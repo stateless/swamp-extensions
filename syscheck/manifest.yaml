@@ -1,0 +1,27 @@
+manifestVersion: 1
+name: "@stateless/syscheck"
+version: "2026.06.12.2"
+description: >-
+  Fleet node verification framework. A catalog of tagged checks (category ×
+  cadence × scope) contributed by domains — host-OS/apt hygiene & fitness over
+  scripts/host-probe.sh, plus a proxmox provider for PVE-scoped checks — run by
+  the syscheck workflow and scored into a per-node pass/warn/fail verdict.
+  Domains (proxmox, future @stateless/docker, …) plug in via a CheckProvider
+  contract. Sits above the domains; results belong in @stateless/inventory.
+repository: "https://github.com/stateless/swamp-extensions"
+labels:
+  - verification
+  - audit
+  - best-practice
+  - fleet
+dependencies:
+  - "@stateless/inventory"
+  - "@swamp/ssh"
+  - "@stateless/proxmox"
+reports:
+  - syscheck.ts
+workflows:
+  - syscheck.workflow.yaml
+additionalFiles:
+  - README.md
+  - LICENSE.txt

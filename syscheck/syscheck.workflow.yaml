@@ -1,0 +1,151 @@
+id: f76562a4-caa0-467b-8b84-644615a9ec92
+name: "@stateless/syscheck"
+description: >-
+  syscheck — run the read-only host-probe across the selected hosts and evaluate
+  the @stateless/syscheck check catalog (host + proxmox providers; CPU microcode,
+  non-free-firmware, kernel) into a per-node pass/warn/fail verdict. Operates
+  over @swamp/ssh (host-OS / apt facts the PVE API cannot see); the PVE-API
+  check subset is added as the catalog grows. READ-ONLY — no mutations, safe to
+  run on a cadence or as an upgrade preflight.
+version: 1
+inputs:
+  properties:
+    inventoryModel:
+      type: string
+      default: proxmox-inventory
+      description: >-
+        Name of the @swamp/ssh inventory model instance to probe. Override to
+        point syscheck at your own fleet's inventory model.
+    hosts:
+      type: string
+      default: all
+      description: >-
+        Host selector for the inventory model: "all", a single host name, or a
+        bar-separated list. Checks mark themselves N/A where they do not apply
+        (e.g. microcode on a VM or a non-x86 host).
+    timeoutSec:
+      type: integer
+      default: 600
+      description: Per-host timeout (seconds) for the probe.
+reports:
+  require:
+    - "@stateless/syscheck"
+jobs:
+  - name: probe
+    description: Read-only host probe (host-OS / apt facts) across the selected hosts.
+    steps:
+      - name: probe-host
+        description: >-
+          Run the read-only host probe on each host; the single-line JSON on
+          stdout lands in that host's runResult.stdout for the syscheck report to
+          evaluate. (Probe inlined from scripts/host-probe.sh — keep in sync.)
+        task:
+          type: model_method
+          modelIdOrName: ${{ inputs.inventoryModel }}
+          methodName: script
+          inputs:
+            hosts: ${{ inputs.hosts }}
+            interpreter: bash
+            captureOutput: true
+            timeoutSec: ${{ inputs.timeoutSec }}
+            script: |
+              set -u
+
+              # JSON-escape a string value (backslash, quote, newline, tab, CR, and stray
+              # control chars). Pure sed so it works on minimal hosts without python/jq.
+              jesc() {
+                printf '%s' "${1-}" \
+                  | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' -e 's/\r//g' \
+                  | sed -e ':a;N;$!ba;s/\n/\\n/g'
+              }
+
+              have() { command -v "$1" >/dev/null 2>&1; }
+
+              # --- always-available facts ------------------------------------------------
+              HOST="$(uname -n 2>/dev/null)"
+              KERNEL="$(uname -r 2>/dev/null)"
+              ARCH="$(uname -m 2>/dev/null)"
+              CMDLINE="$(cat /proc/cmdline 2>/dev/null)"
+              OS=""
+              if [ -r /etc/os-release ]; then
+                # shellcheck disable=SC1091
+                OS="$(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME-}")"
+              fi
+
+              # --- proxmox (only if this is a PVE node) ----------------------------------
+              PVE_JSON="null"
+              if have qm || have pveversion; then
+                PVE_VER="$(pveversion 2>/dev/null | head -n1)"
+                # All configured guests (running OR stopped): qm = VMs, pct = containers.
+                VM_IDS="$(qm list 2>/dev/null | awk 'NR>1 && $1 ~ /^[0-9]+$/ {print $1}')"
+                CT_IDS="$(pct list 2>/dev/null | awk 'NR>1 && $1 ~ /^[0-9]+$/ {print $1}')"
+                GUEST_IDS="$(printf '%s\n%s\n' "$VM_IDS" "$CT_IDS" | tr '\n' ' ' | sed 's/  */ /g; s/^ //; s/ $//')"
+                # Storage status as "name:status;" pairs for the pve-storage-active check.
+                PVE_STORAGES="$(pvesm status 2>/dev/null | awk 'NR>1 {printf "%s:%s;", $1, $3}')"
+                PVE_JSON="{\"version\":\"$(jesc "$PVE_VER")\",\"guestIds\":\"$(jesc "$GUEST_IDS")\",\"storages\":\"$(jesc "$PVE_STORAGES")\"}"
+              fi
+
+              # --- gpu (only if nvidia tooling present) ----------------------------------
+              GPU_JSON="null"
+              if have nvidia-smi; then
+                GPU_SMI="$(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | tr '\n' ';')"
+                GPU_JSON="{\"smi\":\"$(jesc "$GPU_SMI")\"}"
+              fi
+
+              # --- storage (zpool health + block devices) --------------------------------
+              ZPOOL=""; ZHEALTH=""
+              if have zpool; then
+                ZPOOL="$(zpool list -H -o name,health 2>/dev/null | tr '\t' ' ' | tr '\n' ';')"
+                ZHEALTH="$(zpool status -x 2>/dev/null | tr '\n' ' ')"
+              fi
+              DISKS=""
+              if have lsblk; then
+                DISKS="$(lsblk -dno NAME,SIZE,MODEL 2>/dev/null | tr '\n' ';')"
+              fi
+              STORAGE_JSON="{\"zpool\":\"$(jesc "$ZPOOL")\",\"zpoolHealth\":\"$(jesc "$ZHEALTH")\",\"disks\":\"$(jesc "$DISKS")\"}"
+
+              # --- hygiene (best-practice / "warrant of fitness" facts) ------------------
+              # Read-only inputs for the @stateless/syscheck check catalog. Absent tool =>
+              # empty/unknown field, never a failure; the report's checks decide significance.
+              CPU_VENDOR="$(grep -m1 '^vendor_id' /proc/cpuinfo 2>/dev/null | sed 's/.*: //')"
+              # Virtualisation: bare metal prints "none" (and exits non-zero — output still
+              # captured). Absent detector => "unknown" so checks can skip rather than misfire.
+              VIRT="unknown"
+              if have systemd-detect-virt; then
+                VIRT="$(systemd-detect-virt 2>/dev/null || true)"
+                [ -z "$VIRT" ] && VIRT="none"
+              fi
+              # Installed CPU-microcode package (vendor-specific) + version, or "" if none.
+              MICROCODE_PKG=""
+              if have dpkg-query; then
+                for _p in amd64-microcode intel-microcode; do
+                  _st="$(dpkg-query -W -f='${Status}' "$_p" 2>/dev/null || true)"
+                  case "$_st" in
+                    *" installed"*)
+                      MICROCODE_PKG="$_p $(dpkg-query -W -f='${Version}' "$_p" 2>/dev/null || true)"
+                      break ;;
+                  esac
+                done
+              fi
+              # Is the Debian `non-free-firmware` apt component enabled? (one-line or deb822)
+              NONFREE_FW="false"
+              if grep -rqsE 'non-free-firmware' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+                NONFREE_FW="true"
+              fi
+              # Newest installed kernel image basename (vs the running `kernel` field above).
+              NEWEST_KERNEL="$(ls -1 /boot/vmlinuz-* 2>/dev/null | sed 's#.*/vmlinuz-##' | sort -V | tail -1)"
+              HYGIENE_JSON="{\"cpuVendor\":\"$(jesc "$CPU_VENDOR")\",\"virt\":\"$(jesc "$VIRT")\",\"microcodePkg\":\"$(jesc "$MICROCODE_PKG")\",\"nonFreeFirmware\":$NONFREE_FW,\"newestKernel\":\"$(jesc "$NEWEST_KERNEL")\"}"
+
+              # --- emit one JSON document ------------------------------------------------
+              printf '{'
+              printf '"reachable":true,'
+              printf '"host":"%s",' "$(jesc "$HOST")"
+              printf '"os":"%s",' "$(jesc "$OS")"
+              printf '"kernel":"%s",' "$(jesc "$KERNEL")"
+              printf '"arch":"%s",' "$(jesc "$ARCH")"
+              printf '"cmdline":"%s",' "$(jesc "$CMDLINE")"
+              printf '"proxmox":%s,' "$PVE_JSON"
+              printf '"gpu":%s,' "$GPU_JSON"
+              printf '"storage":%s,' "$STORAGE_JSON"
+              printf '"hygiene":%s' "$HYGIENE_JSON"
+              printf '}\n'
