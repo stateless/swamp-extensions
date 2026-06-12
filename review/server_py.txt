@@ -187,6 +187,8 @@ function inline(s){
  s=s.replace(/`([^`]+)`/g,function(m,c){return '<code>'+c+'</code>'});
  s=s.replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>');
  s=s.replace(/(^|[^*])\\*([^*]+)\\*/g,'$1<i>$2</i>');
+ s=s.replace(/~~([^~]+)~~/g,'<s>$1</s>');
+ s=s.replace(/==([^=]+)==/g,'<mark>$1</mark>');
  s=s.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
  return s;
 }
@@ -381,6 +383,7 @@ TOOLBAR = (
     '<div id="toolbar">'
     '<button title="bold (Ctrl+B)" onclick="fmtWrap(\'**\',\'**\')"><b>B</b></button>'
     '<button title="italic (Ctrl+I)" onclick="fmtWrap(\'*\',\'*\')"><i>I</i></button>'
+    '<button title="strikethrough (Ctrl+Shift+X)" onclick="fmtWrap(\'~~\',\'~~\')"><s>S</s></button>'
     '<button title="inline code (Ctrl+E)" onclick="fmtWrap(\'`\',\'`\')">&lt;/&gt;</button>'
     '<button title="link (Ctrl+K)" onclick="mdLink()">link</button>'
     '<span class="sep"></span>'
@@ -434,14 +437,15 @@ function mdLink(){
 ed.addEventListener('keydown',function(e){
  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
  const k=e.key.toLowerCase();
- if(k==='b'){e.preventDefault();fmtWrap('**','**');}
+ if(k==='x'&&e.shiftKey){e.preventDefault();fmtWrap('~~','~~');}
+ else if(k==='b'){e.preventDefault();fmtWrap('**','**');}
  else if(k==='i'){e.preventDefault();fmtWrap('*','*');}
  else if(k==='e'){e.preventDefault();fmtWrap('`','`');}
  else if(k==='k'){e.preventDefault();mdLink();}
 });
 ed.addEventListener('beforeinput',function(e){
  if(e.inputType!=='insertText'||!e.data||e.data.length!==1)return;
- const pairs={'*':'*','_':'_','`':'`','[':']','(':')'};
+ const pairs={'*':'*','_':'_','`':'`','~':'~','=':'=','[':']','(':')'};
  const close=pairs[e.data];
  const s=ed.selectionStart,en=ed.selectionEnd;
  if(!close||s===en)return;                  // no selection -> type normally

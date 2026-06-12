@@ -199,6 +199,19 @@ Deno.test("mdRender: all five CriticMarkup marks", async () => {
   assert(out.includes('<span class="critc">solo</span>'), "solo comment");
 });
 
+Deno.test("mdRender: strikethrough + ==highlight== coexist with Critic", async () => {
+  const mdRender = await loadMdRender();
+  const out = mdRender(
+    "~~struck~~ and ==hot== and {~~old~>new~~} and {==cm==}{>>note<<}",
+    true,
+  );
+  assert(out.includes("<s>struck</s>"), "plain strikethrough");
+  assert(out.includes("<mark>hot</mark>"), "markdown highlight");
+  assert(out.includes("<del>old</del><ins>new</ins>"), "substitution intact");
+  assert(out.includes("<mark>cm</mark>"), "critic highlight intact");
+  assert(out.includes('<span class="critc">note</span>'), "comment intact");
+});
+
 // ---------------------------------------------------------------------------
 // End-to-end server exercise (needs python3 + a listening socket)
 // ---------------------------------------------------------------------------
