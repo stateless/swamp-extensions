@@ -107,6 +107,13 @@ rediscover a lost session: `ps ax | grep server_py` — the cmdline shows
 - Top-of-document YAML frontmatter (`---` fenced) renders as a dashed,
   labelled block in the preview; the page warns before close/navigation
   while edits are unsaved (since 2026.06.12.2).
+- Editing aids (since 2026.06.12.3): toolbar with bold/italic/code/link +
+  the five CriticMarkup marks ({++add++}, {--del--}, {~~old~>new~~},
+  {==highlight==}, {>>comment<<}); Ctrl/Cmd+B/I/E/K; Obsidian-style
+  type-to-wrap (typing * _ ` [ ( with a selection wraps it — ** by typing
+  * twice). The preview renders Critic marks (ins green, del struck,
+  comment bubbles) — ask the human to mark up with tracked changes, then
+  parse {..} marks from the saved markdown and apply/resolve them.
 - File `content` must be inlined in the spec (read the source files and
   embed them when writing the spec JSON).
 

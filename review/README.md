@@ -90,7 +90,17 @@ Every **Save** in the form dual-writes into `outDir`:
 Reloading the form prefills from the last save (resume) — **only the last
 clicked Save**, never in-flight typing; the page warns on close/navigation
 while unsaved edits exist. Doc previews render YAML frontmatter as a styled
-block. `collect`
+block.
+
+Doc-mode editing aids: a toolbar (bold/italic/code/link plus the five
+[CriticMarkup](https://fletcher.github.io/MultiMarkdown-6/syntax/critic.html)
+marks — `{++add++}`, `{--del--}`, `{~~old~>new~~}`, `{==highlight==}`,
+`{>>comment<<}`), Ctrl/Cmd+B/I/E/K shortcuts, and Obsidian-style
+type-to-wrap (typing `*`, `_`, `` ` ``, `[`, `(` with a selection wraps it —
+`**bold**` by typing `*` twice). The preview renders Critic marks visually
+(insertions green, deletions struck red, comments as bubbles), so a human
+can mark up a doc with tracked changes the agent then parses and applies.
+`collect`
 additionally records the result into the swamp data model, so workflows
 consume it with CEL:
 

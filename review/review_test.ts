@@ -156,6 +156,50 @@ Deno.test("pidMatchesSession: rejects a foreign pid", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Embedded markdown renderer (extracted from the python source and executed)
+// ---------------------------------------------------------------------------
+
+async function loadMdRender(): Promise<(src: string, isTop?: boolean) => string> {
+  const py = await Deno.readTextFile(
+    new URL("./server_py.txt", import.meta.url),
+  );
+  const m = py.match(/MD_JS = """\n([\s\S]*?)\n"""/);
+  if (!m) throw new Error("MD_JS block not found in server_py.txt");
+  // Render the python string literal: the only escapes used are \\ pairs.
+  const js = m[1].replaceAll("\\\\", "\\");
+  return new Function(js + "\nreturn mdRender;")() as (
+    src: string,
+    isTop?: boolean,
+  ) => string;
+}
+
+Deno.test("mdRender: frontmatter block at top level only", async () => {
+  const mdRender = await loadMdRender();
+  const out = mdRender("---\ndate: 2026-06-12\ntag:\n  - test\n---\n# Title", true);
+  assert(out.includes('class="fm"'), "frontmatter block missing");
+  assert(out.includes("date: 2026-06-12"));
+  assert(out.includes("<h1>Title</h1>"));
+  const sub = mdRender("---\nx: y\n---", false);
+  assertFalse(sub.includes('class="fm"'), "fm must not render off top level");
+  assert(sub.includes("<hr>"));
+  mdRender("---\nunterminated", true); // must not throw
+});
+
+Deno.test("mdRender: all five CriticMarkup marks", async () => {
+  const mdRender = await loadMdRender();
+  const out = mdRender(
+    "a {++added++} b {--gone--} c {~~old~>new~~} d {==hot==}{>>why<<} e {>>solo<<}",
+    true,
+  );
+  assert(out.includes("<ins>added</ins>"), "addition");
+  assert(out.includes("<del>gone</del>"), "deletion");
+  assert(out.includes("<del>old</del><ins>new</ins>"), "substitution");
+  assert(out.includes("<mark>hot</mark>"), "highlight");
+  assert(out.includes('<span class="critc">why</span>'), "paired comment");
+  assert(out.includes('<span class="critc">solo</span>'), "solo comment");
+});
+
+// ---------------------------------------------------------------------------
 // End-to-end server exercise (needs python3 + a listening socket)
 // ---------------------------------------------------------------------------
 

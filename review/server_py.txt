@@ -142,7 +142,12 @@ button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px
 .frow.active{background:#1a2030}
 .dirty{color:#ffd86b;font-size:11px;margin-left:6px}
 #split{display:flex;gap:0;height:calc(100vh - 170px)}
-#editor{flex:1;box-sizing:border-box;background:#0f1115;color:#e6e6e6;border:1px solid #2a2f3a;border-radius:6px 0 0 6px;padding:12px;font:13px/1.5 ui-monospace,monospace;resize:none;outline:none}
+#edcol{flex:1;display:flex;flex-direction:column;min-width:0}
+#toolbar{display:flex;gap:3px;align-items:center;padding:4px 6px;border:1px solid #2a2f3a;border-bottom:0;border-radius:6px 0 0 0;background:#161a22}
+#toolbar button{background:#1d2430;color:#cfd6e3;border:1px solid #2a2f3a;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;line-height:1.4}
+#toolbar button:hover{background:#2563eb;color:#fff}
+#toolbar .sep{width:1px;align-self:stretch;background:#2a2f3a;margin:0 5px}
+#editor{flex:1;box-sizing:border-box;background:#0f1115;color:#e6e6e6;border:1px solid #2a2f3a;border-radius:0 0 0 6px;padding:12px;font:13px/1.5 ui-monospace,monospace;resize:none;outline:none}
 #preview{flex:1;overflow:auto;border:1px solid #2a2f3a;border-left:0;border-radius:0 6px 6px 0;padding:12px 18px;background:#12151c}
 #preview h1,#preview h2,#preview h3{color:#fff;border:0;text-transform:none;letter-spacing:0}
 #preview h2{font-size:19px}
@@ -156,14 +161,29 @@ button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px
 #preview .fm{border:1px dashed #3a4150;border-radius:6px;margin:0 0 14px;background:#161a22}
 #preview .fm .fmh{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7fb0ff;padding:6px 12px 0}
 #preview .fm pre{margin:0;padding:6px 12px 10px;background:none;color:#a8b0bf;font-size:12px}
+/* CriticMarkup */
+#preview ins{color:#7ee08a;text-decoration:none;background:#15301b;border-radius:3px;padding:0 2px}
+#preview del{color:#ff7b7b;background:#33181b;border-radius:3px;padding:0 2px}
+#preview mark{background:#4d3f12;color:#ffd86b;border-radius:3px;padding:0 2px}
+#preview .critc{color:#9aa3b2;font-size:12px;border:1px dashed #3a4150;border-radius:4px;padding:0 5px;margin:0 2px}
+#preview .critc:before{content:"\\1F4AC  ";font-size:11px}
 """
 
 # Minimal client-side markdown renderer — headings, fences, lists, quotes,
 # tables, hr, inline code/bold/italic/links. Preview-grade, not spec-complete.
 MD_JS = """
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function critic(s){
+ s=s.replace(/\\{\\+\\+([\\s\\S]+?)\\+\\+\\}/g,'<ins>$1</ins>');
+ s=s.replace(/\\{--([\\s\\S]+?)--\\}/g,'<del>$1</del>');
+ s=s.replace(/\\{~~([\\s\\S]+?)~&gt;([\\s\\S]+?)~~\\}/g,'<del>$1</del><ins>$2</ins>');
+ s=s.replace(/\\{==([\\s\\S]+?)==\\}/g,'<mark>$1</mark>');
+ s=s.replace(/\\{&gt;&gt;([\\s\\S]+?)&lt;&lt;\\}/g,'<span class="critc">$1</span>');
+ return s;
+}
 function inline(s){
  s=esc(s);
+ s=critic(s);
  s=s.replace(/`([^`]+)`/g,function(m,c){return '<code>'+c+'</code>'});
  s=s.replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>');
  s=s.replace(/(^|[^*])\\*([^*]+)\\*/g,'$1<i>$2</i>');
@@ -357,10 +377,79 @@ def log_list(ts, data):
 # doc mode
 # ---------------------------------------------------------------------------
 
+TOOLBAR = (
+    '<div id="toolbar">'
+    '<button title="bold (Ctrl+B)" onclick="fmtWrap(\'**\',\'**\')"><b>B</b></button>'
+    '<button title="italic (Ctrl+I)" onclick="fmtWrap(\'*\',\'*\')"><i>I</i></button>'
+    '<button title="inline code (Ctrl+E)" onclick="fmtWrap(\'`\',\'`\')">&lt;/&gt;</button>'
+    '<button title="link (Ctrl+K)" onclick="mdLink()">link</button>'
+    '<span class="sep"></span>'
+    '<button title="Critic: addition {++ ++}" onclick="fmtWrap(\'{++\',\'++}\')">+add</button>'
+    '<button title="Critic: deletion {-- --}" onclick="fmtWrap(\'{--\',\'--}\')">-del</button>'
+    '<button title="Critic: substitution {~~ ~&gt; ~~}" onclick="fmtSub()">~sub</button>'
+    '<button title="Critic: highlight + comment {== ==}{&gt;&gt; &lt;&lt;}" onclick="fmtComment(true)">=hl</button>'
+    '<button title="Critic: comment {&gt;&gt; &lt;&lt;}" onclick="fmtComment(false)">&gt;note</button>'
+    "</div>"
+)
+
 DOC_JS = """
 const ed=document.getElementById('editor'),pv=document.getElementById('preview');
 let cur=0,tmr=null;
 function refresh(){pv.innerHTML=mdRender(ed.value,true)}
+// --- formatting: toolbar + Ctrl-keys + Obsidian-style type-to-wrap ---------
+function fmtWrap(pre,post){
+ const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
+ ed.focus();
+ if(v.length>=pre.length+post.length&&v.startsWith(pre)&&v.endsWith(post)){
+  document.execCommand('insertText',false,v.slice(pre.length,v.length-post.length));
+  ed.selectionStart=s;ed.selectionEnd=e-pre.length-post.length;return;
+ }
+ if(ed.value.slice(s-pre.length,s)===pre&&ed.value.slice(e,e+post.length)===post){
+  ed.selectionStart=s-pre.length;ed.selectionEnd=e+post.length;
+  document.execCommand('insertText',false,v);
+  ed.selectionStart=s-pre.length;ed.selectionEnd=s-pre.length+v.length;return;
+ }
+ document.execCommand('insertText',false,pre+v+post);
+ ed.selectionStart=s+pre.length;ed.selectionEnd=s+pre.length+v.length;
+}
+function fmtSub(){
+ const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
+ ed.focus();
+ document.execCommand('insertText',false,'{~~'+v+'~>~~}');
+ ed.selectionStart=ed.selectionEnd=s+3+v.length+2;  // cursor after ~>
+}
+function fmtComment(withHl){
+ const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
+ ed.focus();
+ const t=(withHl&&v)?'{=='+v+'==}{>><<}':'{>><<}';
+ document.execCommand('insertText',false,t);
+ ed.selectionStart=ed.selectionEnd=s+t.length-3;     // cursor inside >>|<<
+}
+function mdLink(){
+ const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
+ ed.focus();
+ document.execCommand('insertText',false,'['+v+'](url)');
+ ed.selectionStart=s+v.length+3;ed.selectionEnd=s+v.length+6;  // select "url"
+}
+ed.addEventListener('keydown',function(e){
+ if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+ const k=e.key.toLowerCase();
+ if(k==='b'){e.preventDefault();fmtWrap('**','**');}
+ else if(k==='i'){e.preventDefault();fmtWrap('*','*');}
+ else if(k==='e'){e.preventDefault();fmtWrap('`','`');}
+ else if(k==='k'){e.preventDefault();mdLink();}
+});
+ed.addEventListener('beforeinput',function(e){
+ if(e.inputType!=='insertText'||!e.data||e.data.length!==1)return;
+ const pairs={'*':'*','_':'_','`':'`','[':']','(':')'};
+ const close=pairs[e.data];
+ const s=ed.selectionStart,en=ed.selectionEnd;
+ if(!close||s===en)return;                  // no selection -> type normally
+ e.preventDefault();
+ const v=ed.value.slice(s,en);
+ document.execCommand('insertText',false,e.data+v+close);
+ ed.selectionStart=s+1;ed.selectionEnd=s+1+v.length;  // keep selection: ** nests
+});
 ed.addEventListener('input',()=>{FILES[cur].content=ed.value;markDirty(cur);
  clearTimeout(tmr);tmr=setTimeout(refresh,250)});
 function markDirty(i){
@@ -449,13 +538,14 @@ def page_doc():
         "<style>%s\n%s</style></head><body>"
         "<header><h1>%s</h1>"
         "<textarea id=notes rows=2 placeholder='review notes / comments...'>%s</textarea></header>"
-        "<main>%s<div id=split><textarea id=editor spellcheck=false></textarea>"
+        "<main>%s<div id=split><div id=edcol>%s"
+        "<textarea id=editor spellcheck=false></textarea></div>"
         "<div id=preview></div></div></main>"
         "<div id=bar><button onclick=save()>Save</button>%s<span id=msg>%s</span></div>"
         "<script>%s%s%s%s</script></body></html>"
         % (
             html.escape(TITLE), CSS, scale_css(), html.escape(TITLE),
-            html.escape(saved.get("notes", "")), dirblock,
+            html.escape(saved.get("notes", "")), dirblock, TOOLBAR,
             overall, legend, MD_JS, common_js(), state_js, DOC_JS,
         )
     )
