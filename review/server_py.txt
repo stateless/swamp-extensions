@@ -406,11 +406,36 @@ function refresh(){pv.innerHTML=mdRender(ed.value,true)}
 let edTouched=false;
 ed.addEventListener('focus',function(){edTouched=true});
 document.getElementById('toolbar').addEventListener('mousedown',function(e){e.preventDefault()});
+function previewToEditor(ws){
+ // Map a preview-pane selection back to the markdown source: same text,
+ // same occurrence index. Falls back when the run spans formatting.
+ const sel=ws.toString();
+ if(!sel.trim())return false;
+ const r=ws.getRangeAt(0);
+ const pre=document.createRange();
+ pre.selectNodeContents(pv);pre.setEnd(r.startContainer,r.startOffset);
+ const before=pre.toString();
+ let n=0,from=0,idx;
+ while((idx=before.indexOf(sel,from))!==-1){n++;from=idx+1}
+ let s=-1;from=0;
+ for(let k=0;k<=n;k++){s=ed.value.indexOf(sel,from);if(s===-1)break;from=s+1}
+ if(s===-1)s=ed.value.indexOf(sel);          // fewer source hits: take first
+ if(s===-1){
+  document.getElementById('msg').textContent='Couldn\\u2019t find that run in the source (selection spans formatting?) \\u2014 select in the editor.';
+  return false;
+ }
+ ws.removeAllRanges();
+ edTouched=true;
+ ed.focus();
+ ed.setSelectionRange(s,s+sel.length);
+ const line=ed.value.slice(0,s).split('\\n').length;
+ ed.scrollTop=Math.max(0,(line-6)*19.5);     // approx; fine for wrapped docs
+ return true;
+}
 function edTarget(){
  const ws=window.getSelection();
  if(ws&&!ws.isCollapsed&&pv.contains(ws.anchorNode)){
-  document.getElementById('msg').textContent='Select in the editor (left) \\u2014 preview text can\\u2019t be formatted.';
-  return false;
+  return previewToEditor(ws);                // jump + select in the editor
  }
  if(!edTouched){
   document.getElementById('msg').textContent='Click into the editor first.';

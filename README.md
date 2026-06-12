@@ -14,7 +14,7 @@ Maintained by **[stateless](https://swamp-club.com/u/stateless)** — see the
 | --- | --- | --- | --- | --- |
 | `@stateless/inventory` | `2026.06.12.1` | [`inventory/`](inventory/) | [registry](https://swamp-club.com/extensions/@stateless/inventory) | Foundational fleet inventory record — uniform core + extensible facets. |
 | `@stateless/proxmox` | `2026.06.12.1` | [`proxmox/`](proxmox/) | [registry](https://swamp-club.com/extensions/@stateless/proxmox) | Transport-neutral Proxmox VE lifecycle (QEMU/LXC) over REST or `pvesh`-over-SSH. |
-| `@stateless/review` | `2026.06.12.5` | [`review/`](review/) | [registry](https://swamp-club.com/extensions/@stateless/review) | Human-in-the-loop review canvas — curation grids, markdown editor+preview doc review, approve/revise/reject publish gates. |
+| `@stateless/review` | `2026.06.12.6` | [`review/`](review/) | [registry](https://swamp-club.com/extensions/@stateless/review) | Human-in-the-loop review canvas — curation grids, markdown editor+preview doc review, approve/revise/reject publish gates. |
 | `@stateless/syscheck` | `2026.06.12.2` | [`syscheck/`](syscheck/) | [registry](https://swamp-club.com/extensions/@stateless/syscheck) | Fleet node verification — tagged checks (category × cadence × scope) contributed by domains via a `CheckProvider` contract. |
 
 Each extension's directory holds its `manifest.yaml`, source, `README.md`, and
