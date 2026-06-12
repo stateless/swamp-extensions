@@ -398,7 +398,12 @@ TOOLBAR = (
 DOC_JS = """
 const ed=document.getElementById('editor'),pv=document.getElementById('preview');
 let cur=0,tmr=null;
-function refresh(){pv.innerHTML=mdRender(ed.value,true)}
+let lastRendered=null;
+function refresh(){
+ if(ed.value===lastRendered)return;
+ lastRendered=ed.value;
+ requestAnimationFrame(function(){pv.innerHTML=mdRender(ed.value,true)});
+}
 // --- formatting: toolbar + Ctrl-keys + Obsidian-style type-to-wrap ---------
 // Toolbar must act on the EDITOR's selection. Guards: don't steal focus on
 // click; refuse when the user's selection is in the preview pane; refuse a
@@ -503,7 +508,7 @@ ed.addEventListener('beforeinput',function(e){
  ed.selectionStart=s+1;ed.selectionEnd=s+1+v.length;  // keep selection: ** nests
 });
 ed.addEventListener('input',()=>{FILES[cur].content=ed.value;markDirty(cur);
- clearTimeout(tmr);tmr=setTimeout(refresh,250)});
+ clearTimeout(tmr);tmr=setTimeout(refresh,700)});
 function markDirty(i){
  const el=document.getElementById('dirty'+i);
  if(el)el.textContent=(FILES[i].content!==ORIG[i])?'edited':'';
@@ -591,7 +596,7 @@ def page_doc():
         "<header><h1>%s</h1>"
         "<textarea id=notes rows=2 placeholder='review notes / comments...'>%s</textarea></header>"
         "<main>%s<div id=split><div id=edcol>%s"
-        "<textarea id=editor spellcheck=false></textarea></div>"
+        "<textarea id=editor spellcheck=true></textarea></div>"
         "<div id=preview></div></div></main>"
         "<div id=bar><button onclick=save()>Save</button>%s<span id=msg>%s</span></div>"
         "<script>%s%s%s%s</script></body></html>"

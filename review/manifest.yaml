@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/review"
-version: "2026.06.12.6"
+version: "2026.06.12.7"
 description: >-
   Human-in-the-loop review canvas — serve a local web form the human gates
   while the agent keeps working. list mode renders a long candidate list as a
