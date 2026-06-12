@@ -8,7 +8,7 @@ description: >-
   the syscheck workflow and scored into a per-node pass/warn/fail verdict.
   Domains (proxmox, future @stateless/docker, …) plug in via a CheckProvider
   contract. Sits above the domains; results belong in @stateless/inventory.
-repository: "https://github.com/stateless/swamp-extensions"
+repository: "https://github.com/stateless/swamp-extensions/tree/main/syscheck"
 labels:
   - verification
   - audit

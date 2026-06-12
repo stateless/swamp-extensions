@@ -11,7 +11,7 @@ description: >-
   change, not deletion — version history preserves the lifecycle trend).
   Consumer abstractions (telemetry, management, config-drift) depend on it; it
   depends on nothing.
-repository: "https://github.com/stateless/swamp-extensions"
+repository: "https://github.com/stateless/swamp-extensions/tree/main/inventory"
 paths:
   base: manifest
 labels:

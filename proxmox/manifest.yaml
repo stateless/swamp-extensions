@@ -10,7 +10,7 @@ description: >-
   pre-flight check. Plus host/guest telemetry — a nodeStatus method (CPU load,
   memory pressure, root-fs fill, disk SMART) and per-guest metrics — read by the
   @stateless/proxmox-fleet report.
-repository: "https://github.com/stateless/swamp-extensions"
+repository: "https://github.com/stateless/swamp-extensions/tree/main/proxmox"
 labels:
   - proxmox
   - virtualization
