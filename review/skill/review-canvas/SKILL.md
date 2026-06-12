@@ -104,6 +104,9 @@ rediscover a lost session: `ps ax | grep server_py` — the cmdline shows
   doubles as a checklist over the files.
 - `optionScale` in doc mode also renders an overall verdict row in the
   bottom bar — that is your publish gate.
+- Top-of-document YAML frontmatter (`---` fenced) renders as a dashed,
+  labelled block in the preview; the page warns before close/navigation
+  while edits are unsaved (since 2026.06.12.2).
 - File `content` must be inlined in the spec (read the source files and
   embed them when writing the spec JSON).
 
