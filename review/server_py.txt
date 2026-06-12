@@ -158,6 +158,7 @@ button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px
 #preview table{border-collapse:collapse;margin:8px 0}
 #preview td,#preview th{border:1px solid #2a2f3a;padding:4px 8px;font-size:13px}
 #preview a{color:#7fb0ff}
+#preview .blk{display:contents}
 #preview .fm{border:1px dashed #3a4150;border-radius:6px;margin:0 0 14px;background:#161a22}
 #preview .fm .fmh{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7fb0ff;padding:6px 12px 0}
 #preview .fm pre{margin:0;padding:6px 12px 10px;background:none;color:#a8b0bf;font-size:12px}
@@ -192,28 +193,31 @@ function inline(s){
  s=s.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
  return s;
 }
-function mdRender(src,isTop){
+// Block-walker: returns [{l: startLine, h: html}] — one entry per top-level
+// block. data-line stamps + per-block DOM patching hang off this.
+function mdBlocks(src,isTop){
  var out=[],L=src.split('\\n'),i=0;
+ function push(start,html){out.push({l:start,h:html})}
  if(isTop&&L[0]==='---'){
   var fj=1;while(fj<L.length&&L[fj]!=='---'&&L[fj]!=='...')fj++;
   if(fj<L.length){
-   out.push('<div class="fm"><div class="fmh">frontmatter</div><pre>'+esc(L.slice(1,fj).join('\\n'))+'</pre></div>');
+   push(0,'<div class="fm"><div class="fmh">frontmatter</div><pre>'+esc(L.slice(1,fj).join('\\n'))+'</pre></div>');
    i=fj+1;
   }
  }
  while(i<L.length){
-  var l=L[i];
+  var start=i,l=L[i];
   if(/^```/.test(l)){var b=[];i++;while(i<L.length&&!/^```/.test(L[i])){b.push(L[i]);i++}
-   i++;out.push('<pre><code>'+esc(b.join('\\n'))+'</code></pre>');continue}
+   i++;push(start,'<pre><code>'+esc(b.join('\\n'))+'</code></pre>');continue}
   var h=l.match(/^(#{1,6})\\s+(.*)/);
-  if(h){out.push('<h'+h[1].length+'>'+inline(h[2])+'</h'+h[1].length+'>');i++;continue}
-  if(/^\\s*(-{3,}|\\*{3,})\\s*$/.test(l)){out.push('<hr>');i++;continue}
+  if(h){push(start,'<h'+h[1].length+'>'+inline(h[2])+'</h'+h[1].length+'>');i++;continue}
+  if(/^\\s*(-{3,}|\\*{3,})\\s*$/.test(l)){push(start,'<hr>');i++;continue}
   if(/^\\s*>/.test(l)){var q=[];while(i<L.length&&/^\\s*>/.test(L[i])){q.push(L[i].replace(/^\\s*>\\s?/,''));i++}
-   out.push('<blockquote>'+mdRender(q.join('\\n'))+'</blockquote>');continue}
+   push(start,'<blockquote>'+mdRender(q.join('\\n'))+'</blockquote>');continue}
   if(/^\\s*([-*+]|\\d+\\.)\\s+/.test(l)){
    var ord=/^\\s*\\d+\\./.test(l),li=[];
    while(i<L.length&&/^\\s*([-*+]|\\d+\\.)\\s+/.test(L[i])){li.push('<li>'+inline(L[i].replace(/^\\s*([-*+]|\\d+\\.)\\s+/,''))+'</li>');i++}
-   out.push((ord?'<ol>':'<ul>')+li.join('')+(ord?'</ol>':'</ul>'));continue}
+   push(start,(ord?'<ol>':'<ul>')+li.join('')+(ord?'</ol>':'</ul>'));continue}
   if(/^\\s*\\|/.test(l)){var rows=[];
    while(i<L.length&&/^\\s*\\|/.test(L[i])){rows.push(L[i]);i++}
    var t='<table>';
@@ -223,12 +227,15 @@ function mdRender(src,isTop){
     var tag=(r===0)?'th':'td';
     t+='<tr>'+cells.map(function(c){return '<'+tag+'>'+inline(c.trim())+'</'+tag+'>'}).join('')+'</tr>';
    }
-   out.push(t+'</table>');continue}
+   push(start,t+'</table>');continue}
   if(/^\\s*$/.test(l)){i++;continue}
   var p=[];while(i<L.length&&!/^\\s*$/.test(L[i])&&!/^(#|```|\\s*>|\\s*([-*+]|\\d+\\.)\\s|\\s*\\|)/.test(L[i])){p.push(L[i]);i++}
-  out.push('<p>'+inline(p.join(' '))+'</p>');
+  push(start,'<p>'+inline(p.join(' '))+'</p>');
  }
- return out.join('\\n');
+ return out;
+}
+function mdRender(src,isTop){
+ return mdBlocks(src,isTop).map(function(b){return b.h}).join('\\n');
 }
 """
 
@@ -398,12 +405,48 @@ TOOLBAR = (
 DOC_JS = """
 const ed=document.getElementById('editor'),pv=document.getElementById('preview');
 let cur=0,tmr=null;
-let lastRendered=null;
+// Patching preview: each top-level block lives in a .blk wrapper
+// (display:contents = no layout impact). On refresh, unchanged blocks keep
+// their DOM; only the edited span (common prefix/suffix diff) is replaced.
+// data-line attrs are restamped each pass (cheap, no reflow).
+let lastRendered=null,lastHtml=[];
+function patch(blocks){
+ var want=blocks.map(function(b){return b.h});
+ var kids=pv.children;
+ var p=0;while(p<want.length&&p<lastHtml.length&&want[p]===lastHtml[p])p++;
+ var oe=lastHtml.length-1,we=want.length-1;
+ while(oe>=p&&we>=p&&lastHtml[oe]===want[we]){oe--;we--}
+ for(var k=oe;k>=p;k--)pv.removeChild(kids[k]);
+ var ref=kids[p]||null;
+ for(var k2=p;k2<=we;k2++){
+  var d=document.createElement('div');
+  d.className='blk';d.innerHTML=blocks[k2].h;
+  pv.insertBefore(d,ref);
+ }
+ for(var k3=0;k3<blocks.length;k3++)kids[k3].setAttribute('data-line',blocks[k3].l);
+ lastHtml=want;
+}
 function refresh(){
  if(ed.value===lastRendered)return;
  lastRendered=ed.value;
- requestAnimationFrame(function(){pv.innerHTML=mdRender(ed.value,true)});
+ requestAnimationFrame(function(){patch(mdBlocks(ed.value,true))});
 }
+// editor -> preview scroll sync (top visible line -> matching block)
+const LINE_H=19.5;
+let scrollTick=false;
+ed.addEventListener('scroll',function(){
+ if(scrollTick)return;scrollTick=true;
+ requestAnimationFrame(function(){
+  scrollTick=false;
+  var topLine=Math.floor(ed.scrollTop/LINE_H),best=null;
+  for(var k=0;k<pv.children.length;k++){
+   var bl=parseInt(pv.children[k].getAttribute('data-line')||'0',10);
+   if(bl<=topLine)best=pv.children[k];else break;
+  }
+  var el=best&&best.firstElementChild;
+  if(el)pv.scrollTop=el.getBoundingClientRect().top-pv.getBoundingClientRect().top+pv.scrollTop-8;
+ });
+});
 // --- formatting: toolbar + Ctrl-keys + Obsidian-style type-to-wrap ---------
 // Toolbar must act on the EDITOR's selection. Guards: don't steal focus on
 // click; refuse when the user's selection is in the preview pane; refuse a
@@ -417,14 +460,30 @@ function previewToEditor(ws){
  const sel=ws.toString();
  if(!sel.trim())return false;
  const r=ws.getRangeAt(0);
- const pre=document.createRange();
- pre.selectNodeContents(pv);pre.setEnd(r.startContainer,r.startOffset);
- const before=pre.toString();
- let n=0,from=0,idx;
- while((idx=before.indexOf(sel,from))!==-1){n++;from=idx+1}
- let s=-1;from=0;
- for(let k=0;k<=n;k++){s=ed.value.indexOf(sel,from);if(s===-1)break;from=s+1}
- if(s===-1)s=ed.value.indexOf(sel);          // fewer source hits: take first
+ let s=-1;
+ // Exact path: the containing .blk wrapper carries the block's source line —
+ // search from that char offset, so repeated phrases resolve correctly.
+ let anchorEl=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement;
+ const blk=anchorEl&&anchorEl.closest?anchorEl.closest('.blk'):null;
+ if(blk){
+  const line=parseInt(blk.getAttribute('data-line')||'-1',10);
+  if(line>=0){
+   let off=0,seen=0;
+   while(seen<line){off=ed.value.indexOf('\\n',off)+1;if(off===0){off=-1;break}seen++}
+   if(off>=0)s=ed.value.indexOf(sel,off);
+  }
+ }
+ if(s===-1){
+  // Fallback: occurrence-index match across the whole doc.
+  const pre=document.createRange();
+  pre.selectNodeContents(pv);pre.setEnd(r.startContainer,r.startOffset);
+  const before=pre.toString();
+  let n=0,from=0,idx;
+  while((idx=before.indexOf(sel,from))!==-1){n++;from=idx+1}
+  from=0;
+  for(let k=0;k<=n;k++){s=ed.value.indexOf(sel,from);if(s===-1)break;from=s+1}
+  if(s===-1)s=ed.value.indexOf(sel);         // fewer source hits: take first
+ }
  if(s===-1){
   document.getElementById('msg').textContent='Couldn\\u2019t find that run in the source (selection spans formatting?) \\u2014 select in the editor.';
   return false;
@@ -434,7 +493,7 @@ function previewToEditor(ws){
  ed.focus();
  ed.setSelectionRange(s,s+sel.length);
  const line=ed.value.slice(0,s).split('\\n').length;
- ed.scrollTop=Math.max(0,(line-6)*19.5);     // approx; fine for wrapped docs
+ ed.scrollTop=Math.max(0,(line-6)*LINE_H);   // approx; fine for wrapped docs
  return true;
 }
 function edTarget(){

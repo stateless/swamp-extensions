@@ -159,7 +159,10 @@ Deno.test("pidMatchesSession: rejects a foreign pid", async () => {
 // Embedded markdown renderer (extracted from the python source and executed)
 // ---------------------------------------------------------------------------
 
-async function loadMdRender(): Promise<(src: string, isTop?: boolean) => string> {
+type MdRender = (src: string, isTop?: boolean) => string;
+type MdBlocks = (src: string, isTop?: boolean) => { l: number; h: string }[];
+
+async function loadMd(): Promise<{ mdRender: MdRender; mdBlocks: MdBlocks }> {
   const py = await Deno.readTextFile(
     new URL("./server_py.txt", import.meta.url),
   );
@@ -167,10 +170,13 @@ async function loadMdRender(): Promise<(src: string, isTop?: boolean) => string>
   if (!m) throw new Error("MD_JS block not found in server_py.txt");
   // Render the python string literal: the only escapes used are \\ pairs.
   const js = m[1].replaceAll("\\\\", "\\");
-  return new Function(js + "\nreturn mdRender;")() as (
-    src: string,
-    isTop?: boolean,
-  ) => string;
+  return new Function(
+    js + "\nreturn {mdRender: mdRender, mdBlocks: mdBlocks};",
+  )() as { mdRender: MdRender; mdBlocks: MdBlocks };
+}
+
+async function loadMdRender(): Promise<MdRender> {
+  return (await loadMd()).mdRender;
 }
 
 Deno.test("mdRender: frontmatter block at top level only", async () => {
@@ -210,6 +216,23 @@ Deno.test("mdRender: strikethrough + ==highlight== coexist with Critic", async (
   assert(out.includes("<del>old</del><ins>new</ins>"), "substitution intact");
   assert(out.includes("<mark>cm</mark>"), "critic highlight intact");
   assert(out.includes('<span class="critc">note</span>'), "comment intact");
+});
+
+Deno.test("mdBlocks: source-line stamps and local-edit stability", async () => {
+  const { mdBlocks } = await loadMd();
+  const src = "# Title\n\npara one\n\n- a\n- b\n\npara two";
+  const blocks = mdBlocks(src, true);
+  assertEquals(blocks.map((b) => b.l), [0, 2, 4, 7]);
+  assert(blocks[2].h.startsWith("<ul>"));
+  // editing one paragraph leaves every other block's html identical
+  const edited = mdBlocks(
+    "# Title\n\npara one EDITED\n\n- a\n- b\n\npara two",
+    true,
+  );
+  assertEquals(edited.length, blocks.length);
+  const changed = blocks.filter((b, i) => edited[i].h !== b.h);
+  assertEquals(changed.length, 1);
+  assert(edited[1].h.includes("EDITED"));
 });
 
 // ---------------------------------------------------------------------------
