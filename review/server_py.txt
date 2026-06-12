@@ -1,0 +1,598 @@
+#!/usr/bin/env python3
+"""Generic human-in-the-loop review canvas (Python stdlib only).
+
+Serves ONE review session described by a spec JSON file:
+
+  list mode — a curation grid: items grouped by `group`, each with a
+              configurable option-scale (radios), an optional context
+              select, and a comment field. For gating long LLM-generated
+              candidate lists (migrations, triage, cleanup approvals).
+  doc mode  — a pastebin/textedit canvas: markdown editor on the left,
+              live preview on the right, plus an optional verdict
+              option-scale (e.g. approve/revise/reject) for publish gates.
+              With multiple files, a directory listing renders above the
+              editor — per-file verdict + comment, so the listing doubles
+              as a checklist over the files.
+
+Every Save dual-writes into the spec's `outDir`:
+  <name>.json    — structured result (what `collect` reads)
+  <name>.md      — human-readable render (doc mode: the edited doc itself)
+  <name>.log.md  — timestamped append-log (a save can never silently lose
+                   prior state — history survives)
+
+Auth: every request must carry `?t=<token>`. Intended ONLY for secure
+private networks; the token is an abuse guard, not internet-grade auth.
+
+Usage:
+  python3 server.py --spec spec.json --bind 0.0.0.0 --port 8800 --token T
+"""
+import argparse
+import datetime
+import hashlib
+import hmac
+import html
+import http.server
+import json
+import os
+import socketserver
+import sys
+import threading
+import urllib.parse
+
+# ---------------------------------------------------------------------------
+# Spec / state
+# ---------------------------------------------------------------------------
+
+P = argparse.ArgumentParser()
+P.add_argument("--spec", required=True)
+P.add_argument("--bind", default="0.0.0.0")
+P.add_argument("--port", type=int, default=8800)
+P.add_argument("--token", required=True)
+ARGS = P.parse_args()
+
+with open(ARGS.spec) as f:
+    SPEC = json.load(f)
+
+NAME = SPEC["name"]
+MODE = SPEC.get("mode", "list")
+TITLE = SPEC.get("title", NAME)
+OUT = SPEC["outDir"]
+SCALE = SPEC.get("optionScale") or (["keep", "decide", "drop"] if MODE == "list" else [])
+CONTEXTS = SPEC.get("contexts") or []
+ITEMS = SPEC.get("items") or []
+CONTENT = SPEC.get("content") or ""
+INSTRUCTIONS = SPEC.get("instructions") or ""
+
+# doc mode is internally always multi-file; bare content degenerates to one.
+FILES = SPEC.get("files") or []
+if MODE == "doc" and not FILES:
+    FILES = [{"name": "doc", "title": TITLE, "content": CONTENT}]
+
+SAVE_JSON = os.path.join(OUT, NAME + ".json")
+SAVE_MD = os.path.join(OUT, NAME + ".md")
+SAVE_LOG = os.path.join(OUT, NAME + ".log.md")
+SERVER_LOG = os.path.join(OUT, ".review.%s.server.log" % NAME)
+
+
+def slog(msg):
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(SERVER_LOG, "a") as f:
+            f.write("%s %s\n" % (ts, msg))
+    except OSError:
+        pass
+
+
+def load_saved():
+    try:
+        with open(SAVE_JSON) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Rendering — shared chrome
+# ---------------------------------------------------------------------------
+
+# Well-known scale values get semantic colors; anything else cycles a palette.
+KNOWN_COLORS = {
+    "keep": "#7ee08a", "high": "#7ee08a", "approve": "#7ee08a", "yes": "#7ee08a",
+    "low": "#86c5ff", "revise": "#86c5ff",
+    "occasional": "#ffd86b", "decide": "#ffd86b", "undecided": "#b6bcc7",
+    "drop": "#ff7b7b", "reject": "#ff7b7b", "no": "#ff7b7b",
+}
+PALETTE = ["#7ee08a", "#86c5ff", "#ffd86b", "#b6bcc7", "#ff7b7b", "#d7a7ff"]
+
+
+def scale_css():
+    rules = []
+    for i, v in enumerate(SCALE):
+        color = KNOWN_COLORS.get(v, PALETTE[i % len(PALETTE)])
+        rules.append(".r.s%d{color:%s}" % (i, color))
+    return "\n".join(rules)
+
+
+CSS = """
+body{font:14px/1.4 system-ui,sans-serif;margin:0;background:#0f1115;color:#e6e6e6}
+header{position:sticky;top:0;background:#161a22;padding:12px 18px;border-bottom:1px solid #2a2f3a;z-index:5}
+header h1{margin:0 0 6px;font-size:17px}
+#notes{width:100%;box-sizing:border-box;background:#0f1115;color:#e6e6e6;border:1px solid #2a2f3a;border-radius:6px;padding:6px}
+main{padding:10px 18px 90px}
+h2{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#7fb0ff;border-bottom:1px solid #232833;padding-bottom:3px}
+.row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #1a1e26}
+.meta{flex:0 0 28%;min-width:0}
+.meta b{color:#fff}
+.o{color:#8a93a3;font-size:11px}
+.ctl{flex:1;display:flex;align-items:center;gap:6px;min-width:0}
+.radios{flex:0 0 auto;display:flex;gap:3px}
+.r{padding:2px 6px;border-radius:5px;cursor:pointer;font-size:11px;border:1px solid #2a2f3a;user-select:none;white-space:nowrap}
+.r input{margin-right:3px;vertical-align:middle}
+.ctx{flex:0 0 auto;background:#11151c;color:#cfd6e3;border:1px solid #2a2f3a;border-radius:5px;padding:2px 4px;font-size:11px}
+.cm{flex:1;min-width:90px;background:#0f1115;color:#e6e6e6;border:1px solid #2a2f3a;border-radius:5px;padding:4px 8px;font-size:12px}
+#bar{position:fixed;bottom:0;left:0;right:0;background:#161a22;border-top:1px solid #2a2f3a;padding:12px 18px;display:flex;gap:14px;align-items:center}
+button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px;font-size:14px;cursor:pointer}
+#msg{color:#7ee08a}
+/* doc mode */
+#dir{margin:0 0 10px;border:1px solid #2a2f3a;border-radius:6px;background:#12151c}
+.frow{display:flex;align-items:center;gap:10px;padding:5px 10px;border-bottom:1px solid #1a1e26}
+.frow:last-child{border-bottom:0}
+.fname{flex:0 0 32%;min-width:0;cursor:pointer;color:#7fb0ff}
+.frow.active .fname{color:#fff;font-weight:600}
+.frow.active{background:#1a2030}
+.dirty{color:#ffd86b;font-size:11px;margin-left:6px}
+#split{display:flex;gap:0;height:calc(100vh - 170px)}
+#editor{flex:1;box-sizing:border-box;background:#0f1115;color:#e6e6e6;border:1px solid #2a2f3a;border-radius:6px 0 0 6px;padding:12px;font:13px/1.5 ui-monospace,monospace;resize:none;outline:none}
+#preview{flex:1;overflow:auto;border:1px solid #2a2f3a;border-left:0;border-radius:0 6px 6px 0;padding:12px 18px;background:#12151c}
+#preview h1,#preview h2,#preview h3{color:#fff;border:0;text-transform:none;letter-spacing:0}
+#preview h2{font-size:19px}
+#preview code{background:#1a1e26;padding:1px 4px;border-radius:4px;font-size:12px}
+#preview pre{background:#1a1e26;padding:10px;border-radius:6px;overflow:auto}
+#preview pre code{background:none;padding:0}
+#preview blockquote{border-left:3px solid #2a2f3a;margin-left:0;padding-left:12px;color:#a8b0bf}
+#preview table{border-collapse:collapse;margin:8px 0}
+#preview td,#preview th{border:1px solid #2a2f3a;padding:4px 8px;font-size:13px}
+#preview a{color:#7fb0ff}
+"""
+
+# Minimal client-side markdown renderer — headings, fences, lists, quotes,
+# tables, hr, inline code/bold/italic/links. Preview-grade, not spec-complete.
+MD_JS = """
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function inline(s){
+ s=esc(s);
+ s=s.replace(/`([^`]+)`/g,function(m,c){return '<code>'+c+'</code>'});
+ s=s.replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>');
+ s=s.replace(/(^|[^*])\\*([^*]+)\\*/g,'$1<i>$2</i>');
+ s=s.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+ return s;
+}
+function mdRender(src){
+ var out=[],L=src.split('\\n'),i=0;
+ while(i<L.length){
+  var l=L[i];
+  if(/^```/.test(l)){var b=[];i++;while(i<L.length&&!/^```/.test(L[i])){b.push(L[i]);i++}
+   i++;out.push('<pre><code>'+esc(b.join('\\n'))+'</code></pre>');continue}
+  var h=l.match(/^(#{1,6})\\s+(.*)/);
+  if(h){out.push('<h'+h[1].length+'>'+inline(h[2])+'</h'+h[1].length+'>');i++;continue}
+  if(/^\\s*(-{3,}|\\*{3,})\\s*$/.test(l)){out.push('<hr>');i++;continue}
+  if(/^\\s*>/.test(l)){var q=[];while(i<L.length&&/^\\s*>/.test(L[i])){q.push(L[i].replace(/^\\s*>\\s?/,''));i++}
+   out.push('<blockquote>'+mdRender(q.join('\\n'))+'</blockquote>');continue}
+  if(/^\\s*([-*+]|\\d+\\.)\\s+/.test(l)){
+   var ord=/^\\s*\\d+\\./.test(l),li=[];
+   while(i<L.length&&/^\\s*([-*+]|\\d+\\.)\\s+/.test(L[i])){li.push('<li>'+inline(L[i].replace(/^\\s*([-*+]|\\d+\\.)\\s+/,''))+'</li>');i++}
+   out.push((ord?'<ol>':'<ul>')+li.join('')+(ord?'</ol>':'</ul>'));continue}
+  if(/^\\s*\\|/.test(l)){var rows=[];
+   while(i<L.length&&/^\\s*\\|/.test(L[i])){rows.push(L[i]);i++}
+   var t='<table>';
+   for(var r=0;r<rows.length;r++){
+    if(/^\\s*\\|[\\s:|-]+\\|?\\s*$/.test(rows[r]))continue;
+    var cells=rows[r].replace(/^\\s*\\||\\|\\s*$/g,'').split('|');
+    var tag=(r===0)?'th':'td';
+    t+='<tr>'+cells.map(function(c){return '<'+tag+'>'+inline(c.trim())+'</'+tag+'>'}).join('')+'</tr>';
+   }
+   out.push(t+'</table>');continue}
+  if(/^\\s*$/.test(l)){i++;continue}
+  var p=[];while(i<L.length&&!/^\\s*$/.test(L[i])&&!/^(#|```|\\s*>|\\s*([-*+]|\\d+\\.)\\s|\\s*\\|)/.test(L[i])){p.push(L[i]);i++}
+  out.push('<p>'+inline(p.join(' '))+'</p>');
+ }
+ return out.join('\\n');
+}
+"""
+
+
+def common_js():
+    return """
+const T=%s;
+function postSave(body){
+ fetch('/save?t='+encodeURIComponent(T),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(r=>r.json()).then(j=>{document.getElementById('msg').textContent='Saved \\u2713 '+j.savedAt+' \\u2192 '+j.path;})
+  .catch(e=>{document.getElementById('msg').textContent='Error: '+e;});
+}
+""" % json.dumps(ARGS.token)
+
+
+# ---------------------------------------------------------------------------
+# list mode
+# ---------------------------------------------------------------------------
+
+LIST_JS = """
+function save(){
+ const items=[...document.querySelectorAll('.row')].map(r=>{
+  const i=r.dataset.i;
+  const sel=r.querySelector('input[name="d'+i+'"]:checked');
+  const ctx=document.getElementById('x'+i);
+  return {name:r.dataset.name,group:r.dataset.group,meta:r.dataset.meta,
+          disposition:sel?sel.value:'',
+          context:ctx?ctx.value:'',
+          comment:document.getElementById('c'+i).value};
+ });
+ postSave({notes:document.getElementById('notes').value,items:items});
+}
+"""
+
+
+def render_list_rows(saved):
+    by_name = {it.get("name", ""): it for it in saved.get("items", [])}
+    out, last = [], None
+    for i, it in enumerate(ITEMS):
+        name = it.get("name", "")
+        group = it.get("group", "")
+        meta = it.get("meta", "")
+        note = it.get("note", "")
+        sv = by_name.get(name)
+        disp = (sv or {}).get("disposition") or it.get("recommendation") or ""
+        if disp not in SCALE:
+            disp = SCALE[0] if SCALE else ""
+        cmt = (sv or {}).get("comment", "")
+        ctx = (sv or {}).get("context") or it.get("context") or (CONTEXTS[0] if CONTEXTS else "")
+        if group != last:
+            out.append("<h2>%s</h2>" % html.escape(group))
+            last = group
+        radios = ""
+        for si, v in enumerate(SCALE):
+            chk = " checked" if v == disp else ""
+            radios += (
+                '<label class="r s%d"><input type="radio" name="d%d" value="%s"%s>%s</label>'
+                % (si, i, html.escape(v, quote=True), chk, html.escape(v))
+            )
+        ctxsel = ""
+        if CONTEXTS:
+            opts = "".join(
+                "<option%s>%s</option>" % (" selected" if c == ctx else "", html.escape(c))
+                for c in CONTEXTS
+            )
+            ctxsel = '<select class="ctx" id="x%d">%s</select>' % (i, opts)
+        note_s = (" &mdash; <i>%s</i>" % html.escape(note)) if note else ""
+        out.append(
+            '<div class="row" data-i="%d" data-group="%s" data-name="%s" data-meta="%s">'
+            '<div class="meta"><b>%s</b> <span class="o">%s</span>%s</div>'
+            '<div class="ctl"><span class="radios">%s</span>%s'
+            '<input class="cm" id="c%d" value="%s" placeholder="comment"></div></div>'
+            % (
+                i, html.escape(group, quote=True), html.escape(name, quote=True),
+                html.escape(meta, quote=True), html.escape(name), html.escape(meta),
+                note_s, radios, ctxsel, i, html.escape(cmt, quote=True),
+            )
+        )
+    return "\n".join(out)
+
+
+def page_list():
+    saved = load_saved()
+    legend = INSTRUCTIONS or ("scale: " + " &middot; ".join("<b>%s</b>" % html.escape(v) for v in SCALE))
+    return (
+        "<!doctype html><html><head><meta charset=utf-8><title>%s</title>"
+        "<style>%s\n%s</style></head><body>"
+        "<header><h1>%s</h1>"
+        "<textarea id=notes rows=2 placeholder='general notes / decisions...'>%s</textarea></header>"
+        "<main>%s</main>"
+        "<div id=bar><button onclick=save()>Save</button><span id=msg>%s</span></div>"
+        "<script>%s%s</script></body></html>"
+        % (
+            html.escape(TITLE), CSS, scale_css(), html.escape(TITLE),
+            html.escape(saved.get("notes", "")), render_list_rows(saved),
+            legend, common_js(), LIST_JS,
+        )
+    )
+
+
+def render_list_md(data):
+    rows = data.get("items", [])
+    notes = data.get("notes", "")
+    has_ctx = bool(CONTEXTS)
+    L = ["# %s" % TITLE, ""]
+    if notes.strip():
+        L += ["**Notes:** %s" % notes, ""]
+    hdr = "| item | group | meta |" + (" context |" if has_ctx else "") + " disposition | comment |"
+    sep = "|---|---|---|" + ("---|" if has_ctx else "") + "---|---|"
+    L += [hdr, sep]
+    for a in rows:
+        cells = [a.get("name", ""), a.get("group", ""), a.get("meta", "")]
+        if has_ctx:
+            cells.append(a.get("context", ""))
+        cells += ["**%s**" % a.get("disposition", ""), a.get("comment", "")]
+        L.append("| " + " | ".join(cells) + " |")
+    L += ["", "## By disposition"]
+    for v in SCALE:
+        b = [a.get("name", "") for a in rows if a.get("disposition") == v]
+        L.append("- **%s** (%d): %s" % (v, len(b), ", ".join(b)))
+    if has_ctx:
+        L += ["", "## By context"]
+        for c in CONTEXTS:
+            b = [a.get("name", "") for a in rows if a.get("context") == c]
+            L.append("- **%s** (%d): %s" % (c, len(b), ", ".join(b)))
+    return "\n".join(L) + "\n"
+
+
+def log_list(ts, data):
+    rows = data.get("items", [])
+    notes = (data.get("notes", "") or "").strip()
+    log = ["", "---", "## %s  (%d items)" % (ts, len(rows))]
+    if notes:
+        log.append("**Notes:** %s" % notes)
+    for v in SCALE:
+        b = [a.get("name", "") for a in rows if a.get("disposition") == v]
+        log.append("- **%s** (%d): %s" % (v, len(b), ", ".join(b)))
+    return log
+
+
+# ---------------------------------------------------------------------------
+# doc mode
+# ---------------------------------------------------------------------------
+
+DOC_JS = """
+const ed=document.getElementById('editor'),pv=document.getElementById('preview');
+let cur=0,tmr=null;
+function refresh(){pv.innerHTML=mdRender(ed.value)}
+ed.addEventListener('input',()=>{FILES[cur].content=ed.value;markDirty(cur);
+ clearTimeout(tmr);tmr=setTimeout(refresh,250)});
+function markDirty(i){
+ const el=document.getElementById('dirty'+i);
+ if(el)el.textContent=(FILES[i].content!==ORIG[i])?'edited':'';
+}
+function show(i){
+ FILES[cur].content=ed.value;
+ cur=i;ed.value=FILES[i].content;refresh();
+ document.querySelectorAll('.frow').forEach((r,j)=>r.classList.toggle('active',j===i));
+}
+function save(){
+ FILES[cur].content=ed.value;
+ const files=FILES.map((f,i)=>{
+  const v=document.querySelector('input[name="fv'+i+'"]:checked');
+  const c=document.getElementById('fc'+i);
+  return {name:f.name,title:f.title,content:f.content,
+          verdict:v?v.value:'',comment:c?c.value:''};
+ });
+ const ov=document.querySelector('input[name="verdict"]:checked');
+ const body={notes:document.getElementById('notes').value,
+             verdict:ov?ov.value:'',files:files};
+ if(files.length===1)body.content=files[0].content;
+ postSave(body);
+ FILES.forEach((f,i)=>markDirty(i));
+}
+// initial load must NOT write the (empty) textarea back into FILES[0]
+ed.value=FILES[0].content;refresh();
+"""
+
+
+def page_doc():
+    saved = load_saved()
+    by_name = {f.get("name", ""): f for f in saved.get("files", [])}
+    # Single-file saves before multi-file existed kept content at top level.
+    if not by_name and saved.get("content") is not None and len(FILES) == 1:
+        by_name = {FILES[0]["name"]: {"content": saved.get("content")}}
+    files = []
+    for f in FILES:
+        sv = by_name.get(f.get("name", ""), {})
+        files.append({
+            "name": f.get("name", ""),
+            "title": f.get("title") or f.get("name", ""),
+            "content": sv.get("content", f.get("content", "")),
+            "verdict": sv.get("verdict", ""),
+            "comment": sv.get("comment", ""),
+        })
+
+    def radios(group, selected):
+        out = ""
+        for si, v in enumerate(SCALE):
+            chk = " checked" if v == selected else ""
+            out += (
+                '<label class="r s%d"><input type="radio" name="%s" value="%s"%s>%s</label>'
+                % (si, group, html.escape(v, quote=True), chk, html.escape(v))
+            )
+        return '<span class="radios">%s</span>' % out
+
+    dirrows = []
+    if len(files) > 1:
+        for i, f in enumerate(files):
+            dirty = "edited" if f["content"] != FILES[i].get("content", "") else ""
+            dirrows.append(
+                '<div class="frow%s"><span class="fname" onclick="show(%d)">%s'
+                '<span class="dirty" id="dirty%d">%s</span></span>'
+                '<div class="ctl">%s<input class="cm" id="fc%d" value="%s" placeholder="comment"></div></div>'
+                % (
+                    " active" if i == 0 else "", i, html.escape(f["title"]), i, dirty,
+                    radios("fv%d" % i, f["verdict"]) if SCALE else "",
+                    i, html.escape(f["comment"], quote=True),
+                )
+            )
+    dirblock = ('<div id="dir">%s</div>' % "\n".join(dirrows)) if dirrows else ""
+
+    overall = ""
+    if SCALE:
+        overall = radios("verdict", saved.get("verdict", ""))
+    legend = INSTRUCTIONS or "edit left, preview right &mdash; Save writes the revised doc(s) to disk"
+    files_json = json.dumps(
+        [{"name": f["name"], "title": f["title"], "content": f["content"]} for f in files]
+    )
+    orig_json = json.dumps([f.get("content", "") for f in FILES])
+    state_js = "const FILES=%s;const ORIG=%s;" % (files_json, orig_json)
+    return (
+        "<!doctype html><html><head><meta charset=utf-8><title>%s</title>"
+        "<style>%s\n%s</style></head><body>"
+        "<header><h1>%s</h1>"
+        "<textarea id=notes rows=2 placeholder='review notes / comments...'>%s</textarea></header>"
+        "<main>%s<div id=split><textarea id=editor spellcheck=false></textarea>"
+        "<div id=preview></div></div></main>"
+        "<div id=bar><button onclick=save()>Save</button>%s<span id=msg>%s</span></div>"
+        "<script>%s%s%s%s</script></body></html>"
+        % (
+            html.escape(TITLE), CSS, scale_css(), html.escape(TITLE),
+            html.escape(saved.get("notes", "")), dirblock,
+            overall, legend, MD_JS, common_js(), state_js, DOC_JS,
+        )
+    )
+
+
+def file_md_path(fname):
+    return os.path.join(OUT, "%s.%s.md" % (NAME, fname))
+
+
+def render_doc_index_md(data):
+    """Multi-file index: a table of files + verdicts; contents live per-file."""
+    files = data.get("files", [])
+    notes = data.get("notes", "")
+    L = ["# %s" % TITLE, ""]
+    if (data.get("verdict") or "").strip():
+        L += ["**Verdict:** %s" % data["verdict"], ""]
+    if notes.strip():
+        L += ["**Notes:** %s" % notes, ""]
+    L += ["| file | verdict | comment | bytes |", "|---|---|---|---|"]
+    for f in files:
+        content = f.get("content", "") or ""
+        L.append("| [%s](%s) | **%s** | %s | %d |" % (
+            f.get("title") or f.get("name", ""),
+            os.path.basename(file_md_path(f.get("name", ""))),
+            f.get("verdict", ""), f.get("comment", ""), len(content.encode()),
+        ))
+    return "\n".join(L) + "\n"
+
+
+def log_doc(ts, data):
+    files = data.get("files", [])
+    if not files and data.get("content") is not None:
+        files = [{"name": "doc", "content": data.get("content", "")}]
+    notes = (data.get("notes", "") or "").strip()
+    verdict = (data.get("verdict", "") or "").strip()
+    log = ["", "---", "## %s  (%d files)" % (ts, len(files))]
+    if verdict:
+        log.append("**Verdict:** %s" % verdict)
+    if notes:
+        log.append("**Notes:** %s" % notes)
+    for f in files:
+        content = f.get("content", "") or ""
+        digest = hashlib.sha256(content.encode()).hexdigest()[:12]
+        entry = "- **%s**: %d bytes, %d lines, sha %s" % (
+            f.get("name", ""), len(content.encode()),
+            content.count("\n") + 1, digest,
+        )
+        if f.get("verdict"):
+            entry += " — %s" % f["verdict"]
+        if (f.get("comment") or "").strip():
+            entry += " (%s)" % f["comment"]
+        log.append(entry)
+    return log
+
+
+# ---------------------------------------------------------------------------
+# HTTP handler
+# ---------------------------------------------------------------------------
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def _authed(self):
+        q = urllib.parse.urlparse(self.path).query
+        t = urllib.parse.parse_qs(q).get("t", [""])[0]
+        return hmac.compare_digest(t, ARGS.token)
+
+    def _send(self, code, ctype, body):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        if not self._authed():
+            return self._send(403, "text/plain", b"forbidden (missing/bad token)")
+        path = urllib.parse.urlparse(self.path).path
+        if path == "/ping":
+            return self._send(200, "application/json",
+                              json.dumps({"ok": True, "name": NAME, "mode": MODE}).encode())
+        if path == "/state.json":
+            return self._send(200, "application/json", json.dumps(load_saved()).encode())
+        body = (page_list() if MODE == "list" else page_doc()).encode()
+        return self._send(200, "text/html; charset=utf-8", body)
+
+    def do_POST(self):
+        if not self._authed():
+            return self._send(403, "text/plain", b"forbidden (missing/bad token)")
+        path = urllib.parse.urlparse(self.path).path
+        if path == "/shutdown":
+            # token-authenticated self-shutdown — the controller's stop/restart
+            # path; no pid signalling needed (works from sandboxed runtimes).
+            slog("shutdown requested")
+            self._send(200, "application/json", b'{"ok": true, "stopping": true}')
+            threading.Thread(target=SRV.shutdown, daemon=True).start()
+            return
+        ln = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(ln) or b"{}")
+        except ValueError:
+            return self._send(400, "text/plain", b"bad json")
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data["savedAt"] = ts
+        data["mode"] = MODE
+        data["name"] = NAME
+        os.makedirs(OUT, exist_ok=True)
+        with open(SAVE_JSON, "w") as f:
+            json.dump(data, f, indent=2)
+        if MODE == "list":
+            md, log = render_list_md(data), log_list(ts, data)
+        else:
+            files = data.get("files", [])
+            if len(files) > 1:
+                md = render_doc_index_md(data)
+                for fl in files:
+                    content = fl.get("content", "") or ""
+                    with open(file_md_path(fl.get("name", "")), "w") as f:
+                        f.write(
+                            content if content.endswith("\n") or not content
+                            else content + "\n"
+                        )
+            else:
+                md = (files[0].get("content", "") if files else data.get("content", "")) or ""
+            log = log_doc(ts, data)
+        with open(SAVE_MD, "w") as f:
+            f.write(md if md.endswith("\n") or not md else md + "\n")
+        with open(SAVE_LOG, "a") as f:
+            f.write("\n".join(log) + "\n")
+        slog("save: %d bytes json" % ln)
+        r = json.dumps({"ok": True, "savedAt": ts, "path": SAVE_MD}).encode()
+        return self._send(200, "application/json", r)
+
+
+SRV = None
+
+
+def main():
+    global SRV
+    os.makedirs(OUT, exist_ok=True)
+    socketserver.TCPServer.allow_reuse_address = True
+    with socketserver.TCPServer((ARGS.bind, ARGS.port), Handler) as s:
+        SRV = s
+        slog("serving %s mode=%s on %s:%d" % (NAME, MODE, ARGS.bind, ARGS.port))
+        print("serving on %s:%d" % (ARGS.bind, ARGS.port))
+        s.serve_forever()
+        slog("stopped")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:  # noqa: BLE001 — last-resort breadcrumb for the detached process
+        slog("fatal: %r" % e)
+        sys.exit(1)

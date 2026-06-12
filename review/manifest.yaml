@@ -1,0 +1,29 @@
+manifestVersion: 1
+name: "@stateless/review"
+version: "2026.06.12.1"
+description: >-
+  Human-in-the-loop review canvas — serve a local web form the human gates
+  while the agent keeps working. list mode renders a long candidate list as a
+  curation grid (configurable option-scale + per-item comment) for migrations,
+  triage, and cleanup approvals; doc mode is a pastebin-style markdown editor
+  (editor left, live preview right, optional approve/revise/reject verdict)
+  for reviewing generated docs and gating publishes. Detached serve / status /
+  collect / stop lifecycle; every save dual-writes JSON + markdown + a
+  timestamped append-log, and collect records the result into the data model
+  for workflow consumption. Python-stdlib server bundled; private networks
+  only (URL-token guarded).
+repository: "https://github.com/stateless/swamp-extensions/tree/main/review"
+paths:
+  base: manifest
+labels:
+  - human-in-the-loop
+  - review
+  - curation
+  - approval-gate
+  - workflow
+models:
+  - review.ts
+additionalFiles:
+  - README.md
+  - LICENSE.txt
+  - server_py.txt
