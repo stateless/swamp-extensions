@@ -107,13 +107,23 @@ rediscover a lost session: `ps ax | grep server_py` — the cmdline shows
 - Top-of-document YAML frontmatter (`---` fenced) renders as a dashed,
   labelled block in the preview; the page warns before close/navigation
   while edits are unsaved (since 2026.06.12.2).
-- Editing aids (since 2026.06.12.3): toolbar with bold/italic/code/link +
-  the five CriticMarkup marks ({++add++}, {--del--}, {~~old~>new~~},
-  {==highlight==}, {>>comment<<}); Ctrl/Cmd+B/I/E/K; Obsidian-style
-  type-to-wrap (typing * _ ` ~ = [ ( with a selection wraps it — ** by typing
-  * twice). The preview renders Critic marks (ins green, del struck,
-  comment bubbles; plus ~~strikethrough~~ and ==highlight== markdown) — ask the human to mark up with tracked changes, then
-  parse {..} marks from the saved markdown and apply/resolve them.
+- Editing aids (2026.06.12.3+): toolbar with bold/italic/strikethrough/code/
+  link + the five CriticMarkup marks ({++add++}, {--del--}, {~~old~>new~~},
+  {==highlight==}, {>>comment<<}); Ctrl/Cmd+B/I/E/K + Ctrl+Shift+X;
+  Obsidian-style type-to-wrap (typing * _ ` ~ = [ ( with a selection wraps
+  it — ** by typing * twice). The preview renders Critic marks (ins green,
+  del struck, comment bubbles; plus ~~strikethrough~~ and ==highlight==
+  markdown) — ask the human to mark up with tracked changes, then parse {..}
+  marks from the saved markdown and apply/resolve them.
+- Selecting text in the *preview* and hitting a toolbar button jumps the
+  editor to the matching source run and formats it there (block-scoped via
+  data-line stamps); a selection spanning a formatting boundary falls back
+  to a hint.
+- Editor spellcheck is on by default; the preview re-renders per-block on a
+  700ms typing pause (only changed blocks touch the DOM) and scroll-syncs
+  to the editor — large docs stay responsive (.7–.9).
+- Doc mode is a fixed viewport column (the page never scrolls; only the
+  editor/preview panes do), so the header can't cloak the toolbar (.9).
 - File `content` must be inlined in the spec (read the source files and
   embed them when writing the spec JSON).
 
