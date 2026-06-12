@@ -87,7 +87,10 @@ Every **Save** in the form dual-writes into `outDir`:
 - `<name>.log.md` — timestamped append-log: a save can never silently lose
   prior state
 
-Reloading the form prefills from the last save (resume). `collect`
+Reloading the form prefills from the last save (resume) — **only the last
+clicked Save**, never in-flight typing; the page warns on close/navigation
+while unsaved edits exist. Doc previews render YAML frontmatter as a styled
+block. `collect`
 additionally records the result into the swamp data model, so workflows
 consume it with CEL:
 

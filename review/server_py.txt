@@ -153,6 +153,9 @@ button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px
 #preview table{border-collapse:collapse;margin:8px 0}
 #preview td,#preview th{border:1px solid #2a2f3a;padding:4px 8px;font-size:13px}
 #preview a{color:#7fb0ff}
+#preview .fm{border:1px dashed #3a4150;border-radius:6px;margin:0 0 14px;background:#161a22}
+#preview .fm .fmh{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7fb0ff;padding:6px 12px 0}
+#preview .fm pre{margin:0;padding:6px 12px 10px;background:none;color:#a8b0bf;font-size:12px}
 """
 
 # Minimal client-side markdown renderer — headings, fences, lists, quotes,
@@ -167,8 +170,15 @@ function inline(s){
  s=s.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
  return s;
 }
-function mdRender(src){
+function mdRender(src,isTop){
  var out=[],L=src.split('\\n'),i=0;
+ if(isTop&&L[0]==='---'){
+  var fj=1;while(fj<L.length&&L[fj]!=='---'&&L[fj]!=='...')fj++;
+  if(fj<L.length){
+   out.push('<div class="fm"><div class="fmh">frontmatter</div><pre>'+esc(L.slice(1,fj).join('\\n'))+'</pre></div>');
+   i=fj+1;
+  }
+ }
  while(i<L.length){
   var l=L[i];
   if(/^```/.test(l)){var b=[];i++;while(i<L.length&&!/^```/.test(L[i])){b.push(L[i]);i++}
@@ -204,9 +214,15 @@ function mdRender(src){
 def common_js():
     return """
 const T=%s;
+let UNSAVED=false;
+document.addEventListener('input',function(){UNSAVED=true});
+document.addEventListener('change',function(){UNSAVED=true});
+window.addEventListener('beforeunload',function(e){
+ if(UNSAVED){e.preventDefault();e.returnValue='';}
+});
 function postSave(body){
  fetch('/save?t='+encodeURIComponent(T),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-  .then(r=>r.json()).then(j=>{document.getElementById('msg').textContent='Saved \\u2713 '+j.savedAt+' \\u2192 '+j.path;})
+  .then(r=>r.json()).then(j=>{UNSAVED=false;document.getElementById('msg').textContent='Saved \\u2713 '+j.savedAt+' \\u2192 '+j.path;})
   .catch(e=>{document.getElementById('msg').textContent='Error: '+e;});
 }
 """ % json.dumps(ARGS.token)
@@ -344,7 +360,7 @@ def log_list(ts, data):
 DOC_JS = """
 const ed=document.getElementById('editor'),pv=document.getElementById('preview');
 let cur=0,tmr=null;
-function refresh(){pv.innerHTML=mdRender(ed.value)}
+function refresh(){pv.innerHTML=mdRender(ed.value,true)}
 ed.addEventListener('input',()=>{FILES[cur].content=ed.value;markDirty(cur);
  clearTimeout(tmr);tmr=setTimeout(refresh,250)});
 function markDirty(i){

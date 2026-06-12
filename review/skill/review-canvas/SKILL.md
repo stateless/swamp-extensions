@@ -129,3 +129,13 @@ also mirrors `content` at the top level.
   basenames.
 - Spec changes need a server restart (shutdown + re-serve); saves persist
   across restarts.
+- **Never shutdown+re-serve while the human has the form open with unsaved
+  edits.** Resume restores only the last *clicked Save* — never in-flight
+  typing. A restart also rotates the `--token`, invalidating the open tab, so
+  the human silently loses unsaved work and must copy the textarea out and redo
+  (where a stray paste/select can clobber a line). To iterate while they're
+  active, **reuse the running server**; if a restart is unavoidable, pass the
+  **same** `--token` so the open tab stays valid. Treat "test/serve again" as
+  reuse-the-server, not restart-it, whenever a human may be mid-edit.
+  (Servers from 2026.06.12.2 pop a browser leave-warning while edits are
+  unsaved — a guard, not a substitute for this rule.)
