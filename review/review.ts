@@ -317,7 +317,7 @@ async function readSession(
 /** The `@stateless/review` model definition. */
 export const model = {
   type: "@stateless/review",
-  version: "2026.06.12.8",
+  version: "2026.06.12.9",
   globalArguments: GlobalArgsSchema,
   resources: {
     session: {

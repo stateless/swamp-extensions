@@ -133,8 +133,12 @@ h2{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06e
 #bar{position:fixed;bottom:0;left:0;right:0;background:#161a22;border-top:1px solid #2a2f3a;padding:12px 18px;display:flex;gap:14px;align-items:center}
 button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:9px 20px;font-size:14px;cursor:pointer}
 #msg{color:#7ee08a}
-/* doc mode */
-#dir{margin:0 0 10px;border:1px solid #2a2f3a;border-radius:6px;background:#12151c}
+/* doc mode — fixed viewport column: the page never scrolls, only the
+   editor/preview panes do, so the sticky header can't cloak the toolbar */
+body.doc{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body.doc main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0;margin-bottom:64px}
+body.doc #split{flex:1;min-height:0;height:auto}
+#dir{margin:0 0 10px;border:1px solid #2a2f3a;border-radius:6px;background:#12151c;overflow:auto;max-height:30vh;flex:0 0 auto}
 .frow{display:flex;align-items:center;gap:10px;padding:5px 10px;border-bottom:1px solid #1a1e26}
 .frow:last-child{border-bottom:0}
 .fname{flex:0 0 32%;min-width:0;cursor:pointer;color:#7fb0ff}
@@ -651,7 +655,7 @@ def page_doc():
     state_js = "const FILES=%s;const ORIG=%s;" % (files_json, orig_json)
     return (
         "<!doctype html><html><head><meta charset=utf-8><title>%s</title>"
-        "<style>%s\n%s</style></head><body>"
+        "<style>%s\n%s</style></head><body class=doc>"
         "<header><h1>%s</h1>"
         "<textarea id=notes rows=2 placeholder='review notes / comments...'>%s</textarea></header>"
         "<main>%s<div id=split><div id=edcol>%s"
