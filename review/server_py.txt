@@ -400,7 +400,27 @@ const ed=document.getElementById('editor'),pv=document.getElementById('preview')
 let cur=0,tmr=null;
 function refresh(){pv.innerHTML=mdRender(ed.value,true)}
 // --- formatting: toolbar + Ctrl-keys + Obsidian-style type-to-wrap ---------
+// Toolbar must act on the EDITOR's selection. Guards: don't steal focus on
+// click; refuse when the user's selection is in the preview pane; refuse a
+// never-touched editor (else markers drop at a phantom cursor).
+let edTouched=false;
+ed.addEventListener('focus',function(){edTouched=true});
+document.getElementById('toolbar').addEventListener('mousedown',function(e){e.preventDefault()});
+function edTarget(){
+ const ws=window.getSelection();
+ if(ws&&!ws.isCollapsed&&pv.contains(ws.anchorNode)){
+  document.getElementById('msg').textContent='Select in the editor (left) \\u2014 preview text can\\u2019t be formatted.';
+  return false;
+ }
+ if(!edTouched){
+  document.getElementById('msg').textContent='Click into the editor first.';
+  ed.focus();
+  return false;
+ }
+ return true;
+}
 function fmtWrap(pre,post){
+ if(!edTarget())return;
  const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
  ed.focus();
  if(v.length>=pre.length+post.length&&v.startsWith(pre)&&v.endsWith(post)){
@@ -416,12 +436,14 @@ function fmtWrap(pre,post){
  ed.selectionStart=s+pre.length;ed.selectionEnd=s+pre.length+v.length;
 }
 function fmtSub(){
+ if(!edTarget())return;
  const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
  ed.focus();
  document.execCommand('insertText',false,'{~~'+v+'~>~~}');
  ed.selectionStart=ed.selectionEnd=s+3+v.length+2;  // cursor after ~>
 }
 function fmtComment(withHl){
+ if(!edTarget())return;
  const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
  ed.focus();
  const t=(withHl&&v)?'{=='+v+'==}{>><<}':'{>><<}';
@@ -429,6 +451,7 @@ function fmtComment(withHl){
  ed.selectionStart=ed.selectionEnd=s+t.length-3;     // cursor inside >>|<<
 }
 function mdLink(){
+ if(!edTarget())return;
  const s=ed.selectionStart,e=ed.selectionEnd,v=ed.value.slice(s,e);
  ed.focus();
  document.execCommand('insertText',false,'['+v+'](url)');
