@@ -105,6 +105,45 @@ export function sessionPaths(outDir: string, name: string): {
 }
 
 /**
+ * Refuse a relative outDir at the write boundary. The schema already requires
+ * absolute, but the detached server trusts the spec's outDir verbatim — a
+ * relative path resolves against the server's CWD, not the caller's, and
+ * silently buries saves. Belt-and-suspenders against any path that skips
+ * schema validation.
+ */
+function assertAbsoluteOutDir(outDir: string): void {
+  if (!outDir.startsWith("/")) {
+    throw new Error(
+      `outDir must be absolute, got '${outDir}'. A relative outDir resolves ` +
+        `against the detached server's working directory and silently buries ` +
+        `saves — pass an explicit absolute directory.`,
+    );
+  }
+}
+
+/** The co-located sidecar the webcanvas edits, beside a source file. */
+function sidecarPath(source: string): string {
+  return `${source}.webcanvas.md`;
+}
+
+/**
+ * Read a doc's content, preferring a co-located `<source>.webcanvas.md`
+ * sidecar when sidecar mode is on and one exists — so a re-`serve` resumes the
+ * human's prior web edits rather than reverting to the pristine source.
+ */
+async function readDocSource(
+  source: string,
+  useSidecar: boolean,
+): Promise<string> {
+  if (useSidecar) {
+    try {
+      return await Deno.readTextFile(sidecarPath(source));
+    } catch { /* no sidecar yet — fall through to the source */ }
+  }
+  return await Deno.readTextFile(source);
+}
+
+/**
  * Is `pid` alive AND one of OUR servers for this spec? Reads
  * `/proc/<pid>/cmdline` and requires both the server script name and the
  * exact spec path — never trust a recycled pid (verify before kill).
@@ -317,7 +356,7 @@ async function readSession(
 /** The `@stateless/review` model definition. */
 export const model = {
   type: "@stateless/review",
-  version: "2026.06.12.9",
+  version: "2026.06.16.1",
   globalArguments: GlobalArgsSchema,
   resources: {
     session: {
@@ -347,6 +386,7 @@ export const model = {
         ctx: MethodContext,
       ): Promise<MethodResult> => {
         const { outDir, bind } = ctx.globalArgs;
+        assertAbsoluteOutDir(outDir);
         const port = args.port ?? ctx.globalArgs.port;
         const paths = sessionPaths(outDir, args.name);
 
@@ -368,27 +408,38 @@ export const model = {
           return { dataHandles: [handle] };
         }
 
-        // Resolve doc content (inline wins; otherwise read the file).
+        // Resolve doc content (inline wins; otherwise read the file — from the
+        // sidecar first when in sidecar mode, to resume prior web edits).
         let content = args.content;
         if (
           args.mode === "doc" && !content && args.files.length === 0
         ) {
-          content = await Deno.readTextFile(args.contentPath);
+          content = await readDocSource(args.contentPath, args.sidecar);
         }
         // Resolve the multi-file "directory" — paths are read at serve time.
+        // In sidecar mode each file carries its co-located sidecar target so
+        // the server persists edits beside the source.
         const files = [];
         for (const f of args.files) {
-          files.push({
+          const entry: {
+            name: string;
+            title: string;
+            content: string;
+            sidecar?: string;
+          } = {
             name: f.name,
             title: f.title || f.name,
-            content: f.content || await Deno.readTextFile(f.path),
-          });
+            content: f.content || await readDocSource(f.path, args.sidecar),
+          };
+          if (args.sidecar && f.path) entry.sidecar = sidecarPath(f.path);
+          files.push(entry);
         }
 
         await Deno.mkdir(outDir, { recursive: true });
-        const spec = {
+        const title = args.title || args.name;
+        const spec: Record<string, unknown> = {
           name: args.name,
-          title: args.title || args.name,
+          title,
           mode: args.mode,
           outDir,
           optionScale: args.optionScale,
@@ -398,6 +449,10 @@ export const model = {
           files,
           instructions: args.instructions,
         };
+        // Single-doc sidecar: the server keys off a top-level `sidecar` path.
+        if (args.sidecar && args.files.length === 0 && args.contentPath) {
+          spec.sidecar = sidecarPath(args.contentPath);
+        }
         await Deno.writeTextFile(paths.specPath, JSON.stringify(spec, null, 2));
 
         const token = crypto.randomUUID().replaceAll("-", "");
@@ -415,7 +470,7 @@ export const model = {
         const session: Session = {
           name: args.name,
           mode: args.mode,
-          title: spec.title,
+          title,
           url,
           token,
           pid,

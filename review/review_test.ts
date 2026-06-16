@@ -6,12 +6,13 @@
  * @module
  */
 
+import { assert, assertEquals, assertFalse } from "jsr:@std/assert@1";
 import {
-  assert,
-  assertEquals,
-  assertFalse,
-} from "jsr:@std/assert@1";
-import { ItemSchema, ServeArgsSchema, SessionSchema } from "./schemas.ts";
+  GlobalArgsSchema,
+  ItemSchema,
+  ServeArgsSchema,
+  SessionSchema,
+} from "./schemas.ts";
 import { pidMatchesSession, sessionPaths, summarize } from "./review.ts";
 
 // ---------------------------------------------------------------------------
@@ -59,22 +60,83 @@ Deno.test("ServeArgs: doc mode requires content, contentPath, or files", () => {
   assert(byPath.success);
 });
 
+Deno.test("GlobalArgs: outDir must be absolute (the tmp/ split-brain guard)", () => {
+  const rel = GlobalArgsSchema.safeParse({ outDir: "tmp" });
+  assertFalse(rel.success, "relative outDir must be rejected");
+  const dotRel = GlobalArgsSchema.safeParse({ outDir: "./reviews" });
+  assertFalse(dotRel.success, "dot-relative outDir must be rejected");
+  const abs = GlobalArgsSchema.safeParse({ outDir: "/var/lib/review" });
+  assert(abs.success, "absolute outDir must be accepted");
+});
+
+Deno.test("ServeArgs: sidecar is doc-mode only and needs source paths", () => {
+  // list mode + sidecar → rejected
+  const list = ServeArgsSchema.safeParse({
+    name: "gate",
+    mode: "list",
+    items: [{ name: "thing" }],
+    sidecar: true,
+  });
+  assertFalse(list.success, "sidecar must be rejected in list mode");
+  // inline content + sidecar → no source to sit beside → rejected
+  const inline = ServeArgsSchema.safeParse({
+    name: "doc",
+    mode: "doc",
+    content: "# hi",
+    sidecar: true,
+  });
+  assertFalse(
+    inline.success,
+    "sidecar needs a source path, not inline content",
+  );
+  // a file without a path + sidecar → rejected
+  const inlineFile = ServeArgsSchema.safeParse({
+    name: "doc",
+    mode: "doc",
+    files: [{ name: "brief", content: "# hi" }],
+    sidecar: true,
+  });
+  assertFalse(inlineFile.success, "every file needs a path under sidecar");
+  // contentPath + sidecar → accepted
+  const single = ServeArgsSchema.safeParse({
+    name: "doc",
+    mode: "doc",
+    contentPath: "/tmp/x.md",
+    sidecar: true,
+  });
+  assert(single.success);
+  // files with paths + sidecar → accepted
+  const multi = ServeArgsSchema.safeParse({
+    name: "doc",
+    mode: "doc",
+    files: [{ name: "brief", path: "/tmp/brief.md" }],
+    sidecar: true,
+  });
+  assert(multi.success);
+});
+
 Deno.test("ServeArgs: name must be a safe slug", () => {
-  assertFalse(ServeArgsSchema.safeParse({
-    name: "../escape",
-    mode: "doc",
-    content: "x",
-  }).success);
-  assertFalse(ServeArgsSchema.safeParse({
-    name: "Has Spaces",
-    mode: "doc",
-    content: "x",
-  }).success);
-  assert(ServeArgsSchema.safeParse({
-    name: "app-gate.v2",
-    mode: "doc",
-    content: "x",
-  }).success);
+  assertFalse(
+    ServeArgsSchema.safeParse({
+      name: "../escape",
+      mode: "doc",
+      content: "x",
+    }).success,
+  );
+  assertFalse(
+    ServeArgsSchema.safeParse({
+      name: "Has Spaces",
+      mode: "doc",
+      content: "x",
+    }).success,
+  );
+  assert(
+    ServeArgsSchema.safeParse({
+      name: "app-gate.v2",
+      mode: "doc",
+      content: "x",
+    }).success,
+  );
 });
 
 Deno.test("ItemSchema defaults optional fields", () => {
@@ -181,7 +243,10 @@ async function loadMdRender(): Promise<MdRender> {
 
 Deno.test("mdRender: frontmatter block at top level only", async () => {
   const mdRender = await loadMdRender();
-  const out = mdRender("---\ndate: 2026-06-12\ntag:\n  - test\n---\n# Title", true);
+  const out = mdRender(
+    "---\ndate: 2026-06-12\ntag:\n  - test\n---\n# Title",
+    true,
+  );
   assert(out.includes('class="fm"'), "frontmatter block missing");
   assert(out.includes("date: 2026-06-12"));
   assert(out.includes("<h1>Title</h1>"));
@@ -475,6 +540,159 @@ Deno.test({
       } catch { /* already dead */ }
       await child.status;
       await Deno.remove(outDir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name: "server: sidecar mode persists edits beside the source on save",
+  ignore: !havePython,
+  fn: async () => {
+    const outDir = await Deno.makeTempDir({ prefix: "review-test-" });
+    const srcDir = await Deno.makeTempDir({ prefix: "review-src-" });
+    const port = 18925;
+    const token = "testtoken789";
+    const briefPath = `${srcDir}/brief.md`;
+    await Deno.writeTextFile(briefPath, "# Brief\noriginal");
+    const sidecar = `${briefPath}.webcanvas.md`;
+    const spec = {
+      name: "side",
+      title: "Sidecar review",
+      mode: "doc",
+      outDir,
+      optionScale: [],
+      contexts: [],
+      items: [],
+      content: "",
+      files: [
+        {
+          name: "brief",
+          title: "Design brief",
+          content: "# Brief\noriginal",
+          sidecar,
+        },
+      ],
+      instructions: "",
+    };
+    const specPath = `${outDir}/.review.side.spec.json`;
+    await Deno.writeTextFile(specPath, JSON.stringify(spec));
+    const serverPy = new URL("./server_py.txt", import.meta.url).pathname;
+    const child = new Deno.Command("python3", {
+      args: [
+        serverPy,
+        "--spec",
+        specPath,
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        String(port),
+        "--token",
+        token,
+      ],
+      stdin: "null",
+      stdout: "null",
+      stderr: "null",
+    }).spawn();
+    try {
+      let up = false;
+      for (let i = 0; i < 40 && !up; i++) {
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:${port}/ping?t=${token}`,
+            { signal: AbortSignal.timeout(500) },
+          );
+          up = res.ok;
+          await res.body?.cancel();
+        } catch {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+      assert(up, "server never answered /ping");
+
+      // a full save writes the sidecar beside the source (source untouched)
+      const save = await fetch(`http://127.0.0.1:${port}/save?t=${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: "",
+          verdict: "",
+          files: [{
+            name: "brief",
+            title: "Design brief",
+            content: "# Brief\nEDITED via web",
+            verdict: "",
+            comment: "",
+          }],
+        }),
+      });
+      assert((await save.json()).ok);
+
+      const side = await Deno.readTextFile(sidecar);
+      assert(side.includes("EDITED via web"), "sidecar must carry the edit");
+      const source = await Deno.readTextFile(briefPath);
+      assertEquals(source, "# Brief\noriginal", "source must be untouched");
+    } finally {
+      try {
+        child.kill("SIGTERM");
+      } catch { /* already dead */ }
+      await child.status;
+      await Deno.remove(outDir, { recursive: true });
+      await Deno.remove(srcDir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name: "server: refuses a relative outDir (exit 2, no stray dir)",
+  ignore: !havePython,
+  fn: async () => {
+    // Run from a scratch CWD so a relative outDir would land HERE if unguarded.
+    const cwd = await Deno.makeTempDir({ prefix: "review-cwd-" });
+    const spec = {
+      name: "rel",
+      mode: "list",
+      title: "Rel",
+      outDir: "tmp", // relative — the bug the guard exists to refuse
+      optionScale: ["keep"],
+      contexts: [],
+      items: [{ name: "x" }],
+      content: "",
+      instructions: "",
+    };
+    const specPath = `${cwd}/spec.json`;
+    await Deno.writeTextFile(specPath, JSON.stringify(spec));
+    const serverPy = new URL("./server_py.txt", import.meta.url).pathname;
+    const out = await new Deno.Command("python3", {
+      args: [
+        serverPy,
+        "--spec",
+        specPath,
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        "18950",
+        "--token",
+        "t",
+      ],
+      cwd,
+      stdin: "null",
+      stdout: "null",
+      stderr: "piped",
+    }).output();
+    try {
+      assertEquals(out.code, 2, "relative outDir must exit 2");
+      const stderr = new TextDecoder().decode(out.stderr);
+      assert(
+        stderr.includes("not absolute"),
+        "must explain the refusal on stderr",
+      );
+      // the guard fires before makedirs — no stray tmp/ under the CWD
+      assertFalse(
+        await Deno.stat(`${cwd}/tmp`).then(() => true).catch(() => false),
+        "no stray tmp/ may be created",
+      );
+    } finally {
+      await Deno.remove(cwd, { recursive: true });
     }
   },
 });

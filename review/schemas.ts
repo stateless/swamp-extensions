@@ -60,8 +60,21 @@ export const GlobalArgsSchema = z.object({
    * Directory where session artifacts are written (`<name>.json`, `<name>.md`,
    * `<name>.log.md`, plus dot-prefixed spec/server-log files). This is the
    * on-disk collaboration point the agent diffs/collects from.
+   *
+   * MUST be absolute. A relative outDir resolves against the detached server's
+   * working directory — not the caller's — which silently buries saves in a
+   * stray `tmp/` (the CWD split-brain bug). Be deliberate: pass an explicit
+   * absolute directory.
    */
-  outDir: z.string().min(1),
+  outDir: z
+    .string()
+    .min(1)
+    .refine((p) => p.startsWith("/"), {
+      message:
+        "outDir must be an ABSOLUTE path — a relative outDir resolves against " +
+        "the detached server's working directory and silently buries saves " +
+        "(the tmp/ split-brain). Pass an explicit absolute directory.",
+    }),
   /** Listen address. Default binds the LAN — private networks only. */
   bind: z.string().default("0.0.0.0"),
   /** Default listen port (a serve call may override per-session). */
@@ -97,6 +110,15 @@ export const ServeArgsSchema = z
      * set) + comment, so the listing doubles as a checklist over the files.
      */
     files: z.array(FileSchema).default([]),
+    /**
+     * doc mode: ALSO persist each edited doc to a co-located
+     * `<source>.webcanvas.md` sidecar (in addition to the outDir artifacts,
+     * which stay the system of record). Lets the human's edits land beside the
+     * source they came from, and a re-`serve` resume from the sidecar.
+     * Requires real source paths to sit beside — set `path`/`contentPath`, not
+     * inline `content`. Off by default.
+     */
+    sidecar: z.boolean().default(false),
     /** Legend text shown in the bottom bar (defaults derived from the mode). */
     instructions: z.string().default(""),
     /** Override the model's default port for this session. */
@@ -121,6 +143,29 @@ export const ServeArgsSchema = z
         input: v.content,
         path: ["content"],
       });
+    }
+    if (v.sidecar) {
+      if (v.mode !== "doc") {
+        ctx.issues.push({
+          code: "custom",
+          message: "sidecar is doc-mode only",
+          input: v.mode,
+          path: ["sidecar"],
+        });
+      }
+      // A sidecar must sit beside a real source file — inline content has no
+      // source path to co-locate against.
+      const inlineFiles = v.files.length > 0 && v.files.some((f) => !f.path);
+      const inlineSingle = v.files.length === 0 && !v.contentPath;
+      if (inlineFiles || inlineSingle) {
+        ctx.issues.push({
+          code: "custom",
+          message: "sidecar requires source paths to write beside — use path/" +
+            "contentPath, not inline content",
+          input: v.sidecar,
+          path: ["sidecar"],
+        });
+      }
     }
   });
 

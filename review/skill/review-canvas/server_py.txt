@@ -107,10 +107,6 @@ def reload_spec():
     except (OSError, ValueError) as e:
         slog("reload failed (spec unreadable): %s" % e)
         return False
-    if not os.path.isabs(spec.get("outDir", "")):
-        slog("reload refused: outDir %r is not absolute (would bury saves "
-             "under the server CWD)" % spec.get("outDir"))
-        return False
     SPEC = spec
     NAME = SPEC["name"]
     MODE = SPEC.get("mode", "list")
@@ -938,16 +934,6 @@ SRV = None
 
 def main():
     global SRV
-    if not os.path.isabs(OUT):
-        # Loud on stderr too: slog can't write (its log dir is under the bad
-        # OUT, which doesn't exist), so a deliberate refusal must not be silent.
-        msg = ("FATAL: outDir %r is not absolute — refusing to start. A "
-               "relative outDir resolves against the server CWD and silently "
-               "buries saves (the tmp/ split-brain). Pass an absolute path."
-               % OUT)
-        print(msg, file=sys.stderr)
-        slog(msg)
-        sys.exit(2)
     os.makedirs(OUT, exist_ok=True)
     # Unix service convention: SIGHUP reloads the spec in place (no restart).
     try:

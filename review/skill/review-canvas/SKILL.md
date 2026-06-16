@@ -50,6 +50,65 @@ Re-serving with the same spec prefills from the last save (resume). To
 rediscover a lost session: `ps ax | grep server_py` — the cmdline shows
 `--spec`, `--port`, and `--token`.
 
+## Helper: serve_docs.py (build spec from files + reserve)
+
+For **doc mode over on-disk markdown files**, `serve_docs.py` (bundled, stdlib only)
+removes the per-use boilerplate — it strips YAML frontmatter, assembles the spec
+(single `content` for one file, `files[]` for many), and optionally restarts the
+server on the **same token** (archiving any prior `<name>.json` save first so a
+human edit is never clobbered):
+
+```bash
+python3 <skill-dir>/serve_docs.py --outdir "$OUT" --name app-list --serve \
+  --port 8802 --token "$TOKEN" --title "RFC review" \
+  --file docs/0001.md::"PROJECT-0001 (services)" \
+  --file docs/0002.md::"PROJECT-0002 (architecture)"
+```
+
+One `--file` => single-doc spec; many => multi-file. Omit `--serve` to only
+(re)build the spec. Use this instead of hand-rolling the strip-frontmatter +
+spec-assembly + restart dance each iteration.
+
+**Read back with `diff_save.py`** (the inverse — what the human changed). Same
+`--file` args; it reads `<name>.json`, matches each saved file to its source by
+slug, and prints a unified diff + per-file verdict/comment. Use it instead of an
+ad-hoc inline-python diff:
+
+```bash
+python3 <skill-dir>/diff_save.py --outdir "$OUT" --name app-list \
+  --file docs/0001.md::"PROJECT-0001 (services)" \
+  --file docs/0002.md::"PROJECT-0002 (architecture)"
+```
+
+The loop end-to-end: `serve_docs.py` (publish) → human edits + Save →
+`diff_save.py` (read back) → fold edits into the source + commit (human delta,
+no agent trailer — the blame ledger) → `serve_docs.py --serve --force` (reload in place).
+
+**Guardrail (don't bury an unread save).** `serve_docs.py --serve` **refuses to
+reload while an unprocessed `<name>.json` exists** — it errors and tells you to
+`diff_save.py` it first. Once you've folded + committed the edits, pass
+`--force` to archive the save and reload. This closes the hole where an
+agent-side reload silently archives a save the human made but the agent never
+read. (Banner protects the human's tab; this guardrail protects the agent side.)
+
+### Sidecar mode + client autosave (doc mode)
+
+`serve_docs.py` records, per file, the **absolute source path** plus a co-located
+**sidecar** (`foo.md` → `foo.webcanvas.md`). The webcanvas edits the *sidecar*,
+never the source:
+
+- **Source = `foo.md`** (read-only input the agent authors). **Sidecar =
+  `foo.webcanvas.md`** (what the canvas writes). Fold = `diff foo.md foo.webcanvas.md`.
+- **Client autosave**: the page POSTs edited content to `/autosave` every 5s while
+  dirty — persisted to the sidecars only (no json/md/log churn). Manual **Save**
+  still writes the structured `<name>.json` + verdicts + log *and* the sidecars.
+- **Resume**: on (re)build, `serve_docs` loads the sidecar if it exists, else the
+  source — so canvas edits survive reloads/restarts.
+- **outDir is now absolute** (`os.path.abspath`), fixing the split-brain where a
+  relative outDir + a foreign server CWD buried saves under the skill dir.
+- Sidecars are real on-disk files next to the sources; track or gitignore per
+  project. The source is never mutated by the canvas — that's the whole point.
+
 ## Files written to outDir on every Save
 
 | File | What |
@@ -137,6 +196,35 @@ doc: `{"notes": "...", "verdict": "approve", "savedAt": "...", "files":
 [{"name", "title", "content", "verdict", "comment"}]}` — single-file mode
 also mirrors `content` at the top level.
 
+## Git as the blame ledger (canvas = worktree, doc = main)
+
+When the human reviews an agent-authored doc through this canvas, use git to
+keep **human-edit vs agent-edit attribution** clean. Mental model: the tracked
+doc (e.g. `docs/design/…md`) is **main**; the scratch canvas workdir
+(`tmp/…`, gitignored) is a **worktree**. Edits happen in the worktree, then
+merge back to main as commits.
+
+Three-commit choreography:
+
+1. **Baseline** — commit the agent's pre-review doc *with* the
+   `Co-Authored-By: <model>` trailer.
+2. **Human edits** — read `<name>.json` `content`, write it verbatim into the
+   tracked doc (preserve frontmatter), commit **without** the co-author
+   trailer. `git diff baseline..HEAD` is now the pure human delta; `git blame`
+   attributes those lines to the human.
+3. **Agent merge** — apply further agent changes, commit *with* the trailer.
+
+**Trailer-presence is the attribution signal** — without it = human edits,
+with it = agent edits. This is the one place to deliberately omit a
+default co-author trailer. **Do not bundle** the human's saves and the agent's
+next merge into one commit (even if asked as one step) — insert the human-only
+commit between, or the blame separation is lost.
+
+Protect the human's work: poll for `<name>.json` before every overwrite;
+after consuming a save, rename it (`<name>.SAVED-HHMM.json`) so a stale file
+isn't re-read as new; preserve inline CriticMarkup ({>>comment<<}, ==highlight==)
+verbatim — they are the human's annotations.
+
 ## Caveats (learned the hard way)
 
 - **Never test-POST `/save` against a live outDir** — it overwrites the
@@ -147,8 +235,15 @@ also mirrors `content` at the top level.
 - Port already in use → startup dies; check `.review.<name>.server.log`.
 - `name` must be a safe slug (`[a-z0-9][a-z0-9._-]*`) — it becomes file
   basenames.
-- Spec changes need a server restart (shutdown + re-serve); saves persist
-  across restarts.
+- **Spec/content changes reload in place — no restart.** Standard unix service
+  pattern: `kill -HUP <pid>` (or POST `/reload?t=<token>`) re-reads the spec from
+  disk, so the port, `--token`, and any open tab survive. The open page polls
+  `/ping` for a content version and pops a **"Source changed on disk — Reload"**
+  banner (warning first if you have unsaved edits), so a reload never silently
+  re-saves stale content. Only changes to `server_py.txt` itself
+  need a true restart. `serve_docs.py --serve` auto-reloads when a server is
+  already up on the port+token; pass `--restart` to force a relaunch (e.g. after
+  editing `server_py.txt`). Saves persist across both.
 - **Never shutdown+re-serve while the human has the form open with unsaved
   edits.** Resume restores only the last *clicked Save* — never in-flight
   typing. A restart also rotates the `--token`, invalidating the open tab, so
