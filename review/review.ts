@@ -237,6 +237,60 @@ async function shutdownSession(session: Session): Promise<boolean> {
   return false;
 }
 
+/**
+ * Ask a still-running server to re-read its spec in place (token-auth POST
+ * /reload → `reload_spec()`), bumping CONTENT_VERSION so the page fires its
+ * source-changed banner. Keeps the same pid/port/token/URL, so open tabs
+ * survive. Returns true only when the server confirms the reload.
+ */
+async function reloadSession(session: Session): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:${session.port}/reload?t=${
+        encodeURIComponent(session.token)
+      }`,
+      { method: "POST", signal: AbortSignal.timeout(2000) },
+    );
+    if (!res.ok) {
+      await res.body?.cancel();
+      return false;
+    }
+    const j = await res.json() as { reloaded?: boolean };
+    return j.reloaded === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Re-read every `path`-backed file in a spec from disk (honouring the
+ * `<source>.webcanvas.md` sidecar when sidecar mode is on, exactly as `serve`
+ * does) and rewrite the baked `content` snapshot in place. Inline-content
+ * entries carry no `path` and are left untouched. Returns true if any content
+ * actually changed. Mutates `spec`.
+ */
+export async function rebakeSpecFromPaths(
+  spec: Record<string, unknown>,
+): Promise<boolean> {
+  const sidecarMode = spec.sidecarMode === true;
+  let changed = false;
+  if (typeof spec.contentPath === "string" && spec.contentPath) {
+    const fresh = await readDocSource(spec.contentPath, sidecarMode);
+    if (fresh !== spec.content) changed = true;
+    spec.content = fresh;
+  }
+  const files = Array.isArray(spec.files) ? spec.files : [];
+  for (const f of files) {
+    const entry = f as { path?: string; content?: string };
+    if (entry.path) {
+      const fresh = await readDocSource(entry.path, sidecarMode);
+      if (fresh !== entry.content) changed = true;
+      entry.content = fresh;
+    }
+  }
+  return changed;
+}
+
 /** Spawn the bundled server detached and wait until it answers /ping. */
 async function spawnServer(
   ctx: MethodContext,
@@ -356,7 +410,7 @@ async function readSession(
 /** The `@stateless/review` model definition. */
 export const model = {
   type: "@stateless/review",
-  version: "2026.06.16.1",
+  version: "2026.06.17.1",
   globalArguments: GlobalArgsSchema,
   resources: {
     session: {
@@ -425,12 +479,16 @@ export const model = {
             name: string;
             title: string;
             content: string;
+            path?: string;
             sidecar?: string;
           } = {
             name: f.name,
             title: f.title || f.name,
             content: f.content || await readDocSource(f.path, args.sidecar),
           };
+          // Remember the source so `restart` can re-bake from disk; inline
+          // content has no path, so its baked snapshot stays authoritative.
+          if (f.path) entry.path = f.path;
           if (args.sidecar && f.path) entry.sidecar = sidecarPath(f.path);
           files.push(entry);
         }
@@ -448,7 +506,16 @@ export const model = {
           content,
           files,
           instructions: args.instructions,
+          // Persisted so `restart` can re-bake `path`-backed content from disk,
+          // honouring the sidecar exactly as serve does.
+          sidecarMode: args.sidecar,
         };
+        // Single-doc from a path: remember the source so restart can re-read it.
+        if (
+          args.mode === "doc" && args.files.length === 0 && args.contentPath
+        ) {
+          spec.contentPath = args.contentPath;
+        }
         // Single-doc sidecar: the server keys off a top-level `sidecar` path.
         if (args.sidecar && args.files.length === 0 && args.contentPath) {
           spec.sidecar = sidecarPath(args.contentPath);
@@ -639,10 +706,13 @@ export const model = {
 
     restart: {
       description:
-        "Stop (if running) and start a session's server again from its saved " +
-        "spec — same URL/token/port, so open browser tabs keep working. Use " +
-        "after a server-code update or a wedged server; re-run serve to " +
-        "change the spec itself.",
+        "Re-bake any `path`-backed doc content from disk into the spec, then " +
+        "refresh the live canvas — same URL/token/port, so open browser tabs " +
+        "keep working and see a source-changed banner. A live server is " +
+        "reloaded in place (re-reads the spec, no new pid); a dead one is " +
+        "respawned. Use after editing a served source file. To pick up new " +
+        "server CODE, `stop` first (then restart respawns); re-run serve to " +
+        "change the spec shape itself.",
       arguments: NameArgsSchema,
       execute: async (
         args: z.infer<typeof NameArgsSchema>,
@@ -652,29 +722,58 @@ export const model = {
         if (!session) {
           throw new Error(`no session '${args.name}' — run serve first`);
         }
+        let spec: Record<string, unknown>;
         try {
-          await Deno.stat(session.specPath);
+          spec = JSON.parse(await Deno.readTextFile(session.specPath));
         } catch {
           throw new Error(
-            `spec ${session.specPath} is gone — re-run serve to recreate it`,
+            `spec ${session.specPath} is gone or unreadable — re-run serve to ` +
+              `recreate it`,
           );
         }
-        if (await pingSession(session.port, session.token, session.name)) {
-          if (!(await shutdownSession(session))) {
-            throw new Error(
-              `'${args.name}' would not shut down on port ${session.port} — ` +
-                `stop it manually (fuser -k ${session.port}/tcp), then retry`,
-            );
-          }
+        // Re-read path-backed files from disk so an on-disk edit is reflected;
+        // rewrite the baked snapshot the server (re)loads from.
+        const rebaked = await rebakeSpecFromPaths(spec);
+        if (rebaked) {
+          await Deno.writeTextFile(
+            session.specPath,
+            JSON.stringify(spec, null, 2),
+          );
         }
-        const pid = await spawnServer(ctx, {
-          name: session.name,
-          specPath: session.specPath,
-          serverLogPath: session.serverLogPath,
-          bind: session.bind,
-          port: session.port,
-          token: session.token,
-        });
+        // Live server: reload in place (keeps pid/tabs, fires the banner). Fall
+        // back to a full respawn only if reload fails or the server is dead.
+        let pid = session.pid;
+        let action = "reloaded";
+        if (await pingSession(session.port, session.token, session.name)) {
+          if (!(await reloadSession(session))) {
+            if (!(await shutdownSession(session))) {
+              throw new Error(
+                `'${args.name}' would not reload or shut down on port ` +
+                  `${session.port} — stop it manually ` +
+                  `(fuser -k ${session.port}/tcp), then retry`,
+              );
+            }
+            pid = await spawnServer(ctx, {
+              name: session.name,
+              specPath: session.specPath,
+              serverLogPath: session.serverLogPath,
+              bind: session.bind,
+              port: session.port,
+              token: session.token,
+            });
+            action = "respawned";
+          }
+        } else {
+          pid = await spawnServer(ctx, {
+            name: session.name,
+            specPath: session.specPath,
+            serverLogPath: session.serverLogPath,
+            bind: session.bind,
+            port: session.port,
+            token: session.token,
+          });
+          action = "respawned";
+        }
         const handle = await ctx.writeResource(
           "session",
           `session-${args.name}`,
@@ -682,12 +781,13 @@ export const model = {
             ...session,
             pid,
             status: "serving",
-            startedAt: nowIso(),
+            startedAt: action === "respawned" ? nowIso() : session.startedAt,
             updatedAt: nowIso(),
           },
         );
-        ctx.logger.info("restarted '{name}' — open: {url}", {
+        ctx.logger.info("restarted '{name}' ({action}) — open: {url}", {
           name: args.name,
+          action,
           url: session.url,
         });
         return { dataHandles: [handle] };

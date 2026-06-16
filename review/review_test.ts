@@ -13,7 +13,12 @@ import {
   ServeArgsSchema,
   SessionSchema,
 } from "./schemas.ts";
-import { pidMatchesSession, sessionPaths, summarize } from "./review.ts";
+import {
+  pidMatchesSession,
+  rebakeSpecFromPaths,
+  sessionPaths,
+  summarize,
+} from "./review.ts";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -215,6 +220,71 @@ Deno.test("pidMatchesSession: rejects a foreign pid", async () => {
   assertFalse(await pidMatchesSession(1, "/tmp/nope.spec.json"));
   // an absurd pid does not exist
   assertFalse(await pidMatchesSession(999999999, "/tmp/nope.spec.json"));
+});
+
+Deno.test("rebakeSpecFromPaths: re-reads path-backed files, honours sidecar", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "review-rebake-" });
+  try {
+    const briefPath = `${dir}/brief.md`;
+    const modelPath = `${dir}/model.md`;
+    await Deno.writeTextFile(briefPath, "# Brief\nv2");
+    await Deno.writeTextFile(modelPath, "# Model\nv2");
+    // path-backed files hold a stale baked snapshot; an inline file has no path
+    const spec: Record<string, unknown> = {
+      mode: "doc",
+      content: "",
+      files: [
+        {
+          name: "brief",
+          title: "Brief",
+          content: "# Brief\nv1",
+          path: briefPath,
+        },
+        {
+          name: "model",
+          title: "Model",
+          content: "# Model\nv1",
+          path: modelPath,
+        },
+        { name: "inline", title: "Inline", content: "untouched" },
+      ],
+    };
+    const changed = await rebakeSpecFromPaths(spec);
+    assert(changed, "must report a change when content differs");
+    const files = spec.files as { content: string }[];
+    assertEquals(files[0].content, "# Brief\nv2");
+    assertEquals(files[1].content, "# Model\nv2");
+    assertEquals(files[2].content, "untouched", "inline file left alone");
+
+    // a second pass with no on-disk change reports no change
+    assertFalse(
+      await rebakeSpecFromPaths(spec),
+      "no change when disk matches the snapshot",
+    );
+
+    // sidecar mode prefers the co-located <source>.webcanvas.md edit
+    await Deno.writeTextFile(`${briefPath}.webcanvas.md`, "# Brief\nweb-edit");
+    spec.sidecarMode = true;
+    assert(await rebakeSpecFromPaths(spec), "sidecar edit is a change");
+    assertEquals(
+      (spec.files as { content: string }[])[0].content,
+      "# Brief\nweb-edit",
+    );
+
+    // single-doc contentPath is re-baked too
+    const docPath = `${dir}/single.md`;
+    await Deno.writeTextFile(docPath, "single v2");
+    const single: Record<string, unknown> = {
+      mode: "doc",
+      content: "single v1",
+      contentPath: docPath,
+      files: [],
+    };
+    assert(await rebakeSpecFromPaths(single));
+    assertEquals(single.content, "single v2");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -631,6 +701,116 @@ Deno.test({
       assert(side.includes("EDITED via web"), "sidecar must carry the edit");
       const source = await Deno.readTextFile(briefPath);
       assertEquals(source, "# Brief\noriginal", "source must be untouched");
+    } finally {
+      try {
+        child.kill("SIGTERM");
+      } catch { /* already dead */ }
+      await child.status;
+      await Deno.remove(outDir, { recursive: true });
+      await Deno.remove(srcDir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "server: restart re-bakes a path edit + /reload bumps the banner version",
+  ignore: !havePython,
+  fn: async () => {
+    // Mirrors the FOLLOWUP acceptance: serve a path-backed doc, edit the source
+    // on disk, then do what `restart` does (re-bake the spec from disk + POST
+    // /reload) — same port/token, content updates, CONTENT_VERSION increments.
+    const outDir = await Deno.makeTempDir({ prefix: "review-test-" });
+    const srcDir = await Deno.makeTempDir({ prefix: "review-src-" });
+    const port = 18926;
+    const token = "testtokenABC";
+    const briefPath = `${srcDir}/brief.md`;
+    await Deno.writeTextFile(briefPath, "# Brief\noriginal");
+    const specPath = `${outDir}/.review.reload.spec.json`;
+    const writeSpec = (spec: unknown) =>
+      Deno.writeTextFile(specPath, JSON.stringify(spec, null, 2));
+    // serve bakes content + remembers the source path (the new spec fields)
+    await writeSpec({
+      name: "reload",
+      title: "Reload review",
+      mode: "doc",
+      outDir,
+      optionScale: [],
+      contexts: [],
+      items: [],
+      content: "",
+      files: [{
+        name: "brief",
+        title: "Design brief",
+        content: "# Brief\noriginal",
+        path: briefPath,
+      }],
+      sidecarMode: false,
+      instructions: "",
+    });
+    const serverPy = new URL("./server_py.txt", import.meta.url).pathname;
+    const child = new Deno.Command("python3", {
+      args: [
+        serverPy,
+        "--spec",
+        specPath,
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        String(port),
+        "--token",
+        token,
+      ],
+      stdin: "null",
+      stdout: "null",
+      stderr: "null",
+    }).spawn();
+    try {
+      let up = false;
+      for (let i = 0; i < 40 && !up; i++) {
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:${port}/ping?t=${token}`,
+            { signal: AbortSignal.timeout(500) },
+          );
+          up = res.ok;
+          await res.body?.cancel();
+        } catch {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+      assert(up, "server never answered /ping");
+
+      const ping1 =
+        await (await fetch(`http://127.0.0.1:${port}/ping?t=${token}`))
+          .json();
+      assertEquals(ping1.version, 1, "fresh server starts at version 1");
+      const page1 = await (await fetch(`http://127.0.0.1:${port}/?t=${token}`))
+        .text();
+      assert(page1.includes("original"), "page serves the original content");
+
+      // --- the edit + what restart does -----------------------------------
+      await Deno.writeTextFile(briefPath, "# Brief\nUPDATED on disk");
+      const spec = JSON.parse(await Deno.readTextFile(specPath));
+      assert(await rebakeSpecFromPaths(spec), "re-bake must detect the edit");
+      await writeSpec(spec);
+      const reload = await fetch(`http://127.0.0.1:${port}/reload?t=${token}`, {
+        method: "POST",
+      });
+      assert((await reload.json()).reloaded, "/reload must confirm");
+
+      // same port/token: version bumped → banner fires; content reflects edit
+      const ping2 =
+        await (await fetch(`http://127.0.0.1:${port}/ping?t=${token}`))
+          .json();
+      assertEquals(ping2.version, 2, "CONTENT_VERSION must increment");
+      const page2 = await (await fetch(`http://127.0.0.1:${port}/?t=${token}`))
+        .text();
+      assert(page2.includes("UPDATED on disk"), "page must serve the edit");
+
+      // the on-disk spec snapshot carries the new content (verify the snapshot)
+      const onDisk = JSON.parse(await Deno.readTextFile(specPath));
+      assertEquals(onDisk.files[0].content, "# Brief\nUPDATED on disk");
     } finally {
       try {
         child.kill("SIGTERM");

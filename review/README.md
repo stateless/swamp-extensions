@@ -40,7 +40,7 @@ globalArguments:
 | --------- | ------------ |
 | `serve`   | Write the session spec, spawn the bundled Python-stdlib server **detached**, health-check it, record `session` (URL + token + pid + paths). Idempotent per `name` — a live session is reused; change the spec by re-running `serve` after `stop`, or bounce code with `restart`. |
 | `status`  | Is the server alive? Has the human saved yet (file mtime)? Refreshes the `session` resource. |
-| `restart` | Stop (if running) + start again from the saved spec — **same URL/token/port**, open browser tabs keep working. For server-code updates or a wedged server. |
+| `restart` | Re-bake any `path`/`contentPath`-backed doc content from disk into the spec, then refresh the live canvas — **same URL/token/port**, open tabs keep working and show a source-changed banner. A live server is reloaded in place (`POST /reload`, no new pid); a dead one is respawned. Use after editing a served source file. To pick up new server **code** or clear a wedged server, `stop` first (then `restart` respawns). |
 | `collect` | Read `<name>.json` from disk, summarize (per-disposition counts, or doc bytes/lines/verdict), record a `result` resource. Throws if the human hasn't saved. |
 | `stop`    | Ask the server to exit via its token-authenticated `/shutdown` endpoint; falls back to a `/proc`-cmdline-verified SIGTERM. Artifacts stay on disk. |
 
