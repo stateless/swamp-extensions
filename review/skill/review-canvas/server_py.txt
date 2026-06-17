@@ -210,6 +210,23 @@ body.doc #split{flex:1;min-height:0;height:auto}
 #preview mark{background:#4d3f12;color:#ffd86b;border-radius:3px;padding:0 2px}
 #preview .critc{color:#9aa3b2;font-size:12px;border:1px dashed #3a4150;border-radius:4px;padding:0 5px;margin:0 2px}
 #preview .critc:before{content:"\\1F4AC  ";font-size:11px}
+/* doc-mode: scroll-sync toggle (toolbar) */
+#toolbar .synctgl{display:flex;align-items:center;gap:4px;font-size:11px;color:#9aa3b2;cursor:pointer;user-select:none;margin-left:auto;padding-right:4px}
+#toolbar .synctgl input{margin:0;cursor:pointer}
+/* doc-mode: change-rail — clickable CriticMarkup position markers on the right.
+   #preview cedes its right edge to the rail (rail carries the rounded border). */
+body.doc #preview{border-right:0;border-radius:0}
+#crail{flex:0 0 14px;position:relative;background:#12151c;border:1px solid #2a2f3a;border-left:0;border-radius:0 6px 6px 0}
+#crail .ctick{position:absolute;left:2px;right:2px;height:4px;margin-top:-2px;border-radius:2px;opacity:.8;cursor:pointer}
+#crail .ctick:hover{opacity:1;box-shadow:0 0 0 1px #fff}
+.ctick.add{background:#7ee08a}
+.ctick.del{background:#ff7b7b}
+.ctick.sub{background:#86c5ff}
+.ctick.hl{background:#ffd86b}
+.ctick.note{background:#9aa3b2}
+/* flash the preview block a rail tick jumped to (editor shows the selection) */
+@keyframes pvflash{0%{background:rgba(127,176,255,.5)}100%{background:rgba(127,176,255,0)}}
+#preview .flash{animation:pvflash 1.1s ease-out;border-radius:4px}
 """
 
 # Minimal client-side markdown renderer — headings, fences, lists, quotes,
@@ -458,6 +475,9 @@ TOOLBAR = (
     '<button title="Critic: substitution {~~ ~&gt; ~~}" onclick="fmtSub()">~sub</button>'
     '<button title="Critic: highlight + comment {== ==}{&gt;&gt; &lt;&lt;}" onclick="fmtComment(true)">=hl</button>'
     '<button title="Critic: comment {&gt;&gt; &lt;&lt;}" onclick="fmtComment(false)">&gt;note</button>'
+    '<span class="sep"></span>'
+    '<label class="synctgl" title="lock editor &harr; preview scrolling together">'
+    '<input type="checkbox" id="synctgl" checked>sync</label>'
     "</div>"
 )
 
@@ -488,24 +508,102 @@ function patch(blocks){
 function refresh(){
  if(ed.value===lastRendered)return;
  lastRendered=ed.value;
- requestAnimationFrame(function(){patch(mdBlocks(ed.value,true))});
+ requestAnimationFrame(function(){patch(mdBlocks(ed.value,true));renderRail();});
 }
-// editor -> preview scroll sync (top visible line -> matching block)
+// editor <-> preview scroll sync — bidirectional, toggle-gated, loop-guarded.
+// PROPORTIONAL (fraction of scroll range), not line-counted: the editor soft-
+// wraps long source lines into multiple visual rows, so scrollTop/LINE_H drifts
+// ahead of the real source line and the panes desync cumulatively. Mapping by
+// scroll fraction is wrap-safe and never drifts. Each direction suppresses ONLY
+// the other pane's handler (per-pane ignore-until timestamps), so the echo
+// scroll is dropped while real user scrolling is never throttled. The checkbox
+// in the toolbar enables/disables the lock.
 const LINE_H=19.5;
-let scrollTick=false;
+const syncBox=document.getElementById('synctgl');
+function syncOn(){return !syncBox||syncBox.checked}
+let _supE=0,_supP=0;               // ms timestamps: ignore the editor / preview handler until then
+// editor source line -> preview scrollTop that puts its block at the top (used
+// by the change-rail jump, where we DO know the exact source line).
+function pvTopForLine(line){
+ var best=null;
+ for(var k=0;k<pv.children.length;k++){
+  var bl=parseInt(pv.children[k].getAttribute('data-line')||'0',10);
+  if(bl<=line)best=pv.children[k];else break;
+ }
+ var el=best&&best.firstElementChild;
+ if(!el)return null;
+ return el.getBoundingClientRect().top-pv.getBoundingClientRect().top+pv.scrollTop-8;
+}
+let _eTick=false;
 ed.addEventListener('scroll',function(){
- if(scrollTick)return;scrollTick=true;
+ if(!syncOn()||Date.now()<_supE)return;
+ if(_eTick)return;_eTick=true;
  requestAnimationFrame(function(){
-  scrollTick=false;
-  var topLine=Math.floor(ed.scrollTop/LINE_H),best=null;
-  for(var k=0;k<pv.children.length;k++){
-   var bl=parseInt(pv.children[k].getAttribute('data-line')||'0',10);
-   if(bl<=topLine)best=pv.children[k];else break;
-  }
-  var el=best&&best.firstElementChild;
-  if(el)pv.scrollTop=el.getBoundingClientRect().top-pv.getBoundingClientRect().top+pv.scrollTop-8;
+  _eTick=false;
+  var er=ed.scrollHeight-ed.clientHeight;if(er<=0)return;
+  _supP=Date.now()+90;pv.scrollTop=(ed.scrollTop/er)*(pv.scrollHeight-pv.clientHeight);
  });
 });
+let _pTick=false;
+pv.addEventListener('scroll',function(){
+ if(!syncOn()||Date.now()<_supP)return;
+ if(_pTick)return;_pTick=true;
+ requestAnimationFrame(function(){
+  _pTick=false;
+  var pr=pv.scrollHeight-pv.clientHeight;if(pr<=0)return;
+  _supE=Date.now()+90;ed.scrollTop=(pv.scrollTop/pr)*(ed.scrollHeight-ed.clientHeight);
+ });
+});
+// jump both panes to a CriticMarkup mark and flash it (used by the change-rail;
+// ignores the toggle since a click is an explicit request). The editor selects
+// the exact source span (native highlight); the preview pulses the block.
+function flashPvLine(line){
+ var best=null;
+ for(var k=0;k<pv.children.length;k++){
+  var bl=parseInt(pv.children[k].getAttribute('data-line')||'0',10);
+  if(bl<=line)best=pv.children[k];else break;
+ }
+ var el=best&&best.firstElementChild;
+ if(!el)return;
+ el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+ setTimeout(function(){el.classList.remove('flash');},1100);
+}
+function jumpToMark(mk){
+ _supP=Date.now()+250;_supE=Date.now()+250;
+ // editor: select the exact source span — native highlight + caret to edit;
+ // setSelectionRange scrolls the textarea to the selection (wrap-correct).
+ try{ed.focus();ed.setSelectionRange(mk.start,mk.end);}catch(e){}
+ // preview: scroll to the block and pulse it
+ var t=pvTopForLine(mk.line);if(t!=null)pv.scrollTop=t;
+ flashPvLine(mk.line);
+}
+// change-rail: one clickable tick per CriticMarkup mark, placed by line fraction.
+const crail=document.getElementById('crail');
+const CRX=[
+ {c:'add',re:/\\{\\+\\+[\\s\\S]*?\\+\\+\\}/g},
+ {c:'del',re:/\\{--[\\s\\S]*?--\\}/g},
+ {c:'sub',re:/\\{~~[\\s\\S]*?~~\\}/g},
+ {c:'hl',re:/\\{==[\\s\\S]*?==\\}/g},
+ {c:'note',re:/\\{>>[\\s\\S]*?<<\\}/g}
+];
+function _lineOf(idx,s){var n=1;for(var i=0;i<idx&&i<s.length;i++){if(s[i]==='\\n')n++;}return n;}
+function renderRail(){
+ if(!crail)return;
+ var s=ed.value,total=Math.max(1,s.split('\\n').length),marks=[];
+ CRX.forEach(function(x){var m;x.re.lastIndex=0;
+  while((m=x.re.exec(s))){marks.push({cls:x.c,line:_lineOf(m.index,s),
+    start:m.index,end:m.index+m[0].length});
+   if(m.index===x.re.lastIndex)x.re.lastIndex++;}});
+ crail.innerHTML='';
+ marks.forEach(function(mk){
+  var t=document.createElement('div');
+  t.className='ctick '+mk.cls;
+  t.style.top=((mk.line-0.5)/total*100)+'%';
+  t.title=mk.cls+' \\u2014 line '+mk.line+' (click to jump)';
+  t.onclick=function(){jumpToMark(mk);};
+  crail.appendChild(t);
+ });
+}
 // --- formatting: toolbar + Ctrl-keys + Obsidian-style type-to-wrap ---------
 // Toolbar must act on the EDITOR's selection. Guards: don't steal focus on
 // click; refuse when the user's selection is in the preview pane; refuse a
@@ -728,7 +826,7 @@ def page_doc():
         "<textarea id=notes rows=2 placeholder='review notes / comments...'>%s</textarea></header>"
         "<main>%s<div id=split><div id=edcol>%s"
         "<textarea id=editor spellcheck=true></textarea></div>"
-        "<div id=preview></div></div></main>"
+        "<div id=preview></div><div id=crail></div></div></main>"
         "<div id=bar><button onclick=save()>Save</button>%s<span id=msg>%s</span></div>"
         "<script>%s%s%s%s</script></body></html>"
         % (

@@ -100,6 +100,11 @@ type-to-wrap (typing `*`, `_`, `` ` ``, `[`, `(` with a selection wraps it —
 `**bold**` by typing `*` twice). The preview renders Critic marks visually
 (insertions green, deletions struck red, comments as bubbles), so a human
 can mark up a doc with tracked changes the agent then parses and applies.
+The editor and preview scroll-lock together (proportional, wrap-safe;
+toggle the **sync** checkbox in the toolbar to release them), and a
+**change-rail** down the right edge drops one colour-coded, clickable tick
+per Critic mark — click a tick to jump both panes to that change, selecting
+it in the editor and flashing the block in the preview.
 `collect`
 additionally records the result into the swamp data model, so workflows
 consume it with CEL:
