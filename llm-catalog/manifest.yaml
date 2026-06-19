@@ -1,0 +1,29 @@
+manifestVersion: 1
+name: "@stateless/llm-catalog"
+version: "2026.06.19.1"
+description: >-
+  A sourced, versioned knowledge base of LLM-ops knowledge — NOT a control plane
+  for running models, but the structured, CEL-queryable record that running
+  extensions read to decide which model to run where, with what settings, at
+  what cost. Five subject kinds (model, runtime, provider, hardware, technique)
+  plus one access-path join, all the same uniform `entry` shape (open kind +
+  open facets, like @stateless/inventory). The twist: it records external,
+  decaying knowledge, so every volatile assertion carries a provenance envelope
+  (asOf, source, versionPins, supersededBy) — "best vLLM version" is derived as
+  the latest un-superseded claim, never a bare rotting field. Declarative:
+  `apply` materialises one `entry` resource per id (re-run = versioned trend);
+  `prune` soft-retires undeclared entries.
+repository: "https://github.com/stateless/swamp-extensions/tree/main/llm-catalog"
+paths:
+  base: manifest
+labels:
+  - llm
+  - catalog
+  - knowledge-base
+  - inference
+  - ai
+models:
+  - llm_catalog.ts
+additionalFiles:
+  - README.md
+  - LICENSE.txt
