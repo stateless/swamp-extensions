@@ -142,20 +142,41 @@ swamp data query 'modelName == "llm-kb" && specName == "entry"' \
 
 ## Methods
 
-| Method  | Description                                                                                                                       |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `apply` | Materialise each declared entry as an `entry` resource (one per id). Re-running records a new version, retaining the trend.       |
-| `prune` | Soft-retire stored entries no longer declared (records a final version with `status`, default `retired`). No hard delete; idempotent. |
+| Method       | Description                                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `apply`      | Materialise each declared entry as an `entry` resource (one per id); re-run = versioned trend.              |
+| `prune`      | Soft-retire stored entries no longer declared (status change, no hard delete; idempotent).                  |
+| `update`     | Pull the public catalog (`catalogUrl`) into a separate `catalog-entry` resource — additive, never clobbers private `entry` data. |
+| `sync`       | Refresh gateway prices from a live feed (default OpenRouter) by matching `api.providerModelId` -> `priced-path`. |
+| `ingest`     | Draft a model entry from a HuggingFace `config.json` — authoritative architecture, gaps flagged.            |
+| `contribute` | Sanitise a private fleet entry into a generic, public-shaped `contribution` (refuses un-attributed leaks).  |
+| `reconcile`  | Gather every config (access-path) for a model — public + private — into one comparison to reason over.      |
+
+## Public dataset & contributing
+
+The model **definitions, recipes, and benchmarks** are a **separate public
+dataset**, not bundled in this extension (so data changes never bump the
+extension version). It lives at
+[`stateless/swamp-extensions` -> `llm-catalog-data/`](https://github.com/stateless/swamp-extensions/tree/main/llm-catalog-data)
+and is pulled with `update`:
+
+```bash
+swamp model method run <instance> update \
+  --input '{"catalogUrl":"https://raw.githubusercontent.com/stateless/swamp-extensions/main/llm-catalog-data/catalog.json"}'
+```
+
+**Contributions welcome** — open a PR to `llm-catalog-data/` (one file per model
+family; every claim needs `asOf` + `source`; CI runs `assemble.ts` to validate
+schema, ids, references, and contradiction classes). See that directory's README
+for the full guide; the `contribute` method turns a private fleet measurement
+into a PR-ready, sanitised entry.
 
 ## Privacy & security
 
 - The **extension carries no data** and is publish-safe. A **populated instance**
-  mixes public knowledge (changelogs, public benchmarks) with **fleet-private
-  empirical results** (your own hardware throughput) — treat a populated catalog
-  as private.
-- Bulk catalog/pricing is better **referenced or synced** (LiteLLM cost map,
-  OpenRouter `/models`, vendor recipe threads) than hand-maintained; a `sync`
-  method is a deliberate follow-up, not v1.
+  mixes public knowledge with **fleet-private empirical results** (your own
+  hardware throughput) — treat it as private. Public entries pulled by `update`
+  stay in a separate `catalog-entry` resource.
 
 ## License
 
