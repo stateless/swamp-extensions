@@ -8,20 +8,32 @@
   labels: [glm, moe]
   facets:
     architecture:
-      attention: glm4moelite
-      params: "~14B"
-      # FIX (flaw #2): activeParams + nativeContext are NOT yet verified against a
-      # primary source, so they are deliberately omitted rather than guessed —
-      # the gap is tracked as a claim below instead of silently recorded as 0.
+      hfRepo: zai-org/glm-4.7-flash
+      modelType: glm4_moe_lite
+      params: "31B"
+      activeParams: "3B" # 30B-A3B per model card
+      layers: 47
+      hidden: 2048
+      experts: "4/token of 64 routed + 1 shared"
+      nativeContext: 202752 # no rope_scaling — native, not extended
+      vocab: 154880
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card"
+        verification: authoritative
   claims:
     - kind: note
       body: >-
-        Architecture is the glm4moelite MoE variant; reported fast TTFT. Exact
-        active-parameter count and native context length are UNVERIFIED here.
+        VERIFIED against HF (2026-06-20): glm4_moe_lite MoE, 31B total / 3B active
+        (30B-A3B), 47 layers, 64 routed experts + 1 shared, 4 experts/token,
+        202752 native context (rope_scaling null), MIT. Corrects the earlier
+        unverified "~14B" estimate.
       provenance:
-        asOf: "2026-06-19"
-        source: "needs primary source — zai-org/glm-4.7-flash HF model card"
-        confidence: low
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card"
+        verification: authoritative
 
 # Built 2026-06-19 from authoritative sources as a pipeline test:
 #   config.json (architecture) + model card (specs/benchmarks/license) +

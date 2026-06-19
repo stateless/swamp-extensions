@@ -61,6 +61,61 @@
         source: "observed across qwen3 thinking models"
         confidence: high
 
+- id: runtime-dwarfstar
+  kind: runtime
+  name: DwarfStar (ds4)
+  summary: Model-coupled self-host engine for DeepSeek-V4 Flash/PRO; Metal/CUDA/ROCm
+  visibility: public
+  labels: [self-host, gguf, model-coupled, deepseek, apple-silicon, cuda, rocm]
+  facets:
+    formats: [gguf] # loads ONLY antirez-packaged DeepSeek-V4 GGUF layouts — see caveat
+    platform: [metal, cuda, rocm] # Mac (Metal), DGX Spark (CUDA), Strix Halo (ROCm)
+    api: { apiSpec: openai-compat, anthropicCompat: true } # OpenAI + Anthropic-compatible REST
+    # Novel capabilities the catalog has no shared technique vocabulary for yet —
+    # captured here as runtime capabilities rather than per-access-path techniques.
+    capabilities:
+      ssdExpertStreaming: true   # routed-expert cache on SSD → technique-ssd-expert-streaming
+      diskKvSessionCache: true   # ~/.ds4/kvcache, <sha1>.kv = prefix cache persisted to disk
+      exactToolReplay: true      # tool-id → exact sampled DSML bytes; avoids KV checkpoint drift
+      steering: true             # directional steering for behaviour modification
+      mtpSpecDecode: true        # MTP speculative decoding
+      distributed: true          # multi-machine inference
+  claims:
+    - kind: caveat
+      body: >-
+        Model-coupled and NOT a generic GGUF runner: loads only antirez-packaged
+        DeepSeek-V4 layouts from huggingface.co/antirez/deepseek-v4-gguf (the
+        `facets.formats: [gguf]` here is the container, not loadability of generic
+        GGUFs). PRO GGUF production still depends on the external llama.cpp-based
+        workflow; native conversion tooling "can be added later".
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        confidence: low
+    - kind: note
+      body: >-
+        Notable harness ideas distinct from llama.cpp/vLLM: SSD streaming of
+        routed MoE experts (RAM budget caps resident experts), on-disk `.kv`
+        session cache keyed by SHA1 of the rendered byte prefix (`/save` `/list`
+        `/switch` `/del`), and exact-DSML tool-call replay for stateless API
+        sessions (server maps an unguessable tool id → the exact sampled DSML
+        block so re-rendered prompts stay byte-identical and the KV checkpoint
+        never misaligns). Also: MTP spec-decode, directional steering, distributed
+        inference, OpenAI/Anthropic-compatible REST.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Beta, GPT-5.5-assisted, "exists only for a few days"; antirez notes the
+        target model family may change as the landscape evolves. Treat all ds4
+        entries as low-confidence and fast-decaying — re-verify against the repo.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        confidence: low
+
 - id: runtime-mlx
   kind: runtime
   name: MLX (mlx-lm)

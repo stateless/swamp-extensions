@@ -59,6 +59,47 @@
         source: "Unsloth GGUF analysis (via MODEL qwen35 card)"
         verification: cited
 
+- id: technique-moe-expert-2bit
+  kind: technique
+  name: 2-bit routed-MoE-expert quant (asymmetric)
+  summary: Quantize ONLY routed MoE experts (up/gate IQ2_XXS, down Q2_K); leave the rest full-precision
+  visibility: public
+  labels: [quantization, gguf, moe, 2-bit, deepseek]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        DwarfStar's DeepSeek-V4 quant: only the routed MoE experts are quantized
+        (up/gate at IQ2_XXS, down at Q2_K) — the majority of model space — while
+        shared experts, projections and routing are left untouched to preserve
+        quality. Aggressive-where-cheap, exact-where-it-matters; the foundation
+        for fitting V4-Flash on a 96/128GB unified-memory Mac.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        verification: cited
+
+- id: technique-ssd-expert-streaming
+  kind: technique
+  name: SSD expert streaming
+  summary: Stream routed MoE experts from SSD on cache miss; RAM budget caps resident experts
+  visibility: public
+  labels: [memory, moe, ssd, offload]
+  facets: { qualityImpact: neutral } # memory/feasibility, not quality — but adds disk-miss latency
+  claims:
+    - kind: note
+      body: >-
+        Run models larger than RAM by keeping only a budget of complete routed
+        experts resident and loading the rest from SSD on miss
+        (`--ssd-streaming --ssd-streaming-cache-experts 32GB`; auto budget = 80%
+        of the Metal recommended working set minus non-routed weights). Distinct
+        from KV eviction/compression (technique-kv-eviction): this streams
+        WEIGHTS, not the KV cache. Lossless quality; trades decode latency on miss.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        verification: cited
+
 # Quant METHODS (algorithms) — distinct from the FORMAT (gguf/safetensors/mlx).
 # Each method usually ships in a specific format and is supported by specific
 # runtimes; recipes reference them via `uses-technique`. NOTE: GGUF is a format,

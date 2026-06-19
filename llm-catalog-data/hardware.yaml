@@ -32,6 +32,28 @@
         source: "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/"
         confidence: medium
 
+- id: hardware-apple-silicon
+  kind: hardware
+  name: Apple Silicon (unified memory)
+  summary: M-series Mac with large unified memory (96/128GB+); Metal backend
+  visibility: public
+  labels: [apple-silicon, metal, mac, unified-memory]
+  facets:
+    hardware:
+      compute: metal
+      unifiedMemGB: 128 # class spans 96–128GB+; the ds4 q2-imatrix path targets 96/128GB
+      clusterable: true # ds4 supports distributed inference across machines
+  claims:
+    - kind: note
+      body: >-
+        Single-box target for DwarfStar's DeepSeek-V4-Flash q2-imatrix path: a
+        96/128GB unified-memory Mac runs V4-Flash locally via Metal, contrasting
+        the 2-unit DGX Spark vLLM cluster recipe for the same model.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README)"
+        confidence: low
+
 - id: hardware-strix-halo
   kind: hardware
   name: AMD Strix Halo
