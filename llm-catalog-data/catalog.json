@@ -162,6 +162,291 @@
       }
     },
     {
+      "id": "ap-deepseek-v4-flash-ds4-1spark",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-Flash · DwarfStar (ds4) @ 1x DGX Spark (GB10, CUDA)",
+      "summary": "Single-Spark self-host via ds4 (CUDA) — cheaper alt to the 2-Spark vLLM cluster",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-dwarfstar"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-moe-expert-2bit"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ssd-expert-streaming"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "A single DGX Spark runs V4-Flash via ds4's CUDA backend — a cheaper single-box alternative to the 2-unit vLLM cluster recipe (ap-deepseek-v4-flash-2spark-vllm) on the same hardware class. SSD expert streaming lets one unit hold the model when unified memory is tight.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure"
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "antirez/deepseek-v4-gguf",
+            "revision": null,
+            "format": "gguf",
+            "downloadCmd": "./download_model.sh q2-imatrix"
+          },
+          "build": {
+            "runtime": "DwarfStar (ds4)",
+            "version": "beta (2026-06)"
+          },
+          "artifact": {
+            "quant": "q2-imatrix (routed experts only)",
+            "format": "gguf",
+            "packager": "antirez"
+          },
+          "procedure": "https://github.com/antirez/ds4"
+        },
+        "deployment": {
+          "units": 1
+        }
+      }
+    },
+    {
+      "id": "ap-deepseek-v4-flash-ds4-mac",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-Flash · DwarfStar (ds4) @ Mac (96/128GB, Metal)",
+      "summary": "Single-box Apple-Silicon self-host via ds4 q2-imatrix; routed-experts-only 2-bit",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-dwarfstar"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-apple-silicon"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-moe-expert-2bit"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ssd-expert-streaming"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Beta and model-coupled — runs only antirez-packaged V4 GGUFs. Quality impact of routed-experts-only 2-bit is unmeasured here vs the FP8 cluster recipe; the cluster path (ap-deepseek-v4-flash-2spark-vllm) has cited tool/IFEval numbers, this single-box path does not yet. Compare before choosing single-box convenience over cluster fidelity.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 32768
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          },
+          "measurements": [
+            {
+              "machine": "MacBook Pro M3 Max 128GB",
+              "quant": "q2",
+              "prompt": "short",
+              "prefillTokS": 58.52,
+              "decodeTokS": 26.68
+            },
+            {
+              "machine": "MacBook Pro M3 Max 128GB",
+              "quant": "q2",
+              "promptTokens": 11709,
+              "prefillTokS": 250.11,
+              "decodeTokS": 21.47
+            },
+            {
+              "machine": "MacBook Pro M5 Max 128GB",
+              "quant": "q2",
+              "prompt": "short",
+              "prefillTokS": 87.25,
+              "decodeTokS": 34.27
+            },
+            {
+              "machine": "MacBook Pro M5 Max 128GB",
+              "quant": "q2",
+              "promptTokens": 11707,
+              "prefillTokS": 463.44,
+              "decodeTokS": 25.9
+            },
+            {
+              "machine": "Mac Studio M3 Ultra 512GB",
+              "quant": "q2",
+              "prompt": "short",
+              "prefillTokS": 84.43,
+              "decodeTokS": 36.86
+            },
+            {
+              "machine": "Mac Studio M3 Ultra 512GB",
+              "quant": "q2",
+              "promptTokens": 11709,
+              "prefillTokS": 468.03,
+              "decodeTokS": 27.39
+            }
+          ]
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "antirez/deepseek-v4-gguf",
+            "revision": null,
+            "format": "gguf",
+            "downloadCmd": "./download_model.sh q2-imatrix"
+          },
+          "build": {
+            "runtime": "DwarfStar (ds4)",
+            "version": "beta (2026-06, days-old)"
+          },
+          "artifact": {
+            "quant": "q2-imatrix (routed experts only: up/gate IQ2_XXS, down Q2_K)",
+            "format": "gguf",
+            "packager": "antirez"
+          },
+          "serving": {
+            "apiSpec": "openai-compat",
+            "anthropicCompat": true
+          },
+          "command": "ds4  # interactive chat; sets ./ds4flash.gguf as default model pointer",
+          "procedure": "https://github.com/antirez/ds4"
+        },
+        "deployment": {
+          "units": 1
+        }
+      }
+    },
+    {
+      "id": "ap-deepseek-v4-flash-ds4-mac-q4",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-Flash · DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q4)",
+      "summary": "Higher-fidelity q4 on a 512GB Mac Studio; ~same speed as q2, ~2x memory",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-dwarfstar"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-apple-silicon"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "q4 vs q2 on the SAME M3 Ultra 512GB: near-identical speed (35.50 vs 36.86 t/s decode short) at higher fidelity and ~2x memory — a 512GB box can afford it. This is the catalog's quant tradeoff: a comparison across access-paths of one model, not duplicated model entries.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 32768
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          },
+          "measurements": [
+            {
+              "machine": "Mac Studio M3 Ultra 512GB",
+              "quant": "q4",
+              "prompt": "short",
+              "prefillTokS": 78.95,
+              "decodeTokS": 35.5
+            },
+            {
+              "machine": "Mac Studio M3 Ultra 512GB",
+              "quant": "q4",
+              "promptTokens": 12018,
+              "prefillTokS": 448.82,
+              "decodeTokS": 26.62
+            }
+          ]
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "antirez/deepseek-v4-gguf",
+            "revision": null,
+            "format": "gguf",
+            "downloadCmd": null
+          },
+          "build": {
+            "runtime": "DwarfStar (ds4)",
+            "version": "beta (2026-06)"
+          },
+          "artifact": {
+            "quant": "q4",
+            "format": "gguf",
+            "packager": "antirez"
+          },
+          "procedure": "https://github.com/antirez/ds4"
+        },
+        "deployment": {
+          "units": 1
+        }
+      }
+    },
+    {
       "id": "ap-deepseek-v4-flash-openrouter",
       "kind": "access-path",
       "name": "DeepSeek-v4-Flash · OpenRouter (gateway)",
@@ -192,6 +477,87 @@
         "api": {
           "apiSpec": "openai-compat",
           "providerModelId": "deepseek/deepseek-v4-flash"
+        }
+      }
+    },
+    {
+      "id": "ap-deepseek-v4-pro-ds4-mac",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-PRO · DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q2)",
+      "summary": "PRO on a 512GB Mac Studio via ds4; 9.56 t/s decode @ 32k ctx",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-pro"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-dwarfstar"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-apple-silicon"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-moe-expert-2bit"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "PRO is materially slower than Flash on the same box (9.56 vs 27-37 t/s decode) and needs a 512GB-class machine. PRO GGUF production still depends on the external llama.cpp workflow.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 32768
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README, Speed table)",
+            "confidence": "low",
+            "verification": "cited"
+          },
+          "measurements": [
+            {
+              "machine": "Mac Studio M3 Ultra 512GB",
+              "quant": "PRO q2",
+              "promptTokens": 32768,
+              "prefillTokS": 138.82,
+              "decodeTokS": 9.56
+            }
+          ]
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "antirez/deepseek-v4-gguf",
+            "revision": null,
+            "format": "gguf",
+            "downloadCmd": null
+          },
+          "build": {
+            "runtime": "DwarfStar (ds4)",
+            "version": "beta (2026-06)"
+          },
+          "artifact": {
+            "quant": "PRO q2",
+            "format": "gguf",
+            "packager": "antirez"
+          },
+          "procedure": "https://github.com/antirez/ds4"
+        },
+        "deployment": {
+          "units": 1
         }
       }
     },
@@ -464,6 +830,38 @@
       }
     },
     {
+      "id": "hardware-apple-silicon",
+      "kind": "hardware",
+      "name": "Apple Silicon (unified memory)",
+      "summary": "M-series Mac with large unified memory (96/128GB+); Metal backend",
+      "visibility": "public",
+      "labels": [
+        "apple-silicon",
+        "metal",
+        "mac",
+        "unified-memory"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Single-box target for DwarfStar's DeepSeek-V4-Flash q2-imatrix path: a 96/128GB unified-memory Mac runs V4-Flash locally via Metal, contrasting the 2-unit DGX Spark vLLM cluster recipe for the same model.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
+            "confidence": "low"
+          }
+        }
+      ],
+      "facets": {
+        "hardware": {
+          "compute": "metal",
+          "unifiedMemGB": 128,
+          "clusterable": true
+        }
+      }
+    },
+    {
       "id": "hardware-dgx-spark",
       "kind": "hardware",
       "name": "DGX Spark (GB10)",
@@ -528,24 +926,97 @@
       "id": "model-deepseek-v4-flash",
       "kind": "model",
       "name": "DeepSeek-v4-Flash",
-      "summary": "Long-context model; runs at 1M context on a 2-unit DGX Spark cluster",
+      "summary": "284B/13B-active MoE; 1M context (YaRN); MLA + CSA/HCA hybrid attention; MIT",
       "visibility": "public",
       "labels": [
         "deepseek",
-        "long-context"
+        "long-context",
+        "moe",
+        "sparse-attention"
       ],
       "relations": [],
       "claims": [
         {
           "kind": "note",
-          "body": "Exact architecture/parameter details UNVERIFIED here — needs a primary source (DeepSeek release / HF card). Notable for feasible 1M-token sessions on modest unified-memory hardware.",
+          "body": "VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active, 43 layers, 256 routed experts + 1 shared, 6/token, MLA attention, native 65536 extended to 1M via YaRN (factor 16), MIT. Published weights are FP4 (MoE experts) + FP8 mixed. Replaces the earlier UNVERIFIED placeholder.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "needs primary source — DeepSeek-v4 release",
-            "confidence": "low"
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card",
+            "verification": "authoritative"
           }
         }
-      ]
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "MLA (64 heads, 1 KV head, head_dim 512) + CSA/HCA hybrid; sliding_window 128",
+          "params": "284B",
+          "activeParams": "13B",
+          "nativeContext": 65536,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "deepseek-ai/DeepSeek-V4-Flash",
+          "modelType": "deepseek_v4",
+          "layers": 43,
+          "hidden": 4096,
+          "experts": "6/token of 256 routed + 1 shared",
+          "extendedContext": 1048576,
+          "vocab": 129280,
+          "license": "MIT",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-deepseek-v4-pro",
+      "kind": "model",
+      "name": "DeepSeek-v4-PRO",
+      "summary": "1.6T/49B-active MoE; larger V4 sibling; 1M context (YaRN); MIT",
+      "visibility": "public",
+      "labels": [
+        "deepseek",
+        "long-context",
+        "moe",
+        "sparse-attention"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 1.6T total / 49B active, 61 layers, 384 routed experts + 1 shared, 6/token, native 65536 extended to 1M via YaRN, MIT. Larger sibling of V4-Flash (not a quant/fine-tune of it). ds4 PRO GGUF production still depends on the external llama.cpp workflow.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card",
+            "verification": "authoritative"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "1.6T",
+          "activeParams": "49B",
+          "nativeContext": 65536,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "deepseek-ai/DeepSeek-V4-PRO",
+          "modelType": "deepseek_v4",
+          "layers": 61,
+          "hidden": 7168,
+          "experts": "6/token of 384 routed + 1 shared",
+          "extendedContext": 1048576,
+          "license": "MIT",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card",
+            "verification": "authoritative"
+          }
+        }
+      }
     },
     {
       "id": "model-gemma4",
@@ -859,18 +1330,34 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Architecture is the glm4moelite MoE variant; reported fast TTFT. Exact active-parameter count and native context length are UNVERIFIED here.",
+          "body": "VERIFIED against HF (2026-06-20): glm4_moe_lite MoE, 31B total / 3B active (30B-A3B), 47 layers, 64 routed experts + 1 shared, 4 experts/token, 202752 native context (rope_scaling null), MIT. Corrects the earlier unverified \"~14B\" estimate.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "needs primary source — zai-org/glm-4.7-flash HF model card",
-            "confidence": "low"
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card",
+            "verification": "authoritative"
           }
         }
       ],
       "facets": {
         "architecture": {
-          "attention": "glm4moelite",
-          "params": "~14B"
+          "params": "31B",
+          "activeParams": "3B",
+          "nativeContext": 202752,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "zai-org/glm-4.7-flash",
+          "modelType": "glm4_moe_lite",
+          "layers": 47,
+          "hidden": 2048,
+          "experts": "4/token of 64 routed + 1 shared",
+          "vocab": 154880,
+          "license": "MIT",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card",
+            "verification": "authoritative"
+          }
         }
       }
     },
@@ -2302,6 +2789,74 @@
       }
     },
     {
+      "id": "runtime-dwarfstar",
+      "kind": "runtime",
+      "name": "DwarfStar (ds4)",
+      "summary": "Model-coupled self-host engine for DeepSeek-V4 Flash/PRO; Metal/CUDA/ROCm",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "gguf",
+        "model-coupled",
+        "deepseek",
+        "apple-silicon",
+        "cuda",
+        "rocm"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Model-coupled and NOT a generic GGUF runner: loads only antirez-packaged DeepSeek-V4 layouts from huggingface.co/antirez/deepseek-v4-gguf (the `facets.formats: [gguf]` here is the container, not loadability of generic GGUFs). PRO GGUF production still depends on the external llama.cpp-based workflow; native conversion tooling \"can be added later\".",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
+            "confidence": "low"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Notable harness ideas distinct from llama.cpp/vLLM: SSD streaming of routed MoE experts (RAM budget caps resident experts), on-disk `.kv` session cache keyed by SHA1 of the rendered byte prefix (`/save` `/list` `/switch` `/del`), and exact-DSML tool-call replay for stateless API sessions (server maps an unguessable tool id → the exact sampled DSML block so re-rendered prompts stay byte-identical and the KV checkpoint never misaligns). Also: MTP spec-decode, directional steering, distributed inference, OpenAI/Anthropic-compatible REST.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Beta, GPT-5.5-assisted, \"exists only for a few days\"; antirez notes the target model family may change as the landscape evolves. Treat all ds4 entries as low-confidence and fast-decaying — re-verify against the repo.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
+            "confidence": "low"
+          }
+        }
+      ],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
+          "anthropicCompat": true
+        },
+        "formats": [
+          "gguf"
+        ],
+        "platform": [
+          "metal",
+          "cuda",
+          "rocm"
+        ],
+        "capabilities": {
+          "ssdExpertStreaming": true,
+          "diskKvSessionCache": true,
+          "exactToolReplay": true,
+          "steering": true,
+          "mtpSpecDecode": true,
+          "distributed": true
+        }
+      }
+    },
+    {
       "id": "runtime-llamacpp",
       "kind": "runtime",
       "name": "llama.cpp",
@@ -2675,6 +3230,35 @@
       }
     },
     {
+      "id": "technique-moe-expert-2bit",
+      "kind": "technique",
+      "name": "2-bit routed-MoE-expert quant (asymmetric)",
+      "summary": "Quantize ONLY routed MoE experts (up/gate IQ2_XXS, down Q2_K); leave the rest full-precision",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "gguf",
+        "moe",
+        "2-bit",
+        "deepseek"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "DwarfStar's DeepSeek-V4 quant: only the routed MoE experts are quantized (up/gate at IQ2_XXS, down at Q2_K) — the majority of model space — while shared experts, projections and routing are left untouched to preserve quality. Aggressive-where-cheap, exact-where-it-matters; the foundation for fitting V4-Flash on a 96/128GB unified-memory Mac.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
       "id": "technique-pagedattention",
       "kind": "technique",
       "name": "PagedAttention",
@@ -2772,6 +3356,34 @@
           "provenance": {
             "asOf": "2026-06-19",
             "source": "Ray Serve / forum 365639",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-ssd-expert-streaming",
+      "kind": "technique",
+      "name": "SSD expert streaming",
+      "summary": "Stream routed MoE experts from SSD on cache miss; RAM budget caps resident experts",
+      "visibility": "public",
+      "labels": [
+        "memory",
+        "moe",
+        "ssd",
+        "offload"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Run models larger than RAM by keeping only a budget of complete routed experts resident and loading the rest from SSD on miss (`--ssd-streaming --ssd-streaming-cache-experts 32GB`; auto budget = 80% of the Metal recommended working set minus non-routed weights). Distinct from KV eviction/compression (technique-kv-eviction): this streams WEIGHTS, not the KV cache. Lossless quality; trades decode latency on miss.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/antirez/ds4 (README)",
             "verification": "cited"
           }
         }

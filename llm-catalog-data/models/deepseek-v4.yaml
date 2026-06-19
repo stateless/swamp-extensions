@@ -4,19 +4,39 @@
 - id: model-deepseek-v4-flash
   kind: model
   name: DeepSeek-v4-Flash
-  summary: Long-context model; runs at 1M context on a 2-unit DGX Spark cluster
+  summary: 284B/13B-active MoE; 1M context (YaRN); MLA + CSA/HCA hybrid attention; MIT
   visibility: public
-  labels: [deepseek, long-context]
+  labels: [deepseek, long-context, moe, sparse-attention]
+  facets:
+    architecture:
+      hfRepo: deepseek-ai/DeepSeek-V4-Flash
+      modelType: deepseek_v4
+      params: "284B"
+      activeParams: "13B"
+      layers: 43
+      hidden: 4096
+      experts: "6/token of 256 routed + 1 shared"
+      nativeContext: 65536 # extends to 1048576 (1M) via YaRN factor 16
+      extendedContext: 1048576
+      attention: "MLA (64 heads, 1 KV head, head_dim 512) + CSA/HCA hybrid; sliding_window 128"
+      vocab: 129280
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card"
+        verification: authoritative
   claims:
     - kind: note
       body: >-
-        Exact architecture/parameter details UNVERIFIED here — needs a primary
-        source (DeepSeek release / HF card). Notable for feasible 1M-token
-        sessions on modest unified-memory hardware.
+        VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active,
+        43 layers, 256 routed experts + 1 shared, 6/token, MLA attention, native
+        65536 extended to 1M via YaRN (factor 16), MIT. Published weights are FP4
+        (MoE experts) + FP8 mixed. Replaces the earlier UNVERIFIED placeholder.
       provenance:
-        asOf: "2026-06-19"
-        source: "needs primary source — DeepSeek-v4 release"
-        confidence: low
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card"
+        verification: authoritative
 
 # Real recipe from NVIDIA forum 372268 (author aidendle94, posted by 0rand) —
 # vLLM (NOT llama.cpp), 2× Spark over ConnectX-7, FP8, 1M context. Corrects an
@@ -119,6 +139,213 @@
         (35.6 t/s single / 63.9 t/s @c4) and MiaAI_Lab (40-45 t/s) on the same
         image — results agree within the concurrency-dependent band.
       provenance: *fwd372268
+
+# ── single-box self-host (DwarfStar @ Mac) — contrast vs the 2-Spark cluster ──
+# antirez/ds4: model-coupled engine that runs V4-Flash on ONE 96/128GB Mac via a
+# routed-experts-only 2-bit quant. Same model as the vLLM cluster recipe above →
+# the catalog's point: one model, competing access-paths to compare.
+- id: ap-deepseek-v4-flash-ds4-mac
+  kind: access-path
+  name: DeepSeek-v4-Flash · DwarfStar (ds4) @ Mac (96/128GB, Metal)
+  summary: Single-box Apple-Silicon self-host via ds4 q2-imatrix; routed-experts-only 2-bit
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-flash }
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-apple-silicon }
+    - { rel: uses-technique, target: technique-moe-expert-2bit } # routed experts only (lossy)
+    - { rel: uses-technique, target: technique-ssd-expert-streaming } # for RAM-constrained boxes
+  facets:
+    recipe:
+      download:
+        hfRepo: antirez/deepseek-v4-gguf
+        revision: null # TODO pin commit/tag for byte-exact re-download
+        format: gguf
+        downloadCmd: "./download_model.sh q2-imatrix" # 96/128GB machines, imatrix-tuned q2
+      build:
+        runtime: DwarfStar (ds4)
+        version: "beta (2026-06, days-old)"
+      artifact:
+        quant: "q2-imatrix (routed experts only: up/gate IQ2_XXS, down Q2_K)"
+        format: gguf
+        packager: antirez
+      serving:
+        apiSpec: openai-compat
+        anthropicCompat: true
+      # On RAM-tight boxes, add: --ssd-streaming --ssd-streaming-cache-experts 32GB
+      command: "ds4  # interactive chat; sets ./ds4flash.gguf as default model pointer"
+      procedure: "https://github.com/antirez/ds4"
+    deployment: { units: 1 }
+    outcome:
+      context: { tokens: 32768 }
+      # antirez/ds4 published "Speed" table. Conditions (ALL rows): --ctx 32768,
+      # --nothink, greedy decoding, -n 256. "short" = a standard Italian narrative;
+      # long prompts exercise chunked prefill + long-context decode. prefill =
+      # prompt-processing t/s, decode = generation t/s.
+      measurements:
+        - { machine: "MacBook Pro M3 Max 128GB", quant: q2, prompt: short,        prefillTokS: 58.52,  decodeTokS: 26.68 }
+        - { machine: "MacBook Pro M3 Max 128GB", quant: q2, promptTokens: 11709,   prefillTokS: 250.11, decodeTokS: 21.47 }
+        - { machine: "MacBook Pro M5 Max 128GB", quant: q2, prompt: short,        prefillTokS: 87.25,  decodeTokS: 34.27 }
+        - { machine: "MacBook Pro M5 Max 128GB", quant: q2, promptTokens: 11707,   prefillTokS: 463.44, decodeTokS: 25.90 }
+        - { machine: "Mac Studio M3 Ultra 512GB", quant: q2, prompt: short,       prefillTokS: 84.43,  decodeTokS: 36.86 }
+        - { machine: "Mac Studio M3 Ultra 512GB", quant: q2, promptTokens: 11709,  prefillTokS: 468.03, decodeTokS: 27.39 }
+      provenance: &ds4repo
+        asOf: "2026-06-20"
+        source: "https://github.com/antirez/ds4 (README, Speed table)"
+        verification: cited
+        confidence: low
+  claims:
+    - kind: caveat
+      body: >-
+        Beta and model-coupled — runs only antirez-packaged V4 GGUFs. Quality
+        impact of routed-experts-only 2-bit is unmeasured here vs the FP8 cluster
+        recipe; the cluster path (ap-deepseek-v4-flash-2spark-vllm) has cited
+        tool/IFEval numbers, this single-box path does not yet. Compare before
+        choosing single-box convenience over cluster fidelity.
+      provenance: *ds4repo
+
+# q4 on a 512GB Mac Studio — the quant tradeoff is a cross-access-path compare.
+- id: ap-deepseek-v4-flash-ds4-mac-q4
+  kind: access-path
+  name: DeepSeek-v4-Flash · DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q4)
+  summary: Higher-fidelity q4 on a 512GB Mac Studio; ~same speed as q2, ~2x memory
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-flash }
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-apple-silicon }
+  facets:
+    recipe:
+      download:
+        hfRepo: antirez/deepseek-v4-gguf
+        revision: null
+        format: gguf
+        downloadCmd: null # README documents the q2-imatrix arg; q4 arg unconfirmed — see repo
+      build: { runtime: DwarfStar (ds4), version: "beta (2026-06)" }
+      artifact: { quant: q4, format: gguf, packager: antirez }
+      procedure: "https://github.com/antirez/ds4"
+    deployment: { units: 1 }
+    outcome:
+      context: { tokens: 32768 } # --ctx 32768 --nothink greedy -n 256 (same as q2 rows)
+      measurements:
+        - { machine: "Mac Studio M3 Ultra 512GB", quant: q4, prompt: short,       prefillTokS: 78.95,  decodeTokS: 35.50 }
+        - { machine: "Mac Studio M3 Ultra 512GB", quant: q4, promptTokens: 12018,   prefillTokS: 448.82, decodeTokS: 26.62 }
+      provenance: *ds4repo
+  claims:
+    - kind: note
+      body: >-
+        q4 vs q2 on the SAME M3 Ultra 512GB: near-identical speed (35.50 vs 36.86
+        t/s decode short) at higher fidelity and ~2x memory — a 512GB box can
+        afford it. This is the catalog's quant tradeoff: a comparison across
+        access-paths of one model, not duplicated model entries.
+      provenance: *ds4repo
+
+# Single DGX Spark via ds4's CUDA backend — alt to the 2-unit vLLM cluster above.
+- id: ap-deepseek-v4-flash-ds4-1spark
+  kind: access-path
+  name: DeepSeek-v4-Flash · DwarfStar (ds4) @ 1x DGX Spark (GB10, CUDA)
+  summary: Single-Spark self-host via ds4 (CUDA) — cheaper alt to the 2-Spark vLLM cluster
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-flash }
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-moe-expert-2bit }
+    - { rel: uses-technique, target: technique-ssd-expert-streaming }
+  facets:
+    recipe:
+      download:
+        hfRepo: antirez/deepseek-v4-gguf
+        revision: null
+        format: gguf
+        downloadCmd: "./download_model.sh q2-imatrix"
+      build: { runtime: DwarfStar (ds4), version: "beta (2026-06)" }
+      artifact: { quant: "q2-imatrix (routed experts only)", format: gguf, packager: antirez }
+      procedure: "https://github.com/antirez/ds4"
+    deployment: { units: 1 }
+    outcome:
+      # ds4 runs on a SINGLE DGX Spark via its CUDA backend; the repo's Speed table
+      # is Mac-only, so no single-Spark tok/s is published — recorded as a gap.
+      speed: { note: "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure" }
+      provenance: *ds4repo
+  claims:
+    - kind: note
+      body: >-
+        A single DGX Spark runs V4-Flash via ds4's CUDA backend — a cheaper
+        single-box alternative to the 2-unit vLLM cluster recipe
+        (ap-deepseek-v4-flash-2spark-vllm) on the same hardware class. SSD expert
+        streaming lets one unit hold the model when unified memory is tight.
+      provenance: *ds4repo
+
+# ── DeepSeek-V4-PRO — larger V4 sibling; ds4 also serves it (512GB-class box) ──
+- id: model-deepseek-v4-pro
+  kind: model
+  name: DeepSeek-v4-PRO
+  summary: 1.6T/49B-active MoE; larger V4 sibling; 1M context (YaRN); MIT
+  visibility: public
+  labels: [deepseek, long-context, moe, sparse-attention]
+  facets:
+    architecture:
+      hfRepo: deepseek-ai/DeepSeek-V4-PRO
+      modelType: deepseek_v4
+      params: "1.6T"
+      activeParams: "49B"
+      layers: 61
+      hidden: 7168
+      experts: "6/token of 384 routed + 1 shared"
+      nativeContext: 65536 # extends to 1048576 (1M) via YaRN factor 16
+      extendedContext: 1048576
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card"
+        verification: authoritative
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 1.6T total / 49B active,
+        61 layers, 384 routed experts + 1 shared, 6/token, native 65536 extended to
+        1M via YaRN, MIT. Larger sibling of V4-Flash (not a quant/fine-tune of it).
+        ds4 PRO GGUF production still depends on the external llama.cpp workflow.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card"
+        verification: authoritative
+
+- id: ap-deepseek-v4-pro-ds4-mac
+  kind: access-path
+  name: DeepSeek-v4-PRO · DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q2)
+  summary: PRO on a 512GB Mac Studio via ds4; 9.56 t/s decode @ 32k ctx
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-pro }
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-apple-silicon }
+    - { rel: uses-technique, target: technique-moe-expert-2bit }
+  facets:
+    recipe:
+      download:
+        hfRepo: antirez/deepseek-v4-gguf
+        revision: null
+        format: gguf
+        downloadCmd: null # PRO variant arg unconfirmed in README — see repo
+      build: { runtime: DwarfStar (ds4), version: "beta (2026-06)" }
+      artifact: { quant: "PRO q2", format: gguf, packager: antirez }
+      procedure: "https://github.com/antirez/ds4"
+    deployment: { units: 1 }
+    outcome:
+      context: { tokens: 32768 }
+      measurements:
+        - { machine: "Mac Studio M3 Ultra 512GB", quant: "PRO q2", promptTokens: 32768, prefillTokS: 138.82, decodeTokS: 9.56 }
+      provenance: *ds4repo
+  claims:
+    - kind: caveat
+      body: >-
+        PRO is materially slower than Flash on the same box (9.56 vs 27-37 t/s
+        decode) and needs a 512GB-class machine. PRO GGUF production still depends
+        on the external llama.cpp workflow.
+      provenance: *ds4repo
 
 # ── gateway access-path (real OpenRouter price; contrast cost vs GLM-5.2) ─────
 - id: ap-deepseek-v4-flash-openrouter

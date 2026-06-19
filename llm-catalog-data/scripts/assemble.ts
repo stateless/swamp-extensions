@@ -106,10 +106,19 @@ for (const l of loaded) {
   // deno-lint-ignore no-explicit-any
   const model: any = ofModel ? modelById.get(ofModel) : undefined;
   const nativeCtx = model?.facets?.architecture?.nativeContext;
+  const extendedCtx = model?.facets?.architecture?.extendedContext;
   const apCtx = l.entry.facets?.outcome?.context?.tokens;
-  if (typeof nativeCtx === "number" && typeof apCtx === "number" && apCtx > nativeCtx) {
+  // An access-path may exceed nativeContext ONLY if it declares the context-extension
+  // technique AND stays within the model's verified extendedContext ceiling (e.g.
+  // DeepSeek-V4 is native 65536, YaRN-extended to 1M — the vLLM recipe runs 1M).
+  const usesExtension = (l.entry.relations ?? []).some((r) =>
+    r.rel === "uses-technique" && r.target === "technique-context-extension"
+  );
+  const cap = (usesExtension && typeof extendedCtx === "number") ? extendedCtx : nativeCtx;
+  if (typeof cap === "number" && typeof apCtx === "number" && apCtx > cap) {
+    const how = cap === extendedCtx ? "extended context" : "native context";
     errors.push(
-      `${l.file} [${l.id}]: context ${apCtx} exceeds ${ofModel} native context ${nativeCtx}`,
+      `${l.file} [${l.id}]: context ${apCtx} exceeds ${ofModel} ${how} ${cap}`,
     );
   }
 }
