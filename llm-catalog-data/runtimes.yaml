@@ -1,0 +1,83 @@
+# Runtimes — self-host inference engines. Shared reference entities, referenced
+# by id from the per-family access-paths (served-by: runtime-…). Small, slow-moving.
+# All entries here are public + generic (no fleet specifics).
+
+- id: runtime-llamacpp
+  kind: runtime
+  name: llama.cpp
+  summary: Widely-used self-host GGUF inference engine (llama-server)
+  visibility: public
+  labels: [self-host, gguf]
+  facets:
+    formats: [gguf] # the weight container this runtime loads — used to check artifact compat
+  claims:
+    - kind: note
+      body: >-
+        Thinking control: `--reasoning-budget 0` suppresses reasoning, `-1` =
+        unlimited. With thinking enabled the server splits reasoning into
+        `choices[0].message.reasoning_content` (not `content`) — clients must
+        read both; `content` can be empty on complex prompts.
+      provenance:
+        asOf: "2026-04-17"
+        source: "llama.cpp server /v1/chat behaviour (observed)"
+        confidence: high
+
+- id: runtime-vllm
+  kind: runtime
+  name: vLLM
+  summary: High-throughput serving engine; tensor/pipeline parallel, FP8 KV, spec decoding
+  visibility: public
+  labels: [self-host, serving, gpu, production]
+  facets:
+    formats: [safetensors] # vLLM/transformers/SGLang ecosystem loads safetensors (incl. FP8)
+  claims:
+    - kind: note
+      body: >-
+        Supports tensor-parallel + multi-node, MTP speculative decoding, FP8 KV
+        cache, prefix caching. Preferred over llama.cpp for production throughput
+        and multi-GPU/cluster; the published DGX Spark recipes (forum 365639,
+        372268) are vLLM-based.
+      provenance:
+        asOf: "2026-06-19"
+        source: "NVIDIA forum recipes 365639 / 372268"
+        verification: cited
+
+- id: runtime-ollama
+  kind: runtime
+  name: Ollama
+  summary: Self-host engine with a model hub and templated GGUFs
+  visibility: public
+  labels: [self-host]
+  facets:
+    formats: [gguf]
+  claims:
+    - kind: caveat
+      body: >-
+        `num_predict` does not cap thinking tokens, so thinking models can hang
+        indefinitely with `stream:false`. Prefer llama.cpp `--reasoning-budget`
+        for reliable think/nothink control on reasoning models.
+      provenance:
+        asOf: "2026-04-13"
+        source: "observed across qwen3 thinking models"
+        confidence: high
+
+- id: runtime-mlx
+  kind: runtime
+  name: MLX (mlx-lm)
+  summary: Apple-Silicon inference framework; loads MLX-format weights only
+  visibility: public
+  labels: [self-host, apple-silicon, mlx]
+  facets:
+    formats: [mlx]
+    platform: apple-silicon # MLX weights run only on Apple Silicon (M-series); not CUDA/ROCm
+  claims:
+    - kind: note
+      body: >-
+        Weight container = a third ecosystem alongside GGUF (llama.cpp/ollama) and
+        safetensors (vLLM/transformers): MLX format runs only via mlx-lm / LM
+        Studio on Apple Silicon. Choosing a format therefore constrains both the
+        runtime AND the hardware.
+      provenance:
+        asOf: "2026-06-19"
+        source: "mlx-lm / Apple MLX"
+        verification: cited

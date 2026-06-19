@@ -1,0 +1,92 @@
+# Providers — hosted gateways. Shared reference entities, referenced by id from
+# per-family gateway access-paths (via-provider: provider-…). Public + generic.
+
+- id: provider-bedrock-mantle
+  kind: provider
+  name: Amazon Bedrock Mantle
+  summary: OpenAI-spec endpoint fronting many non-GPT models (GLM, Nemotron, …)
+  visibility: public
+  labels: [gateway, cloud, openai-compat]
+  facets:
+    api:
+      apiSpec: openai-compat
+      compatCaveats:
+        - Some models may not support every feature of the OpenAI API surface.
+  claims:
+    - kind: recommendation
+      body: >-
+        Reported to run agent workloads on cheap models (e.g. z.ai GLM) at ~1/10th
+        the cost of first-party Sonnet, with acceptable quality for those tasks.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://substack.com/@conceptualplanner/note/c-277895469"
+        confidence: low
+
+# ── first-party providers (vendor's own API; proprietary models only here) ───
+- id: provider-anthropic
+  kind: provider
+  name: Anthropic API
+  summary: First-party API for Claude models (proprietary)
+  visibility: public
+  labels: [first-party, anthropic]
+  facets:
+    api: { apiSpec: anthropic-native, type: first-party }
+
+- id: provider-openai
+  kind: provider
+  name: OpenAI API
+  summary: First-party API for GPT / o-series models (proprietary)
+  visibility: public
+  labels: [first-party, openai]
+  facets:
+    api: { apiSpec: openai-native, type: first-party }
+
+- id: provider-google
+  kind: provider
+  name: Google AI / Gemini API
+  summary: First-party API for Gemini (proprietary) + Gemma (open)
+  visibility: public
+  labels: [first-party, google]
+  facets:
+    api: { apiSpec: google-native, type: first-party }
+
+- id: provider-zai
+  kind: provider
+  name: z.ai API
+  summary: First-party API for GLM models (also open-weights on HF)
+  visibility: public
+  labels: [first-party, zai, openai-compat]
+  facets:
+    api: { apiSpec: openai-compat, type: first-party }
+
+- id: provider-deepseek
+  kind: provider
+  name: DeepSeek API
+  summary: First-party API for DeepSeek models (also open-weights)
+  visibility: public
+  labels: [first-party, deepseek, openai-compat]
+  facets:
+    api: { apiSpec: openai-compat, type: first-party }
+
+# ── aggregator / proxy (fronts MANY models from MANY upstreams via one API) ──
+- id: provider-openrouter
+  kind: provider
+  name: OpenRouter
+  summary: Aggregator proxying many models from many upstreams via one OpenAI-compatible API
+  visibility: public
+  labels: [aggregator, gateway, openai-compat]
+  facets:
+    api:
+      apiSpec: openai-compat
+      type: aggregator
+      endpoint: "https://openrouter.ai/api/v1"
+  claims:
+    - kind: note
+      body: >-
+        Routes each model to one or more upstream sub-providers; the SAME model
+        may carry multiple price/latency tiers (e.g. :free, :nitro, by upstream).
+        Prices change frequently — sync from the /models endpoint, don't pin.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://openrouter.ai/api/v1/models"
+        verification: authoritative

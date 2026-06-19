@@ -1,0 +1,258 @@
+# Techniques — KV-compression, quant schemes, attention/decoding methods.
+# Shared reference entities, referenced by id (uses-technique: technique-…). Public.
+
+- id: technique-kv-quant-bf16
+  kind: technique
+  name: KV-cache quant (bf16)
+  summary: Lower KV memory / fix gibberish via --cache-type-k/v bf16 (llama.cpp)
+  visibility: public
+  labels: [kv-cache, memory]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: finding
+      body: >-
+        Gibberish output at low context or large KV — try `--cache-type-k bf16
+        --cache-type-v bf16`.
+      provenance:
+        asOf: "2026-04-17"
+        source: "llama.cpp serving (observed on qwen3.5)"
+        confidence: medium
+
+# ── quantization schemes (referenced by access-paths via uses-technique; the
+#    chosen scheme + packager also ride the recipe.artifact). A quant is NOT a
+#    model — it's how the SAME weights are encoded for deployment. ───────────
+- id: technique-gguf-kquant
+  kind: technique
+  name: GGUF k-quant
+  summary: Standard llama.cpp k-quant GGUF compression (Q4_K_M, Q5_K_M, Q8_0, …)
+  visibility: public
+  labels: [quantization, gguf]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        Perplexity / KLD (calibrated on wiki text) is NOT a reliable proxy for
+        chat or code quality — a quant that scores well on PPL can produce worse
+        outputs. Prefer task-based evals over published PPL.
+      provenance:
+        asOf: "2026-06-19"
+        source: "Unsloth GGUF analysis (via MODEL qwen35 card)"
+        verification: cited
+
+- id: technique-unsloth-dynamic
+  kind: technique
+  name: Unsloth Dynamic GGUF (UD-Q*)
+  summary: Per-tensor dynamic bit allocation protecting sensitive tensors; imatrix
+  visibility: public
+  labels: [quantization, gguf, unsloth, packager]
+  claims:
+    - kind: finding
+      body: >-
+        UD-Q4_K_XL / UD-Q4_K_M protect quant-sensitive tensors (keep them at
+        higher bit depth) while letting tolerant tensors go lower — better
+        quality than flat k-quant at the same nominal bit depth. imatrix variants
+        ~5–10% slower but higher quality at a given bit depth (worth it for
+        long-context / precise tasks). MXFP4 retired from the Dynamic lineup
+        (worse than Q4_K on many tensors; native-hardware only).
+      provenance:
+        asOf: "2026-06-19"
+        source: "Unsloth GGUF analysis (via MODEL qwen35 card)"
+        verification: cited
+
+# Quant METHODS (algorithms) — distinct from the FORMAT (gguf/safetensors/mlx).
+# Each method usually ships in a specific format and is supported by specific
+# runtimes; recipes reference them via `uses-technique`. NOTE: GGUF is a format,
+# not a method — its method is GGUF k-quant (technique-gguf-kquant above).
+- id: technique-gptq
+  kind: technique
+  name: GPTQ
+  summary: Calibration-based post-training weight quant (INT4/INT3); safetensors
+  visibility: public
+  labels: [quantization, ptq, safetensors]
+  claims:
+    - kind: note
+      body: >-
+        Layer-wise calibration PTQ, commonly INT4. Ships in safetensors; loaded by
+        vLLM / transformers / SGLang (NOT llama.cpp). Mature; AWQ often edges it on
+        4-bit quality.
+      provenance: { asOf: "2026-06-19", source: "GPTQ method / vLLM quantization docs", verification: cited }
+
+- id: technique-awq
+  kind: technique
+  name: AWQ
+  summary: Activation-aware weight quant — protects salient weights; safetensors
+  visibility: public
+  labels: [quantization, ptq, safetensors]
+  claims:
+    - kind: note
+      body: >-
+        Activation-aware Weight Quantization: scales/protects the most salient
+        weight channels, typically beating GPTQ at 4-bit quality. safetensors;
+        vLLM / transformers / SGLang.
+      provenance: { asOf: "2026-06-19", source: "AWQ method / vLLM quantization docs", verification: cited }
+
+- id: technique-autoround
+  kind: technique
+  name: Intel AutoRound
+  summary: Sign-gradient-descent rounding PTQ; strong INT4; safetensors
+  visibility: public
+  labels: [quantization, ptq, safetensors, intel]
+  claims:
+    - kind: note
+      body: >-
+        SignRound-based PTQ; competitive/strong INT4 checkpoints. safetensors;
+        vLLM. Used by the Qwen3.5-122B single-Spark recipe (Intel AutoRound INT4).
+      provenance: { asOf: "2026-06-19", source: "Intel AutoRound / NVIDIA forum 365639", verification: cited }
+
+- id: technique-fp8
+  kind: technique
+  name: FP8 (8-bit float)
+  summary: Near-lossless 8-bit float; native on Hopper/Blackwell; safetensors
+  visibility: public
+  labels: [quantization, fp8, safetensors]
+  claims:
+    - kind: note
+      body: >-
+        8-bit floating point (E4M3/E5M2), near-lossless vs BF16 and hardware-native
+        on Hopper/Blackwell — minimal quality loss for good throughput. safetensors;
+        vLLM. Used by the DeepSeek-v4-Flash recipe (official FP8 weights + FP8 KV).
+      provenance: { asOf: "2026-06-19", source: "FP8 / vLLM quantization docs + NVIDIA forum 372268", verification: cited }
+
+# KV-cache / attention OPTIMISATIONS. The decisive axis is qualityImpact:
+#   neutral = mathematically exact (pure speed/memory win — never changes output)
+#   lossy   = trades context fidelity for memory (a config-QUALITY factor, §14)
+- id: technique-pagedattention
+  kind: technique
+  name: PagedAttention
+  summary: KV-cache memory paging (vLLM) — eliminates fragmentation; LOSSLESS
+  visibility: public
+  labels: [kv-cache, memory, vllm]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        Virtual-memory-style paging of the KV cache: near-zero fragmentation,
+        enables high concurrency + long context in less memory. Mathematically
+        exact — pure throughput/memory win, no quality change. vLLM core.
+      provenance: { asOf: "2026-06-19", source: "PagedAttention / vLLM", verification: cited }
+
+- id: technique-flashattention
+  kind: technique
+  name: FlashAttention / FlashInfer
+  summary: Fused exact attention kernel — faster + lower memory; LOSSLESS
+  visibility: public
+  labels: [attention, kernel, memory]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        IO-aware fused attention (FlashAttention-2/3, FlashInfer) — cuts attention
+        memory and speeds prefill/decode; mathematically EXACT (no quality change).
+        The DeepSeek-v4-Flash recipe enables FlashInfer autotune.
+      provenance: { asOf: "2026-06-19", source: "FlashAttention / FlashInfer", verification: cited }
+
+- id: technique-prefix-caching
+  kind: technique
+  name: Prefix caching
+  summary: Reuse KV for shared prompt prefixes (system/few-shot); LOSSLESS
+  visibility: public
+  labels: [kv-cache, scheduling]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        Caches and reuses KV for repeated prompt prefixes — large TTFT/throughput
+        win on shared context (system prompts, agents). Exact. DeepSeek recipe:
+        `--enable-prefix-caching`.
+      provenance: { asOf: "2026-06-19", source: "vLLM prefix caching", verification: cited }
+
+- id: technique-kv-eviction
+  kind: technique
+  name: KV eviction / compression (SnapKV, H2O, StreamingLLM)
+  summary: Drop/compress less-important KV tokens — LOSSY at long context
+  visibility: public
+  labels: [kv-cache, memory, long-context]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: caveat
+      body: >-
+        SnapKV / H2O / StreamingLLM evict or compress KV entries to fit long
+        context in less memory — trades long-range coherence for footprint. A
+        config-QUALITY factor: measure long-context quality before relying on it.
+      provenance: { asOf: "2026-06-19", source: "SnapKV / H2O / StreamingLLM", verification: cited }
+
+# PARALLELISM approaches — distribute compute across GPUs/nodes. All LOSSLESS
+# (they change WHERE compute runs, never the output). The choice is driven by
+# interconnect bandwidth and model size; captured in recipe.serving + referenced.
+- id: technique-tensor-parallel
+  kind: technique
+  name: Tensor parallelism (TP)
+  summary: Shard each layer's tensors across GPUs (intra-layer); needs fast interconnect
+  visibility: public
+  labels: [parallelism, multi-gpu]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        Splits attention/FFN matrices across N GPUs — lowers per-GPU memory and
+        speeds compute, but is interconnect-bound (NVLink / RoCE). vLLM
+        `--tensor-parallel-size`. The DeepSeek 2-Spark recipe uses TP=2 over
+        ConnectX-7. Lossless.
+      provenance: { asOf: "2026-06-19", source: "vLLM distributed serving + forum 372268", verification: cited }
+
+- id: technique-pipeline-parallel
+  kind: technique
+  name: Pipeline parallelism (PP)
+  summary: Split model layers across GPUs/nodes (inter-layer); tolerates slower links
+  visibility: public
+  labels: [parallelism, multi-node]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        Assigns layer ranges to different devices/nodes — far less
+        interconnect-sensitive than TP, so it suits slower/multi-node links, at
+        some pipeline-bubble latency cost. vLLM `--pipeline-parallel-size`. Lossless.
+      provenance: { asOf: "2026-06-19", source: "vLLM distributed serving", verification: cited }
+
+- id: technique-expert-parallel
+  kind: technique
+  name: Expert parallelism (EP)
+  summary: Shard MoE experts across GPUs; pairs with TP for large MoE
+  visibility: public
+  labels: [parallelism, moe, multi-gpu]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: "Distributes MoE experts across devices (only routed experts compute per token); pairs with TP for large MoE. Lossless."
+      provenance: { asOf: "2026-06-19", source: "MoE serving (vLLM/SGLang)", verification: cited }
+
+- id: technique-ray-serve
+  kind: technique
+  name: Ray / data parallelism
+  summary: Replicate the model across nodes for throughput (multi-replica)
+  visibility: public
+  labels: [parallelism, throughput, ray]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: "Ray-orchestrated multi-replica/multi-node serving for concurrency/throughput (vs TP/PP which split one replica). The AoE Qwen3.5-122B 56 tok/s result used a Ray cluster. Lossless."
+      provenance: { asOf: "2026-06-19", source: "Ray Serve / forum 365639", verification: cited }
+
+# Context extension — run BEYOND a model's native context via RoPE scaling/YaRN.
+- id: technique-context-extension
+  kind: technique
+  name: Context extension (RoPE scaling / YaRN)
+  summary: Run past native context via RoPE-scaling/YaRN; lossy at the extended tail
+  visibility: public
+  labels: [context, rope, yarn, long-context]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: caveat
+      body: >-
+        Extending past nativeContext (RoPE scaling / YaRN, or vLLM
+        `--max-model-len` + `VLLM_ALLOW_LONG_MAX_MODEL_LEN`) trades long-range
+        fidelity — quality can degrade at the extended tail ("lost in the
+        middle"). NOT all models extend: some hard-cap (Gemma e2b clamps to 128k).
+        Verify long-context quality at the target length, don't assume.
+      provenance: { asOf: "2026-06-19", source: "RoPE/YaRN + vLLM long-context", verification: cited }

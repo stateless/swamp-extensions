@@ -1,0 +1,142 @@
+# DeepSeek V4 family. Public + generic. Demonstrates a CLUSTER access-path
+# (hardware-config = 2 units) and a long-context recipe.
+
+- id: model-deepseek-v4-flash
+  kind: model
+  name: DeepSeek-v4-Flash
+  summary: Long-context model; runs at 1M context on a 2-unit DGX Spark cluster
+  visibility: public
+  labels: [deepseek, long-context]
+  claims:
+    - kind: note
+      body: >-
+        Exact architecture/parameter details UNVERIFIED here — needs a primary
+        source (DeepSeek release / HF card). Notable for feasible 1M-token
+        sessions on modest unified-memory hardware.
+      provenance:
+        asOf: "2026-06-19"
+        source: "needs primary source — DeepSeek-v4 release"
+        confidence: low
+
+# Real recipe from NVIDIA forum 372268 (author aidendle94, posted by 0rand) —
+# vLLM (NOT llama.cpp), 2× Spark over ConnectX-7, FP8, 1M context. Corrects an
+# earlier placeholder. Secondary posters (stu.miller, MiaAI_Lab) replicate it.
+- id: ap-deepseek-v4-flash-2spark-vllm
+  kind: access-path
+  name: DeepSeek-v4-Flash · vLLM @ 2× DGX Spark (1M ctx) — aidendle94 recipe
+  summary: 2-Spark FP8 cluster recipe; 30-45 tok/s decode at 1M context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-flash }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-fp8 } # quant method (distinct from the safetensors format)
+    - { rel: uses-technique, target: technique-prefix-caching } # --enable-prefix-caching (lossless)
+    - { rel: uses-technique, target: technique-flashattention } # --enable-flashinfer-autotune (lossless)
+    - { rel: uses-technique, target: technique-tensor-parallel } # --tensor-parallel-size 2 (lossless)
+    - { rel: uses-technique, target: technique-context-extension } # max-model-len 1M + VLLM_ALLOW_LONG_MAX_MODEL_LEN
+  facets:
+    recipe:
+      # DOWNLOAD source — the exact artifact to re-fetch (half of reproducibility).
+      download:
+        hfRepo: deepseek-ai/DeepSeek-V4-Flash
+        revision: null # TODO pin commit/tag for byte-exact re-download
+        format: safetensors
+        downloadCmd: "hf download deepseek-ai/DeepSeek-V4-Flash --revision <rev>"
+      # RUN source — the exact image/versions/command to re-run (the other half).
+      build:
+        runtime: vLLM
+        version: "0.21.1"
+        cuda: "12.1"
+        image: "aidendle94/sparkrun-vllm-ds4-gb10:production-ready"
+      artifact: { quant: "FP8 (official)", format: safetensors, kvCacheDtype: fp8 }
+      hardware:
+        units: 2
+        accel: GB10
+        unifiedMemGB: 128
+        interconnect: "ConnectX-7 200Gbps RoCE (QSFP56 direct)"
+      command: >-
+        dsv4-vllm-entrypoint serve deepseek-ai/DeepSeek-V4-Flash
+        --tensor-parallel-size 2 --pipeline-parallel-size 1 --kv-cache-dtype fp8
+        --block-size 256 --max-model-len 1000000 --max-num-seqs 6
+        --max-num-batched-tokens 8192 --gpu-memory-utilization 0.82
+        --enable-prefix-caching
+        --speculative-config '{"method":"mtp","num_speculative_tokens":2}'
+        --distributed-executor-backend mp --enable-flashinfer-autotune
+        --nnodes 2 --node-rank ${NODE_RANK} --master-addr ${MASTER_ADDR}
+      env:
+        VLLM_USE_B12X_MOE: "1"
+        VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+        TORCH_CUDA_ARCH_LIST: "12.1a"
+        NCCL_NET: "IB"
+      serving:
+        # template/parsers — a QUALITY factor (wrong parser breaks tool-calling)
+        toolCallParser: deepseek_v4
+        reasoningParser: deepseek_v4
+        tokenizerMode: deepseek_v4
+        # batch/concurrency — a THROUGHPUT factor (quality-neutral) AND the
+        # condition that makes a tok/s number comparable
+        maxNumSeqs: 6 # max concurrent sequences
+        maxNumBatchedTokens: 8192
+        blockSize: 256
+      procedure: "https://forums.developer.nvidia.com/t/372268"
+    deployment: { units: 2 }
+    outcome:
+      context: { tokens: 1000000 }
+      speed:
+        genTokS: 39.4
+        note: "@240K ctx, single request — see measurements for the conditions"
+      # A tok/s is only comparable WITH its concurrency + context depth. The
+      # spread below is all one config; concurrency ~doubles throughput.
+      measurements:
+        - { concurrency: 1, contextDepth: 0, decodeTokS: 45.7, ttft: "1s" }
+        - { concurrency: 1, contextDepth: 240000, decodeTokS: 39.4 }
+        - { concurrency: 1, contextDepth: 512000, decodeTokS: 36.1 }
+        - { concurrency: 1, contextDepth: 980000, decodeTokS: 30.4, ttft: "16.6m" }
+        - { concurrency: 2, contextDepth: 0, decodeTokS: 54.4 }
+        - { concurrency: 4, contextDepth: 0, decodeTokS: 47.8 }
+      quality:
+        toolEvalBench: "89/100" # depends on the correct deepseek_v4 tool-call parser above
+        ifEvalInstruction: 88.2
+        ifEvalPrompt: 84.8
+      provenance: &fwd372268
+        asOf: "2026-06-19"
+        source: "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        Dead ends (per 0rand): FP4-Marlin backend incompatible with FP8 weights;
+        manual PR-40082 build hits a FlashInfer/cutlass mismatch; standard
+        spark-vllm-docker lacks b12x MoE (2× slower prefill). Requires
+        `shm_size: 64gb` + `ulimits memlock=-1` or NCCL "unhandled system error".
+        Launch worker node before head (~10s delay).
+      provenance: *fwd372268
+    - kind: note
+      body: >-
+        RECONCILIATION: num_speculative_tokens=2 — 0rand says "2 is optimal" vs a
+        query about MTP=3 (no comparative metrics given). Replicated by stu.miller
+        (35.6 t/s single / 63.9 t/s @c4) and MiaAI_Lab (40-45 t/s) on the same
+        image — results agree within the concurrency-dependent band.
+      provenance: *fwd372268
+
+# ── gateway access-path (real OpenRouter price; contrast cost vs GLM-5.2) ─────
+- id: ap-deepseek-v4-flash-openrouter
+  kind: access-path
+  name: DeepSeek-v4-Flash · OpenRouter (gateway)
+  summary: Hosted access via OpenRouter — ~13x cheaper input than GLM-5.2
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-deepseek-v4-flash }
+    - { rel: via-provider, target: provider-openrouter }
+  facets:
+    api:
+      apiSpec: openai-compat
+      providerModelId: "deepseek/deepseek-v4-flash"
+    cost:
+      perMTokInUsd: 0.09
+      perMTokOutUsd: 0.18
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://openrouter.ai/api/v1/models"
+        verification: authoritative # authoritative AT asOf — re-sync for current price

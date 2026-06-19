@@ -1,0 +1,164 @@
+# GPT-OSS family (OpenAI). Public + generic — mined from the public MODEL card
+# (OpenAI HF release, Harmony repo, Unsloth run/fine-tune guide). Our-fleet
+# measurements (GB10 tok/s, 6-task smoke scores, multi-judge panel) are NOT here —
+# they stay private and, if shared, become sanitised access-paths with
+# community attribution.
+#
+# Structure: one family umbrella entry (shared license/config/template caveats) +
+# one entry per variant (variant-of → model-gpt-oss). DRY: shared facts live once
+# on the family; variant entries carry only what differs.
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-gpt-oss
+  kind: model
+  name: GPT-OSS (family)
+  summary: OpenAI open-weights MoE reasoning family; text-only; 128K context
+  visibility: public
+  labels: [gpt-oss, openai, open-weights, moe, reasoning]
+  facets:
+    architecture:
+      attention: alternating-swa-full # 128-token sliding window + full attention, with a learnable sink token
+      modality: [text]
+      notes: >-
+        A single learnable sink token is appended to each attention computation
+        to prevent first-token collapse in the sliding-window layers. RL-trained
+        reasoning models; English-primary but multilingual capable.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    license:
+      spdx: apache-2.0
+      released: "2025-08"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/openai/gpt-oss-20b"
+        verification: authoritative
+    config:
+      thinking:
+        supported: true
+        # Reasoning effort is a named tier set via the Harmony chat template
+        # ("Reasoning: medium" in the system prompt), not a token budget / server flag.
+        effort: [low, medium, high] # default medium
+        disableGeneric: null # no --reasoning-budget flag; effort set via chat template only
+      sampling: { temp: 1.0, top_p: 1.0, top_k: 0 } # temp fixed at 1.0 — do not lower; top_k disabled (try 100 to experiment)
+      eosToken: "<|return|>"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        Jinja chat templates used by inference engines diverge from OpenAI's
+        canonical Harmony format: tool-call args rendered with `tojson` backslash
+        string symbols, extra newlines on turn boundaries, and tool-call thoughts
+        must use `<|channel|>analysis` (not `final` — `final` is only for the last
+        assistant message). Unsloth GGUFs have these fixed; prefer them for reliable
+        tool calling.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://github.com/openai/harmony (via MODEL gpt-oss card)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Float16 causes infinities — the model was trained in BF16. Use BF16 or
+        float32; float16 on T4/older GPUs (no native BF16) overflows after some time.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL gpt-oss card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        MXFP4 is not natively supported on Ampere and older GPUs. Triton emulates
+        it via `tl.dot_scaled` (upcasts to BF16 internally) — works but slower than
+        native hardware support (Blackwell+).
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL gpt-oss card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Quantized weights below F16 (incl. 2-bit) reportedly show minimal accuracy
+        loss — attention layers stay higher precision while MoE routing layers are
+        compressed. The `hf-gpt-oss:120b-q3` hub build is broken (1/5 quality on
+        the card's note); use Q4 or above.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    - kind: note
+      body: >-
+        Ollama compatibility is not confirmed by the card; Unsloth recommends
+        llama.cpp backends. (Referenced runtimes: runtime-llamacpp, runtime-ollama.)
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    - kind: note
+      body: >-
+        Unsloth Flex Attention enables long-context fine-tuning on a single 80GB
+        H100: ~60K ctx BF16 LoRA / ~81K ctx QLoRA, vs ~9K standard and ~15K with FA3.
+        FA3 lacks the backward pass for the sink mechanism — do NOT use FA3 for
+        gpt-oss training.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    - kind: note
+      body: >-
+        GAP: the card cites no vendor-published benchmark numbers — only
+        comparative positioning (120b "rivals o4-mini", 20b "rivals o3-mini"; both
+        outperform o1 and GPT-4o on function calling / CoT). Re-verify quantitative
+        benchmarks against OpenAI's primary model card before relying on them.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL gpt-oss card (re-verify against primary source)"
+        verification: cited
+
+# ── variants ────────────────────────────────────────────────────────────────
+- id: model-gpt-oss-20b
+  kind: model
+  name: GPT-OSS 20B
+  summary: Smaller MoE variant; rivals o3-mini; locally runnable (~14GB Q4)
+  visibility: public
+  labels: [gpt-oss, openai, moe, reasoning, local]
+  relations:
+    - { rel: variant-of, target: model-gpt-oss }
+  facets:
+    architecture:
+      attention: alternating-swa-full
+      params: "20B"
+      nativeContext: 131072
+      modality: [text]
+      notes: >-
+        Comparative positioning: rivals o3-mini; strong function calling and CoT
+        reasoning. Approx. on-disk size ~14GB at dynamic Q4 / ~20GB at F16; 2-bit
+        (~11.5GB) reportedly near-identical to F16 (~14GB) per the card.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/openai/gpt-oss-20b"
+        verification: authoritative
+
+- id: model-gpt-oss-120b
+  kind: model
+  name: GPT-OSS 120B
+  summary: Larger MoE variant; rivals o4-mini; locally runnable (~66GB 1-bit)
+  visibility: public
+  labels: [gpt-oss, openai, moe, reasoning, local]
+  relations:
+    - { rel: variant-of, target: model-gpt-oss }
+  facets:
+    architecture:
+      attention: alternating-swa-full
+      params: "120B"
+      nativeContext: 131072
+      modality: [text]
+      notes: >-
+        Comparative positioning: rivals o4-mini; strong function calling and CoT
+        reasoning. Approx. on-disk size ~66GB at 1-bit / ~74GB at Q4. The card warns
+        the `hf-gpt-oss:120b-q3` hub build is broken — use Q4 or above.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/openai/gpt-oss-20b"
+        verification: authoritative

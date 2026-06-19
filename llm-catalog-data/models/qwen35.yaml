@@ -1,0 +1,342 @@
+# Qwen3.5 family (Alibaba / Qwen). Public + generic — mined from the Qwen blog /
+# HF (via the MODEL qwen35 card). Hybrid Gated-DeltaNet + attention layout: most
+# layers are linear-attention DeltaNet (O(n), low KV), ~1-in-4 are full attention.
+# Our-fleet eval scores / GB10 tok/s are NOT here (private). Structure: family
+# umbrella + per-variant entries (variant-of → model-qwen35).
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-qwen35
+  kind: model
+  name: Qwen3.5 (family)
+  summary: Hybrid Gated-DeltaNet + attention; thinking; multimodal; 201 languages
+  visibility: public
+  labels: [qwen, deltanet, thinking, multimodal]
+  facets:
+    architecture:
+      attention: hybrid-deltanet # N × (3×(Gated DeltaNet → FFN/MoE) → 1×(Gated Attention → FFN/MoE))
+      notes: "Most layers are Gated DeltaNet (linear attention, O(n)); ~1-in-4 full attention. Trained with Multi-Token Prediction (MTP)."
+      multilingual: 201
+      released: "2026-03-09"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+    config:
+      thinking:
+        control: "--reasoning-budget 0 (suppress) | -1 (unlimited)"
+        minContextForThinking: 131072
+      sampling: # Qwen / Unsloth recommendations
+        thinkingGeneral: { temp: 1.0, top_p: 0.95, top_k: 20, presence_penalty: 1.5 }
+        thinkingCoding: { temp: 0.6, top_p: 0.95, top_k: 20, presence_penalty: 0.0 }
+        nonThinkingGeneral: { temp: 0.7, top_p: 0.8, top_k: 20, presence_penalty: 1.5 }
+      provenance:
+        asOf: "2026-06-19"
+        source: "Qwen/Unsloth guidance (via MODEL qwen35 card)"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        DeltaNet linear-attention majority → lower KV memory and higher
+        throughput than an equivalent-size transformer; better long-context
+        memory profile.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+    - kind: finding
+      body: >-
+        Quant guidance (DeltaNet-hybrid tensor sensitivity): `ssm_out` very
+        sensitive (degrades sharply below Q4); `attn_*` sensitive (keep Q4+);
+        `ffn_up`/`gate_exps` tolerate 3-bit. Recommended UD-Q4_K_XL / UD-Q4_K_M.
+        MXFP4 retired (worse than Q4_K on many tensors). Prefer task evals over
+        perplexity (PPL is not a chat/code-quality proxy).
+      provenance:
+        asOf: "2026-06-19"
+        source: "Unsloth GGUF analysis (via MODEL qwen35 card)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Ollama incompatible (separate mmproj vision files); use llama.cpp. Think
+        flag unreliable in Ollama — use `--reasoning-budget 0` or
+        `--chat-template-kwargs '{"enable_thinking":false}'`. With thinking on,
+        answers land in `choices[0].message.reasoning_content` (not `content`) —
+        clients must read both.
+      provenance:
+        asOf: "2026-04-17"
+        source: "MODEL qwen35 card (re-verify against primary source)"
+        verification: cited
+    - kind: note
+      body: "License not stated in the source card — needs a primary source (HF model card)."
+      provenance:
+        asOf: "2026-06-19"
+        source: "gap — needs primary source"
+        verification: cited
+
+# ── variants (MoE) ───────────────────────────────────────────────────────────
+- id: model-qwen35-35b
+  kind: model
+  name: Qwen3.5-35B-A3B
+  summary: MoE; leads TAU2 agentic for its size (beats the 122B); strong general
+  visibility: public
+  labels: [qwen, moe, agentic]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "35B"
+      activeParams: "3B"
+      layers: 40
+      experts: "8/token of 256 routed + 1 shared"
+      hidden: 2048
+      nativeContext: 262144
+      modality: [text, image, video]
+    benchmarks: # Qwen-published, thinking mode
+      mmluPro: 85.3
+      gpqaDiamond: 84.2
+      ifEval: 91.9
+      ifBench: 70.2
+      sweBenchVerified: 69.2
+      liveCodeBenchV6: 74.6
+      tau2Agentic: 81.2
+      mmmlu: 85.2
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+  claims:
+    - kind: note
+      body: "Qwen3.5-Flash is the hosted form of 35B-A3B (1M context, built-in tools)."
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+
+- id: model-qwen35-122b
+  kind: model
+  name: Qwen3.5-122B-A10B
+  summary: Larger MoE sibling; same hybrid-deltanet layout; 256K context
+  visibility: public
+  labels: [qwen, moe]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "122B"
+      activeParams: "10B"
+      nativeContext: 262144
+      modality: [text, image, video]
+    benchmarks:
+      mmluPro: 86.7
+      gpqaDiamond: 86.6
+      ifEval: 93.4
+      ifBench: 76.1
+      sweBenchVerified: 72.0
+      liveCodeBenchV6: 78.9
+      tau2Agentic: 79.5
+      mmmlu: 86.7
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+
+- id: model-qwen35-397b
+  kind: model
+  name: Qwen3.5-397B-A17B
+  summary: Flagship MoE; hosted as Qwen3.5-Plus (1M ctx); not locally practical
+  visibility: public
+  labels: [qwen, moe, flagship]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "397B"
+      activeParams: "17B"
+      layers: 60
+      experts: "10/token of 512 routed + 1 shared"
+      hidden: 4096
+      nativeContext: 262144 # extends toward 1M for hosted
+      modality: [text, image, video]
+  claims:
+    - kind: note
+      body: "Hosted as Qwen3.5-Plus (1M context, built-in tools); ~200GB+ — multi-node for local."
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+
+# ── variants (dense) ─────────────────────────────────────────────────────────
+- id: model-qwen35-27b
+  kind: model
+  name: Qwen3.5-27B (dense)
+  summary: Dense; 64 layers (deep for its size); competitive with 35B-A3B
+  visibility: public
+  labels: [qwen, dense, long-context]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "27B"
+      layers: 64
+      hidden: 5120
+      nativeContext: 262144
+      modality: [text, image, video]
+    benchmarks:
+      mmluPro: 86.1
+      gpqaDiamond: 85.5
+      ifEval: 95.0
+      ifBench: 76.5
+      sweBenchVerified: 72.4
+      liveCodeBenchV6: 80.7
+      tau2Agentic: 79.0
+      mmmlu: 85.9
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+
+- id: model-qwen35-9b
+  kind: model
+  name: Qwen3.5-9B (dense)
+  summary: Dense; ~6GB Q4; 256K context with DeltaNet — small-footprint candidate
+  visibility: public
+  labels: [qwen, dense, small]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "9B"
+      layers: 32
+      hidden: 4096
+      nativeContext: 262144
+      modality: [text, image, video]
+
+# ── self-host configs: Qwen3.5-122B on DGX Spark via vLLM (forum 365639) ─────
+#  LINEAGE STRATEGY: a config's LINEAR progression (Albond v1 → v2 → …) is NOT
+#  enumerated as separate entries — only the current-best config is a live entry,
+#  and the v1→v2 evolution lives in THIS FILE'S GIT HISTORY (`git log -p`). That
+#  keeps the model files small. CONCURRENT/disagreeing variants (a different
+#  contributor's cluster result) genuinely coexist, so they DO get their own
+#  entry + a `replicates`/`alt-config-of` relation — git can't branch-compare.
+#  (Corrects an earlier placeholder that wrongly said llama.cpp + Unsloth GGUF.)
+
+- id: ap-qwen35-122b-spark-vllm
+  kind: access-path
+  name: Qwen3.5-122B · vLLM @ 1× Spark — Albond (current best)
+  summary: AutoRound INT4 + Qwen FP8 shared-expert layers + MTP-1; 38.4 tok/s single-Spark
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-122b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-autoround } # quant method
+    - { rel: uses-technique, target: technique-fp8 } # + FP8 for shared-expert layers
+  facets:
+    recipe:
+      build: { runtime: vLLM, version: "0.19" }
+      artifact: { quant: "hybrid INT4 (AutoRound) + FP8 (Qwen official, 144 shared-expert dense layers)", format: safetensors }
+      hardware: { units: 1, accel: GB10 }
+      technique: "MTP-1 speculative decoding (~95% accept); ~95-line vLLM INC quant patch"
+      procedure: "https://forums.developer.nvidia.com/t/365639"
+    outcome:
+      speed:
+        genTokS: 38.4
+        range: "36.3-39.9 across Q&A/code/JSON/math/long-code"
+        note: "title claims 51 tok/s; author's VERIFIED single-Spark figure is 38.4"
+      quality:
+        measured: null # the thread reports THROUGHPUT only, not output quality
+        note: >-
+          No output-quality measured for this AutoRound-INT4 config — INT4 quant
+          CAN degrade outputs, so speed alone doesn't certify it. Reference
+          ceiling = model-qwen35-122b published benchmarks; treat as UNVERIFIED
+          for quality until an eval on THIS config exists.
+        verification: unverified
+      provenance: &fwd365639
+        asOf: "2026-06-19"
+        source: "https://forums.developer.nvidia.com/t/365639 (Albond)"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Config progression (Albond): v1 AutoRound INT4 = 28.3 tok/s → v2 added
+        Qwen FP8 shared-expert layers + MTP-1 = 38.4. Only the current-best config
+        is a live entry; the full v1→v2 evolution is in this file's git history.
+      provenance: *fwd365639
+    - kind: finding
+      body: "MTP-1 alone is the biggest win; the hybrid INT4+FP8 adds only ~2 tok/s on top of AutoRound+MTP (36.5 → 38.4)."
+      provenance: *fwd365639
+    - kind: note
+      body: "Corroborated by norman.2 (~38.6-40 tok/s, same hybrid+MTP config, community vLLM docker)."
+      provenance: *fwd365639
+
+- id: ap-qwen35-122b-spark-vllm-aoe-ray
+  kind: access-path
+  name: Qwen3.5-122B · vLLM Ray cluster — AoE (contributor)
+  summary: AutoRound INT4 on a Ray cluster; up to 56 tok/s — DISAGREES with single-Spark
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-122b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: replicates, target: ap-qwen35-122b-spark-vllm } # concurrent variant — kept as its own entry, not git
+    - { rel: uses-technique, target: technique-autoround } # quant method
+    - { rel: uses-technique, target: technique-ray-serve } # Ray cluster (vs single-Spark)
+  facets:
+    recipe:
+      build: { runtime: vLLM, version: "0.19.1rc1.dev15" }
+      artifact: { quant: "INT4 (Intel/Qwen3.5-122B-A10B-int4-AutoRound)", format: safetensors }
+      hardware: { config: "Ray cluster (multi-node, not single Spark)" }
+      technique: "MTP (85-100% accept)"
+    outcome:
+      speed: { genTokS: 56, note: "Ray cluster — higher than single-Spark; explains the spread toward the title's 51" }
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://forums.developer.nvidia.com/t/365639 (AoE)"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        RECONCILIATION: results span 28.3 (v1) → 36.5 (AutoRound+MTP) → 38.4
+        (v2 hybrid, single Spark) → 56 (AoE Ray cluster). The title's "51 tok/s"
+        sits between single-Spark v2 and the cluster — it is NOT the verified
+        single-Spark number (38.4). Also: llama-benchy reports ~20 tok/s because
+        it measures decode steps, not user-facing throughput — a metric
+        disagreement, not a config one.
+      provenance: *fwd365639
+
+# ── gateway access-paths (same models as the self-host paths above; real
+#    OpenRouter prices, sync-refreshed). Demonstrates one model reachable BOTH
+#    self-host (private GB10 measurement) and via a gateway (public cost). ─────
+- id: ap-qwen35-35b-openrouter
+  kind: access-path
+  name: Qwen3.5-35B-A3B · OpenRouter (gateway)
+  summary: Hosted access via OpenRouter
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-35b }
+    - { rel: via-provider, target: provider-openrouter }
+  facets:
+    api: { apiSpec: openai-compat, providerModelId: "qwen/qwen3.5-35b-a3b" }
+    cost:
+      perMTokInUsd: 0.14
+      perMTokOutUsd: 1.0
+      provenance: { asOf: "2026-06-19", source: "https://openrouter.ai/api/v1/models", verification: authoritative }
+
+- id: ap-qwen35-122b-openrouter
+  kind: access-path
+  name: Qwen3.5-122B-A10B · OpenRouter (gateway)
+  summary: Hosted access via OpenRouter
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-122b }
+    - { rel: via-provider, target: provider-openrouter }
+  facets:
+    api: { apiSpec: openai-compat, providerModelId: "qwen/qwen3.5-122b-a10b" }
+    cost:
+      perMTokInUsd: 0.26
+      perMTokOutUsd: 2.08
+      provenance: { asOf: "2026-06-19", source: "https://openrouter.ai/api/v1/models", verification: authoritative }

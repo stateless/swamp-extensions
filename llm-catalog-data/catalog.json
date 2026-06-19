@@ -1,0 +1,2835 @@
+{
+  "entries": [
+    {
+      "id": "ap-deepseek-v4-flash-2spark-vllm",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-Flash · vLLM @ 2× DGX Spark (1M ctx) — aidendle94 recipe",
+      "summary": "2-Spark FP8 cluster recipe; 30-45 tok/s decode at 1M context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-context-extension"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Dead ends (per 0rand): FP4-Marlin backend incompatible with FP8 weights; manual PR-40082 build hits a FlashInfer/cutlass mismatch; standard spark-vllm-docker lacks b12x MoE (2× slower prefill). Requires `shm_size: 64gb` + `ulimits memlock=-1` or NCCL \"unhandled system error\". Launch worker node before head (~10s delay).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "RECONCILIATION: num_speculative_tokens=2 — 0rand says \"2 is optimal\" vs a query about MTP=3 (no comparative metrics given). Replicated by stu.miller (35.6 t/s single / 63.9 t/s @c4) and MiaAI_Lab (40-45 t/s) on the same image — results agree within the concurrency-dependent band.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "quality": {
+            "toolEvalBench": "89/100",
+            "ifEvalInstruction": 88.2,
+            "ifEvalPrompt": 84.8
+          },
+          "speed": {
+            "genTokS": 39.4,
+            "note": "@240K ctx, single request — see measurements for the conditions"
+          },
+          "context": {
+            "tokens": 1000000
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)",
+            "verification": "cited"
+          },
+          "measurements": [
+            {
+              "concurrency": 1,
+              "contextDepth": 0,
+              "decodeTokS": 45.7,
+              "ttft": "1s"
+            },
+            {
+              "concurrency": 1,
+              "contextDepth": 240000,
+              "decodeTokS": 39.4
+            },
+            {
+              "concurrency": 1,
+              "contextDepth": 512000,
+              "decodeTokS": 36.1
+            },
+            {
+              "concurrency": 1,
+              "contextDepth": 980000,
+              "decodeTokS": 30.4,
+              "ttft": "16.6m"
+            },
+            {
+              "concurrency": 2,
+              "contextDepth": 0,
+              "decodeTokS": 54.4
+            },
+            {
+              "concurrency": 4,
+              "contextDepth": 0,
+              "decodeTokS": 47.8
+            }
+          ]
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "deepseek-ai/DeepSeek-V4-Flash",
+            "revision": null,
+            "format": "safetensors",
+            "downloadCmd": "hf download deepseek-ai/DeepSeek-V4-Flash --revision <rev>"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "version": "0.21.1",
+            "cuda": "12.1",
+            "image": "aidendle94/sparkrun-vllm-ds4-gb10:production-ready"
+          },
+          "artifact": {
+            "quant": "FP8 (official)",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10",
+            "unifiedMemGB": 128,
+            "interconnect": "ConnectX-7 200Gbps RoCE (QSFP56 direct)"
+          },
+          "command": "dsv4-vllm-entrypoint serve deepseek-ai/DeepSeek-V4-Flash --tensor-parallel-size 2 --pipeline-parallel-size 1 --kv-cache-dtype fp8 --block-size 256 --max-model-len 1000000 --max-num-seqs 6 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.82 --enable-prefix-caching --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":2}' --distributed-executor-backend mp --enable-flashinfer-autotune --nnodes 2 --node-rank ${NODE_RANK} --master-addr ${MASTER_ADDR}",
+          "env": {
+            "VLLM_USE_B12X_MOE": "1",
+            "VLLM_ALLOW_LONG_MAX_MODEL_LEN": "1",
+            "TORCH_CUDA_ARCH_LIST": "12.1a",
+            "NCCL_NET": "IB"
+          },
+          "serving": {
+            "toolCallParser": "deepseek_v4",
+            "reasoningParser": "deepseek_v4",
+            "tokenizerMode": "deepseek_v4",
+            "maxNumSeqs": 6,
+            "maxNumBatchedTokens": 8192,
+            "blockSize": 256
+          },
+          "procedure": "https://forums.developer.nvidia.com/t/372268"
+        },
+        "deployment": {
+          "units": 2
+        }
+      }
+    },
+    {
+      "id": "ap-deepseek-v4-flash-openrouter",
+      "kind": "access-path",
+      "name": "DeepSeek-v4-Flash · OpenRouter (gateway)",
+      "summary": "Hosted access via OpenRouter — ~13x cheaper input than GLM-5.2",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-deepseek-v4-flash"
+        },
+        {
+          "rel": "via-provider",
+          "target": "provider-openrouter"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "cost": {
+          "perMTokInUsd": 0.09,
+          "perMTokOutUsd": 0.18,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://openrouter.ai/api/v1/models",
+            "verification": "authoritative"
+          }
+        },
+        "api": {
+          "apiSpec": "openai-compat",
+          "providerModelId": "deepseek/deepseek-v4-flash"
+        }
+      }
+    },
+    {
+      "id": "ap-glm-52-openrouter",
+      "kind": "access-path",
+      "name": "GLM-5.2 · OpenRouter (gateway)",
+      "summary": "Hosted access via OpenRouter; cost is per-(model × provider), dated",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-glm-52"
+        },
+        {
+          "rel": "via-provider",
+          "target": "provider-openrouter"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "cost": {
+          "perMTokInUsd": 1.2,
+          "perMTokOutUsd": 4.1,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://openrouter.ai/api/v1/models",
+            "verification": "authoritative"
+          }
+        },
+        "api": {
+          "apiSpec": "openai-compat",
+          "providerModelId": "z-ai/glm-5.2"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-122b-openrouter",
+      "kind": "access-path",
+      "name": "Qwen3.5-122B-A10B · OpenRouter (gateway)",
+      "summary": "Hosted access via OpenRouter",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-122b"
+        },
+        {
+          "rel": "via-provider",
+          "target": "provider-openrouter"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "cost": {
+          "perMTokInUsd": 0.26,
+          "perMTokOutUsd": 2.08,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://openrouter.ai/api/v1/models",
+            "verification": "authoritative"
+          }
+        },
+        "api": {
+          "apiSpec": "openai-compat",
+          "providerModelId": "qwen/qwen3.5-122b-a10b"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-122b-spark-vllm",
+      "kind": "access-path",
+      "name": "Qwen3.5-122B · vLLM @ 1× Spark — Albond (current best)",
+      "summary": "AutoRound INT4 + Qwen FP8 shared-expert layers + MTP-1; 38.4 tok/s single-Spark",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-122b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Config progression (Albond): v1 AutoRound INT4 = 28.3 tok/s → v2 added Qwen FP8 shared-expert layers + MTP-1 = 38.4. Only the current-best config is a live entry; the full v1→v2 evolution is in this file's git history.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "MTP-1 alone is the biggest win; the hybrid INT4+FP8 adds only ~2 tok/s on top of AutoRound+MTP (36.5 → 38.4).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Corroborated by norman.2 (~38.6-40 tok/s, same hybrid+MTP config, community vLLM docker).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "quality": {
+            "measured": null,
+            "note": "No output-quality measured for this AutoRound-INT4 config — INT4 quant CAN degrade outputs, so speed alone doesn't certify it. Reference ceiling = model-qwen35-122b published benchmarks; treat as UNVERIFIED for quality until an eval on THIS config exists.",
+            "verification": "unverified"
+          },
+          "speed": {
+            "genTokS": 38.4,
+            "range": "36.3-39.9 across Q&A/code/JSON/math/long-code",
+            "note": "title claims 51 tok/s; author's VERIFIED single-Spark figure is 38.4"
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "build": {
+            "runtime": "vLLM",
+            "version": "0.19"
+          },
+          "artifact": {
+            "quant": "hybrid INT4 (AutoRound) + FP8 (Qwen official, 144 shared-expert dense layers)",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 1,
+            "accel": "GB10"
+          },
+          "technique": "MTP-1 speculative decoding (~95% accept); ~95-line vLLM INC quant patch",
+          "procedure": "https://forums.developer.nvidia.com/t/365639"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-122b-spark-vllm-aoe-ray",
+      "kind": "access-path",
+      "name": "Qwen3.5-122B · vLLM Ray cluster — AoE (contributor)",
+      "summary": "AutoRound INT4 on a Ray cluster; up to 56 tok/s — DISAGREES with single-Spark",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-122b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "replicates",
+          "target": "ap-qwen35-122b-spark-vllm"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "RECONCILIATION: results span 28.3 (v1) → 36.5 (AutoRound+MTP) → 38.4 (v2 hybrid, single Spark) → 56 (AoE Ray cluster). The title's \"51 tok/s\" sits between single-Spark v2 and the cluster — it is NOT the verified single-Spark number (38.4). Also: llama-benchy reports ~20 tok/s because it measures decode steps, not user-facing throughput — a metric disagreement, not a config one.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "genTokS": 56,
+            "note": "Ray cluster — higher than single-Spark; explains the spread toward the title's 51"
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://forums.developer.nvidia.com/t/365639 (AoE)",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "build": {
+            "runtime": "vLLM",
+            "version": "0.19.1rc1.dev15"
+          },
+          "artifact": {
+            "quant": "INT4 (Intel/Qwen3.5-122B-A10B-int4-AutoRound)",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "config": "Ray cluster (multi-node, not single Spark)"
+          },
+          "technique": "MTP (85-100% accept)"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-35b-openrouter",
+      "kind": "access-path",
+      "name": "Qwen3.5-35B-A3B · OpenRouter (gateway)",
+      "summary": "Hosted access via OpenRouter",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-35b"
+        },
+        {
+          "rel": "via-provider",
+          "target": "provider-openrouter"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "cost": {
+          "perMTokInUsd": 0.14,
+          "perMTokOutUsd": 1,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://openrouter.ai/api/v1/models",
+            "verification": "authoritative"
+          }
+        },
+        "api": {
+          "apiSpec": "openai-compat",
+          "providerModelId": "qwen/qwen3.5-35b-a3b"
+        }
+      }
+    },
+    {
+      "id": "hardware-dgx-spark",
+      "kind": "hardware",
+      "name": "DGX Spark (GB10)",
+      "summary": "Unified-memory inference box; direct CUDA; clusterable; low power",
+      "visibility": "public",
+      "labels": [
+        "spark",
+        "gb10",
+        "cuda"
+      ],
+      "relations": [
+        {
+          "rel": "prefer-over",
+          "target": "hardware-strix-halo",
+          "rationale": "Direct NVIDIA CUDA support, easy clustering, ~60-80W draw.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "claims": [
+        {
+          "kind": "recommendation",
+          "body": "Two units (buy ASUS Ascent GX10 to save cost) can run DeepSeek-v4-Flash at 1M context and stay comfortably under USD 10k; ~60-80W per unit.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "hardware": {
+          "compute": "cuda",
+          "unifiedMemGB": 128,
+          "powerW": 70,
+          "clusterable": true
+        }
+      }
+    },
+    {
+      "id": "hardware-strix-halo",
+      "kind": "hardware",
+      "name": "AMD Strix Halo",
+      "summary": "APU-class unified-memory box; comparable price point to DGX Spark",
+      "visibility": "public",
+      "labels": [
+        "amd",
+        "apu"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "hardware": {
+          "compute": "rocm"
+        }
+      }
+    },
+    {
+      "id": "model-deepseek-v4-flash",
+      "kind": "model",
+      "name": "DeepSeek-v4-Flash",
+      "summary": "Long-context model; runs at 1M context on a 2-unit DGX Spark cluster",
+      "visibility": "public",
+      "labels": [
+        "deepseek",
+        "long-context"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Exact architecture/parameter details UNVERIFIED here — needs a primary source (DeepSeek release / HF card). Notable for feasible 1M-token sessions on modest unified-memory hardware.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "needs primary source — DeepSeek-v4 release",
+            "confidence": "low"
+          }
+        }
+      ]
+    },
+    {
+      "id": "model-gemma4",
+      "kind": "model",
+      "name": "Gemma 4 (family)",
+      "summary": "Google open-weights family; hybrid local-sliding + global attention",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "google",
+        "open-weights"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Do NOT run any Gemma 4 GGUF on the CUDA 13.2 runtime — it produces poor outputs. Use a known-good CUDA build.",
+          "provenance": {
+            "asOf": "2026-04-11",
+            "source": "Unsloth note (via MODEL gemma4 card)",
+            "versionPins": {
+              "cuda": "13.2-BAD"
+            },
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Disable thinking reliably with `llama-server` + the gemma4-native `enable_thinking:false`; `llama-cli` may not suppress thinking reliably. Do not feed prior thinking output back into multi-turn history.",
+          "provenance": {
+            "asOf": "2026-04-17",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4 + llama.cpp",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "notes": "Global layers use unified K/V with Proportional RoPE (p-RoPE) for long-context memory.",
+          "vocab": 262144
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "released": "2026",
+          "trainingCutoff": "2025-01",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        },
+        "config": {
+          "thinking": {
+            "supported": true,
+            "disable": "--chat-template-kwargs '{\"enable_thinking\":false}'",
+            "disableGeneric": "--reasoning-budget 0"
+          },
+          "sampling": {
+            "temp": 1,
+            "top_p": 0.95,
+            "top_k": 64
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gemma4-26b",
+      "kind": "model",
+      "name": "Gemma 4 26B-A4B (MoE)",
+      "summary": "Sparse MoE; ~4B active inference speed at 26B total; 256K context",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gemma4"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "params": "25.2B",
+          "activeParams": "3.8B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "layers": 30,
+          "slidingWindow": 1024,
+          "experts": "8 active / 128 total",
+          "visionEncoderParams": "~550M"
+        },
+        "benchmarks": {
+          "mmluPro": 82.6,
+          "aime2026": 88.3,
+          "liveCodeBenchV6": 77.1,
+          "codeforcesElo": 1718,
+          "gpqaDiamond": 82.3,
+          "tau2Agentic": 68.2,
+          "hleNoTools": 8.7,
+          "bigBenchExtraHard": 64.8,
+          "mmmlu": 86.3,
+          "mrcrV2_128k": 44.1,
+          "mmmuProVision": 73.8,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gemma4-31b",
+      "kind": "model",
+      "name": "Gemma 4 31B (dense)",
+      "summary": "Largest dense variant; 256K context; strongest Gemma 4 benchmarks",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "dense"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gemma4"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "params": "30.7B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "layers": 60,
+          "slidingWindow": 1024,
+          "visionEncoderParams": "~550M"
+        },
+        "benchmarks": {
+          "mmluPro": 85.2,
+          "aime2026": 89.2,
+          "liveCodeBenchV6": 80,
+          "codeforcesElo": 2150,
+          "gpqaDiamond": 84.3,
+          "tau2Agentic": 76.9,
+          "hleNoTools": 19.5,
+          "bigBenchExtraHard": 74.4,
+          "mmmlu": 88.4,
+          "mrcrV2_128k": 66.4,
+          "mmmuProVision": 76.9,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gemma4-e2b",
+      "kind": "model",
+      "name": "Gemma 4 e2b",
+      "summary": "On-device efficiency variant (Per-Layer Embeddings); fastest; small",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "efficiency",
+        "on-device"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gemma4"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "128K context + 512-token sliding window are architectural HARD caps (PLE on-device design). `--ctx-size` above 131072 is silently clamped (HTTP 400 only on inference). Usable ~100K; not for long-context tasks.",
+          "provenance": {
+            "asOf": "2026-04-14",
+            "source": "GGUF metadata + server clamp log (verified)",
+            "verification": "reproduced"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "params": "5.1B",
+          "nativeContext": 131072,
+          "modality": [
+            "text",
+            "image",
+            "audio"
+          ],
+          "effectiveParams": "2.3B",
+          "layers": 35,
+          "slidingWindow": 512,
+          "visionEncoderParams": "~150M",
+          "audioEncoderParams": "~300M"
+        },
+        "benchmarks": {
+          "mmluPro": 60,
+          "aime2026": 37.5,
+          "liveCodeBenchV6": 44,
+          "codeforcesElo": 633,
+          "gpqaDiamond": 43.4,
+          "tau2Agentic": 24.5,
+          "bigBenchExtraHard": 21.9,
+          "mmmlu": 67.4,
+          "mrcrV2_128k": 19.1,
+          "mmmuProVision": 44.2,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gemma4-e4b",
+      "kind": "model",
+      "name": "Gemma 4 e4b",
+      "summary": "On-device efficiency variant; barrier candidate; PLE",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "efficiency",
+        "on-device"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gemma4"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "128K hard cap + 512 sliding window (same PLE limits as e2b).",
+          "provenance": {
+            "asOf": "2026-04-14",
+            "source": "GGUF metadata (verified)",
+            "verification": "reproduced"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "params": "8B",
+          "nativeContext": 131072,
+          "modality": [
+            "text",
+            "image",
+            "audio"
+          ],
+          "effectiveParams": "4.5B",
+          "layers": 42,
+          "slidingWindow": 512,
+          "visionEncoderParams": "~150M",
+          "audioEncoderParams": "~300M"
+        },
+        "benchmarks": {
+          "mmluPro": 69.4,
+          "aime2026": 42.5,
+          "liveCodeBenchV6": 52,
+          "codeforcesElo": 940,
+          "gpqaDiamond": 58.6,
+          "tau2Agentic": 42.2,
+          "bigBenchExtraHard": 33.1,
+          "mmmlu": 76.6,
+          "mrcrV2_128k": 25.4,
+          "mmmuProVision": 52.6,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-glm-47-flash",
+      "kind": "model",
+      "name": "GLM-4.7-Flash",
+      "summary": "Fast MoE (glm4moelite arch); fast TTFT; cheap via gateways",
+      "visibility": "public",
+      "labels": [
+        "glm",
+        "moe"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Architecture is the glm4moelite MoE variant; reported fast TTFT. Exact active-parameter count and native context length are UNVERIFIED here.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "needs primary source — zai-org/glm-4.7-flash HF model card",
+            "confidence": "low"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "glm4moelite",
+          "params": "~14B"
+        }
+      }
+    },
+    {
+      "id": "model-glm-52",
+      "kind": "model",
+      "name": "GLM-5.2",
+      "summary": "753B MoE (glm_moe_dsa); MLA + DSA sparse attention; 1M context; MIT",
+      "visibility": "public",
+      "labels": [
+        "glm",
+        "moe",
+        "sparse-attention",
+        "long-context",
+        "agentic"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "IndexShare: the DSA sparse-attention indexer is reused across every four sparse-attention layers (index_topk 2048), cutting per-token FLOPs ~2.9× at 1M context.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/blog/zai-org/glm-52-blog + arXiv 2602.15763",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Active-parameter count is NOT stated for 5.2. The GLM-5 base scales to 744B total / 40B active — indicative only, not confirmed for 5.2.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "arXiv 2602.15763 (GLM-5, not the 5.2 card)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Release ~2026-02-17 (inferred from arXiv id 2602.15763); not explicitly dated on the model card.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "arXiv 2602.15763",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "753B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text"
+          ],
+          "modelType": "glm_moe_dsa",
+          "layers": 78,
+          "hidden": 6144,
+          "attentionHeads": 64,
+          "experts": "8/token of 256 routed + 1 shared",
+          "vocab": 154880,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/zai-org/GLM-5.2 config.json",
+            "verification": "authoritative"
+          }
+        },
+        "serving": {
+          "tensorTypes": [
+            "BF16",
+            "F32"
+          ],
+          "frameworks": [
+            "SGLang",
+            "vLLM",
+            "Transformers",
+            "KTransformers",
+            "Ascend NPU"
+          ],
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/zai-org/GLM-5.2",
+            "verification": "authoritative"
+          }
+        },
+        "license": {
+          "spdx": "MIT",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/zai-org/GLM-5.2",
+            "verification": "authoritative"
+          }
+        },
+        "benchmarks": {
+          "hle": 40.5,
+          "aime2026": 99.2,
+          "sweBenchPro": 62.1,
+          "gpqaDiamond": 91.2,
+          "terminalBench21": 82.7,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/zai-org/GLM-5.2",
+            "verification": "authoritative",
+            "note": "Terminal-Bench 2.1 is 81.0 in the z.ai blog comparison vs 82.7 on the model card — source variance flagged, model-card value used."
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gpt-oss",
+      "kind": "model",
+      "name": "GPT-OSS (family)",
+      "summary": "OpenAI open-weights MoE reasoning family; text-only; 128K context",
+      "visibility": "public",
+      "labels": [
+        "gpt-oss",
+        "openai",
+        "open-weights",
+        "moe",
+        "reasoning"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Jinja chat templates used by inference engines diverge from OpenAI's canonical Harmony format: tool-call args rendered with `tojson` backslash string symbols, extra newlines on turn boundaries, and tool-call thoughts must use `<|channel|>analysis` (not `final` — `final` is only for the last assistant message). Unsloth GGUFs have these fixed; prefer them for reliable tool calling.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://github.com/openai/harmony (via MODEL gpt-oss card)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Float16 causes infinities — the model was trained in BF16. Use BF16 or float32; float16 on T4/older GPUs (no native BF16) overflows after some time.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL gpt-oss card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "MXFP4 is not natively supported on Ampere and older GPUs. Triton emulates it via `tl.dot_scaled` (upcasts to BF16 internally) — works but slower than native hardware support (Blackwell+).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL gpt-oss card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Quantized weights below F16 (incl. 2-bit) reportedly show minimal accuracy loss — attention layers stay higher precision while MoE routing layers are compressed. The `hf-gpt-oss:120b-q3` hub build is broken (1/5 quality on the card's note); use Q4 or above.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Ollama compatibility is not confirmed by the card; Unsloth recommends llama.cpp backends. (Referenced runtimes: runtime-llamacpp, runtime-ollama.)",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Unsloth Flex Attention enables long-context fine-tuning on a single 80GB H100: ~60K ctx BF16 LoRA / ~81K ctx QLoRA, vs ~9K standard and ~15K with FA3. FA3 lacks the backward pass for the sink mechanism — do NOT use FA3 for gpt-oss training.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "GAP: the card cites no vendor-published benchmark numbers — only comparative positioning (120b \"rivals o4-mini\", 20b \"rivals o3-mini\"; both outperform o1 and GPT-4o on function calling / CoT). Re-verify quantitative benchmarks against OpenAI's primary model card before relying on them.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL gpt-oss card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "alternating-swa-full",
+          "modality": [
+            "text"
+          ],
+          "notes": "A single learnable sink token is appended to each attention computation to prevent first-token collapse in the sliding-window layers. RL-trained reasoning models; English-primary but multilingual capable.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "released": "2025-08",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/openai/gpt-oss-20b",
+            "verification": "authoritative"
+          }
+        },
+        "config": {
+          "thinking": {
+            "supported": true,
+            "effort": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "disableGeneric": null
+          },
+          "sampling": {
+            "temp": 1,
+            "top_p": 1,
+            "top_k": 0
+          },
+          "eosToken": "<|return|>",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gpt-oss-120b",
+      "kind": "model",
+      "name": "GPT-OSS 120B",
+      "summary": "Larger MoE variant; rivals o4-mini; locally runnable (~66GB 1-bit)",
+      "visibility": "public",
+      "labels": [
+        "gpt-oss",
+        "openai",
+        "moe",
+        "reasoning",
+        "local"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gpt-oss"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "alternating-swa-full",
+          "params": "120B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "notes": "Comparative positioning: rivals o4-mini; strong function calling and CoT reasoning. Approx. on-disk size ~66GB at 1-bit / ~74GB at Q4. The card warns the `hf-gpt-oss:120b-q3` hub build is broken — use Q4 or above.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/openai/gpt-oss-20b",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-gpt-oss-20b",
+      "kind": "model",
+      "name": "GPT-OSS 20B",
+      "summary": "Smaller MoE variant; rivals o3-mini; locally runnable (~14GB Q4)",
+      "visibility": "public",
+      "labels": [
+        "gpt-oss",
+        "openai",
+        "moe",
+        "reasoning",
+        "local"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gpt-oss"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "alternating-swa-full",
+          "params": "20B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "notes": "Comparative positioning: rivals o3-mini; strong function calling and CoT reasoning. Approx. on-disk size ~14GB at dynamic Q4 / ~20GB at F16; 2-bit (~11.5GB) reportedly near-identical to F16 (~14GB) per the card.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/openai/gpt-oss-20b",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron",
+      "kind": "model",
+      "name": "Nemotron (family)",
+      "summary": "NVIDIA open-weights family; nemotron_h Mamba2-Transformer hybrid; 256K context",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "nvidia",
+        "open-weights",
+        "hybrid-ssm"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "CORRECTION: the source card's \"NoPE / no positional embeddings / 1M context\" description was NOT supported by the canonical config.json — real model_type is nemotron_h (Mamba2-Transformer hybrid), context 256K. Do not rely on a 1M native context for this family.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/* HF config.json vs MODEL nemotron card",
+            "verification": "authoritative"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Thinking is always on: no confirmed `--reasoning-budget` suppression — thinking is structural (`<think>` tokens in the template). Strip `<think>...</think>` blocks in post-processing if clean output is needed.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Ollama `think` flag unreliable for this family — use llama.cpp for reliable thinking behaviour.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (re-verify against primary source)",
+            "verification": "cited",
+            "runtimes": [
+              "runtime-ollama",
+              "runtime-llamacpp"
+            ]
+          }
+        },
+        {
+          "kind": "note",
+          "body": "No vendor-published benchmark numbers in the source card — benchmark facets omitted pending a primary source.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "nemotron_h",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "vocab": 131072,
+          "notes": "Hybrid state-space (Mamba2) + Transformer layers. Designed for coding, math, agentic, reasoning.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/* HF config.json (verified: model_type nemotron_h, max_position_embeddings 262144, vocab 131072)",
+            "verification": "authoritative"
+          }
+        },
+        "license": {
+          "name": "NVIDIA Open Model License",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/nvidia",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "thinking": {
+            "supported": true,
+            "always": true,
+            "tokens": "<think> / </think> (token IDs 12 / 13)",
+            "disable": "no --reasoning-budget support confirmed; strip <think>...</think> in post-processing if needed"
+          },
+          "sampling": {
+            "chat": {
+              "temp": 1,
+              "top_p": 1
+            },
+            "toolCalling": {
+              "temp": 0.6,
+              "top_p": 0.95
+            }
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron-cascade-2-30b",
+      "kind": "model",
+      "name": "Nemotron Cascade-2 30B-A3B",
+      "summary": "Cascade-2; post-trained from Nemotron-3-Nano-30B-A3B-Base; MoE 3B active",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "cascade",
+        "moe",
+        "fine-tune"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        },
+        {
+          "rel": "finetune-of",
+          "target": "model-nemotron-nano-30b-a3b"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "params": "30B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/Nemotron-Cascade-2-30B-A3B",
+          "layers": 52,
+          "experts": "6/token of 128 routed + 1 shared",
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/Nemotron-Cascade-2-30B-A3B config.json",
+            "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "q4": "~24 GB",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (estimated)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron-nano-30b-a3b",
+      "kind": "model",
+      "name": "Nemotron 3 Nano 30B-A3B (MoE)",
+      "summary": "Sparse MoE; 3B active at ~31B total; 256K context",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "nano",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "params": "30B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+          "layers": 52,
+          "experts": "6/token of 128 routed",
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 config.json",
+            "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "q4": "~24 GB",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (estimated)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron-nano-4b",
+      "kind": "model",
+      "name": "Nemotron 3 Nano 4B",
+      "summary": "Smallest variant; DENSE ~4B (no experts); 256K context",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "nano",
+        "small",
+        "dense"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "params": "4B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",
+          "dense": true,
+          "layers": 42,
+          "hidden": 3136,
+          "attentionHeads": 40,
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16 config.json",
+            "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "q4": "~3 GB",
+          "q8": "~5 GB",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (estimated)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron-super-120b-a12b",
+      "kind": "model",
+      "name": "Nemotron 3 Super 120B-A12B (MoE)",
+      "summary": "Largest variant; sparse MoE; 12B active at 120B total; 256K context",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "super",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Fine-tuning: BF16 LoRA ~256GB VRAM (multi-GPU); router-layer FT disabled by default for stability; QLoRA is the practical single-node option.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "120B",
+          "activeParams": "12B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+          "layers": 88,
+          "experts": "22/token of 512 routed",
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json",
+            "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "q4": "64–72 GB",
+          "q8": "~128 GB",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL nemotron card (estimated)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen3-coder-next",
+      "kind": "model",
+      "name": "Qwen3-Coder-Next",
+      "summary": "Alibaba/Qwen coding-optimised MoE; ~3B active of ~80B; non-reasoning instruct; 256K context",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "alibaba",
+        "coder",
+        "moe",
+        "open-weights"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "`--min-p 0.01` is required — llama.cpp defaults to 0.05, which diverges from the Qwen-recommended sampling.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "issue",
+          "body": "Historical llama.cpp `vectorized key_gdiff` bug (fixed 2026-02-04) caused looping and bad outputs. Re-download GGUFs and update llama.cpp if they were downloaded before this date.",
+          "provenance": {
+            "asOf": "2026-02-04",
+            "source": "MODEL qwen3coder card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Tool-calling parsing improved in llama.cpp on 2026-02-19; update llama.cpp for best agentic/tool-use results.",
+          "provenance": {
+            "asOf": "2026-02-19",
+            "source": "MODEL qwen3coder card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "The HuggingFace `hf-qwen3-coder-next` build pulls a thinking variant — `think:false` is ignored in some versions. Use the Unsloth GGUF for reliable no-think behaviour.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "issue",
+          "body": "Q8 multi-shard registration is broken in Ollama 0.20.4 (bad registration). Use Q4_K_M or serve via llama.cpp directly.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MODEL qwen3coder card (re-verify against primary source)",
+            "versionPins": {
+              "runtime": "ollama-0.20.4"
+            },
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Fine-tuning fits on a single B200 GPU for BF16 LoRA via Unsloth.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "GAP: the card publishes no vendor benchmark numbers (MMLU, LiveCodeBench, etc.) for Qwen3-Coder-Next — benchmarks facet omitted. Re-mine the HuggingFace model card if published figures are needed.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "MoE",
+          "params": "~80B",
+          "activeParams": "~3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "notes": "Non-reasoning instruct — no thinking mode. Designed for long-horizon agentic coding, complex tool use, and recovery from execution failures. Qwen claims comparable performance to models with 10–20x more active parameters.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
+            "verification": "cited"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "released": "2026-02",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "thinking": {
+            "supported": false
+          },
+          "sampling": {
+            "temp": 1,
+            "top_p": 0.95,
+            "top_k": 40,
+            "min_p": 0.01,
+            "repeat_penalty": 1
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        "footprint": {
+          "quants": [
+            {
+              "quant": "Q4",
+              "memGB": "~46"
+            },
+            {
+              "quant": "Q8",
+              "memGB": "~85"
+            },
+            {
+              "quant": "Q2/Q3",
+              "memGB": "~29",
+              "note": "usable, some quality loss"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen35",
+      "kind": "model",
+      "name": "Qwen3.5 (family)",
+      "summary": "Hybrid Gated-DeltaNet + attention; thinking; multimodal; 201 languages",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "deltanet",
+        "thinking",
+        "multimodal"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "DeltaNet linear-attention majority → lower KV memory and higher throughput than an equivalent-size transformer; better long-context memory profile.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "Quant guidance (DeltaNet-hybrid tensor sensitivity): `ssm_out` very sensitive (degrades sharply below Q4); `attn_*` sensitive (keep Q4+); `ffn_up`/`gate_exps` tolerate 3-bit. Recommended UD-Q4_K_XL / UD-Q4_K_M. MXFP4 retired (worse than Q4_K on many tensors). Prefer task evals over perplexity (PPL is not a chat/code-quality proxy).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Unsloth GGUF analysis (via MODEL qwen35 card)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Ollama incompatible (separate mmproj vision files); use llama.cpp. Think flag unreliable in Ollama — use `--reasoning-budget 0` or `--chat-template-kwargs '{\"enable_thinking\":false}'`. With thinking on, answers land in `choices[0].message.reasoning_content` (not `content`) — clients must read both.",
+          "provenance": {
+            "asOf": "2026-04-17",
+            "source": "MODEL qwen35 card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "License not stated in the source card — needs a primary source (HF model card).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "gap — needs primary source",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "notes": "Most layers are Gated DeltaNet (linear attention, O(n)); ~1-in-4 full attention. Trained with Multi-Token Prediction (MTP).",
+          "multilingual": 201,
+          "released": "2026-03-09",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "thinking": {
+            "control": "--reasoning-budget 0 (suppress) | -1 (unlimited)",
+            "minContextForThinking": 131072
+          },
+          "sampling": {
+            "thinkingGeneral": {
+              "temp": 1,
+              "top_p": 0.95,
+              "top_k": 20,
+              "presence_penalty": 1.5
+            },
+            "thinkingCoding": {
+              "temp": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "presence_penalty": 0
+            },
+            "nonThinkingGeneral": {
+              "temp": 0.7,
+              "top_p": 0.8,
+              "top_k": 20,
+              "presence_penalty": 1.5
+            }
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Qwen/Unsloth guidance (via MODEL qwen35 card)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen35-122b",
+      "kind": "model",
+      "name": "Qwen3.5-122B-A10B",
+      "summary": "Larger MoE sibling; same hybrid-deltanet layout; 256K context",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen35"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "122B",
+          "activeParams": "10B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ]
+        },
+        "benchmarks": {
+          "mmluPro": 86.7,
+          "gpqaDiamond": 86.6,
+          "ifEval": 93.4,
+          "ifBench": 76.1,
+          "sweBenchVerified": 72,
+          "liveCodeBenchV6": 78.9,
+          "tau2Agentic": 79.5,
+          "mmmlu": 86.7,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen35-27b",
+      "kind": "model",
+      "name": "Qwen3.5-27B (dense)",
+      "summary": "Dense; 64 layers (deep for its size); competitive with 35B-A3B",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "dense",
+        "long-context"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen35"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "27B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "layers": 64,
+          "hidden": 5120
+        },
+        "benchmarks": {
+          "mmluPro": 86.1,
+          "gpqaDiamond": 85.5,
+          "ifEval": 95,
+          "ifBench": 76.5,
+          "sweBenchVerified": 72.4,
+          "liveCodeBenchV6": 80.7,
+          "tau2Agentic": 79,
+          "mmmlu": 85.9,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen35-35b",
+      "kind": "model",
+      "name": "Qwen3.5-35B-A3B",
+      "summary": "MoE; leads TAU2 agentic for its size (beats the 122B); strong general",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe",
+        "agentic"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen35"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Qwen3.5-Flash is the hosted form of 35B-A3B (1M context, built-in tools).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "35B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "layers": 40,
+          "experts": "8/token of 256 routed + 1 shared",
+          "hidden": 2048
+        },
+        "benchmarks": {
+          "mmluPro": 85.3,
+          "gpqaDiamond": 84.2,
+          "ifEval": 91.9,
+          "ifBench": 70.2,
+          "sweBenchVerified": 69.2,
+          "liveCodeBenchV6": 74.6,
+          "tau2Agentic": 81.2,
+          "mmmlu": 85.2,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen35-397b",
+      "kind": "model",
+      "name": "Qwen3.5-397B-A17B",
+      "summary": "Flagship MoE; hosted as Qwen3.5-Plus (1M ctx); not locally practical",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe",
+        "flagship"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen35"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Hosted as Qwen3.5-Plus (1M context, built-in tools); ~200GB+ — multi-node for local.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.5",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "397B",
+          "activeParams": "17B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "layers": 60,
+          "experts": "10/token of 512 routed + 1 shared",
+          "hidden": 4096
+        }
+      }
+    },
+    {
+      "id": "model-qwen35-9b",
+      "kind": "model",
+      "name": "Qwen3.5-9B (dense)",
+      "summary": "Dense; ~6GB Q4; 256K context with DeltaNet — small-footprint candidate",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "dense",
+        "small"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen35"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "9B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "layers": 32,
+          "hidden": 4096
+        }
+      }
+    },
+    {
+      "id": "model-qwen36",
+      "kind": "model",
+      "name": "Qwen 3.6 (family)",
+      "summary": "Alibaba open-weights multimodal family; hybrid Gated DeltaNet + Attention MoE",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "alibaba",
+        "open-weights",
+        "moe",
+        "multimodal"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Thinking on by default (`<think>...\\n\\n` before response). Disable with the qwen36-native `enable_thinking:false`; the soft-switch `/think` `/nothink` tokens are NOT supported (unlike Qwen3). `preserve_thinking` retains reasoning traces from prior turns to reduce redundant re-reasoning in agent sessions and improve KV cache utilisation; minimum recommended context to preserve thinking is 128K tokens.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Ollama incompatible — separate mmproj vision files are not handled; use llama.cpp backends. Gibberish output can occur if context is too low; try `--cache-type-k bf16 --cache-type-v bf16`. 128K minimum context recommended to preserve thinking capability.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3.6 (via MODEL qwen36 card)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "`reasoning_content` split (llama.cpp OpenAI-compatible API, thinking enabled): thinking tokens land in `choices[0][\"message\"][\"reasoning_content\"]`, NOT `content`. For complex prompts `content` may be empty — the answer must be read from `reasoning_content`. Family-wide (all Qwen3.5/3.6 thinking models, not version-specific). Client code must check both fields. The inline `<think>` tag is what the Jinja template generates internally; the llama.cpp API splits it into the two fields.",
+          "provenance": {
+            "asOf": "2026-04-17",
+            "source": "MODEL qwen36 card (re-verify against primary source)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Unsloth GGUFs support a `developer` role for Codex/OpenCode agentic tools. Qwen 3.6 adds improved agentic coding (frontend workflows, repo-level reasoning) vs Qwen3.5.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "notes": "Identical architecture to Qwen3.5. Layer pattern: 10 × (3 × (Gated DeltaNet → MoE) → 1 × (Gated Attention → MoE)). MTP (multi-token prediction) present. Vision encoder present — requires `--mmproj` for multimodal in llama.cpp; text-only omits `--mmproj` (or vLLM `--language-model-only`)."
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "released": "2026-04-16",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "multilingual": 201,
+          "thinking": {
+            "supported": true,
+            "disable": "--chat-template-kwargs '{\"enable_thinking\":false}'",
+            "disableGeneric": "--reasoning-budget 0",
+            "preserveThinking": "--chat-template-kwargs '{\"enable_thinking\":true,\"preserve_thinking\":true}'",
+            "minContextForThinking": 128000,
+            "note": "No `/think` `/nothink` soft-switch tokens (unlike Qwen3). Use chat-template-kwargs or reasoning-budget instead."
+          },
+          "sampling": {
+            "thinkingGeneral": {
+              "temp": 1,
+              "top_p": 0.95,
+              "top_k": 20,
+              "presence_penalty": 1.5
+            },
+            "thinkingCoding": {
+              "temp": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "presence_penalty": 0
+            },
+            "nonThinkingGeneral": {
+              "temp": 0.7,
+              "top_p": 0.8,
+              "top_k": 20,
+              "presence_penalty": 1.5
+            },
+            "nonThinkingReasoning": {
+              "temp": 1,
+              "top_p": 0.95,
+              "top_k": 20,
+              "presence_penalty": 1.5
+            },
+            "presence_penalty": "0–2 to reduce repetitions; higher may slightly cost quality",
+            "repetition_penalty": "disabled or 1.0"
+          },
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen36-35b-a3b",
+      "kind": "model",
+      "name": "Qwen 3.6 35B-A3B (MoE)",
+      "summary": "Sparse MoE; 3B active at 35B total; 262K native (→1M YaRN); multimodal",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe",
+        "multimodal"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen36"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "262K native context, extensible to ~1M via YaRN. Approximate memory footprint by quant (vendor/community estimate): 3-bit ~17 GB, 4-bit ~23 GB, 6-bit ~30 GB, 8-bit ~38 GB, BF16 ~70 GB.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Only the 35B-A3B variant has been released (2026-04-16); additional Qwen 3.6 variants are expected but not yet published. Vendor-published benchmarks above are notably stronger on coding-agent tasks vs Qwen3.5-35B-A3B (SWE-bench Verified +3.4, Terminal-Bench +11, QwenWebBench +43%); general knowledge/math (MMLU-Pro, GPQA, AIME) is comparable to 3.5.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-deltanet",
+          "params": "35B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "layers": 40,
+          "experts": "8 routed + 1 shared / 256 total",
+          "hiddenDim": 2048,
+          "mtp": true
+        },
+        "benchmarks": {
+          "sweBenchVerified": 73.4,
+          "sweBenchMultilingual": 67.2,
+          "terminalBench2": 51.5,
+          "qwenWebBench": 1397,
+          "mcpMark": 37,
+          "gpqaDiamond": 86,
+          "aime2026": 92.7,
+          "mmluPro": 85.2,
+          "liveCodeBenchV6": 80.4,
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "provider-anthropic",
+      "kind": "provider",
+      "name": "Anthropic API",
+      "summary": "First-party API for Claude models (proprietary)",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "anthropic"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "anthropic-native",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "provider-bedrock-mantle",
+      "kind": "provider",
+      "name": "Amazon Bedrock Mantle",
+      "summary": "OpenAI-spec endpoint fronting many non-GPT models (GLM, Nemotron, …)",
+      "visibility": "public",
+      "labels": [
+        "gateway",
+        "cloud",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "recommendation",
+          "body": "Reported to run agent workloads on cheap models (e.g. z.ai GLM) at ~1/10th the cost of first-party Sonnet, with acceptable quality for those tasks.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://substack.com/@conceptualplanner/note/c-277895469",
+            "confidence": "low"
+          }
+        }
+      ],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
+          "compatCaveats": [
+            "Some models may not support every feature of the OpenAI API surface."
+          ]
+        }
+      }
+    },
+    {
+      "id": "provider-deepseek",
+      "kind": "provider",
+      "name": "DeepSeek API",
+      "summary": "First-party API for DeepSeek models (also open-weights)",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "deepseek",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "provider-google",
+      "kind": "provider",
+      "name": "Google AI / Gemini API",
+      "summary": "First-party API for Gemini (proprietary) + Gemma (open)",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "google"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "google-native",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "provider-openai",
+      "kind": "provider",
+      "name": "OpenAI API",
+      "summary": "First-party API for GPT / o-series models (proprietary)",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "openai"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-native",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "provider-openrouter",
+      "kind": "provider",
+      "name": "OpenRouter",
+      "summary": "Aggregator proxying many models from many upstreams via one OpenAI-compatible API",
+      "visibility": "public",
+      "labels": [
+        "aggregator",
+        "gateway",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Routes each model to one or more upstream sub-providers; the SAME model may carry multiple price/latency tiers (e.g. :free, :nitro, by upstream). Prices change frequently — sync from the /models endpoint, don't pin.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "https://openrouter.ai/api/v1/models",
+            "verification": "authoritative"
+          }
+        }
+      ],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
+          "endpoint": "https://openrouter.ai/api/v1",
+          "type": "aggregator"
+        }
+      }
+    },
+    {
+      "id": "provider-zai",
+      "kind": "provider",
+      "name": "z.ai API",
+      "summary": "First-party API for GLM models (also open-weights on HF)",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "zai",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "runtime-llamacpp",
+      "kind": "runtime",
+      "name": "llama.cpp",
+      "summary": "Widely-used self-host GGUF inference engine (llama-server)",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "gguf"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Thinking control: `--reasoning-budget 0` suppresses reasoning, `-1` = unlimited. With thinking enabled the server splits reasoning into `choices[0].message.reasoning_content` (not `content`) — clients must read both; `content` can be empty on complex prompts.",
+          "provenance": {
+            "asOf": "2026-04-17",
+            "source": "llama.cpp server /v1/chat behaviour (observed)",
+            "confidence": "high"
+          }
+        }
+      ],
+      "facets": {
+        "formats": [
+          "gguf"
+        ]
+      }
+    },
+    {
+      "id": "runtime-mlx",
+      "kind": "runtime",
+      "name": "MLX (mlx-lm)",
+      "summary": "Apple-Silicon inference framework; loads MLX-format weights only",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "apple-silicon",
+        "mlx"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Weight container = a third ecosystem alongside GGUF (llama.cpp/ollama) and safetensors (vLLM/transformers): MLX format runs only via mlx-lm / LM Studio on Apple Silicon. Choosing a format therefore constrains both the runtime AND the hardware.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "mlx-lm / Apple MLX",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "formats": [
+          "mlx"
+        ],
+        "platform": "apple-silicon"
+      }
+    },
+    {
+      "id": "runtime-ollama",
+      "kind": "runtime",
+      "name": "Ollama",
+      "summary": "Self-host engine with a model hub and templated GGUFs",
+      "visibility": "public",
+      "labels": [
+        "self-host"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "`num_predict` does not cap thinking tokens, so thinking models can hang indefinitely with `stream:false`. Prefer llama.cpp `--reasoning-budget` for reliable think/nothink control on reasoning models.",
+          "provenance": {
+            "asOf": "2026-04-13",
+            "source": "observed across qwen3 thinking models",
+            "confidence": "high"
+          }
+        }
+      ],
+      "facets": {
+        "formats": [
+          "gguf"
+        ]
+      }
+    },
+    {
+      "id": "runtime-vllm",
+      "kind": "runtime",
+      "name": "vLLM",
+      "summary": "High-throughput serving engine; tensor/pipeline parallel, FP8 KV, spec decoding",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "serving",
+        "gpu",
+        "production"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Supports tensor-parallel + multi-node, MTP speculative decoding, FP8 KV cache, prefix caching. Preferred over llama.cpp for production throughput and multi-GPU/cluster; the published DGX Spark recipes (forum 365639, 372268) are vLLM-based.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "NVIDIA forum recipes 365639 / 372268",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "formats": [
+          "safetensors"
+        ]
+      }
+    },
+    {
+      "id": "technique-autoround",
+      "kind": "technique",
+      "name": "Intel AutoRound",
+      "summary": "Sign-gradient-descent rounding PTQ; strong INT4; safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "ptq",
+        "safetensors",
+        "intel"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "SignRound-based PTQ; competitive/strong INT4 checkpoints. safetensors; vLLM. Used by the Qwen3.5-122B single-Spark recipe (Intel AutoRound INT4).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Intel AutoRound / NVIDIA forum 365639",
+            "verification": "cited"
+          }
+        }
+      ]
+    },
+    {
+      "id": "technique-awq",
+      "kind": "technique",
+      "name": "AWQ",
+      "summary": "Activation-aware weight quant — protects salient weights; safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "ptq",
+        "safetensors"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Activation-aware Weight Quantization: scales/protects the most salient weight channels, typically beating GPTQ at 4-bit quality. safetensors; vLLM / transformers / SGLang.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "AWQ method / vLLM quantization docs",
+            "verification": "cited"
+          }
+        }
+      ]
+    },
+    {
+      "id": "technique-context-extension",
+      "kind": "technique",
+      "name": "Context extension (RoPE scaling / YaRN)",
+      "summary": "Run past native context via RoPE-scaling/YaRN; lossy at the extended tail",
+      "visibility": "public",
+      "labels": [
+        "context",
+        "rope",
+        "yarn",
+        "long-context"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "Extending past nativeContext (RoPE scaling / YaRN, or vLLM `--max-model-len` + `VLLM_ALLOW_LONG_MAX_MODEL_LEN`) trades long-range fidelity — quality can degrade at the extended tail (\"lost in the middle\"). NOT all models extend: some hard-cap (Gemma e2b clamps to 128k). Verify long-context quality at the target length, don't assume.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "RoPE/YaRN + vLLM long-context",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-expert-parallel",
+      "kind": "technique",
+      "name": "Expert parallelism (EP)",
+      "summary": "Shard MoE experts across GPUs; pairs with TP for large MoE",
+      "visibility": "public",
+      "labels": [
+        "parallelism",
+        "moe",
+        "multi-gpu"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Distributes MoE experts across devices (only routed experts compute per token); pairs with TP for large MoE. Lossless.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "MoE serving (vLLM/SGLang)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-flashattention",
+      "kind": "technique",
+      "name": "FlashAttention / FlashInfer",
+      "summary": "Fused exact attention kernel — faster + lower memory; LOSSLESS",
+      "visibility": "public",
+      "labels": [
+        "attention",
+        "kernel",
+        "memory"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "IO-aware fused attention (FlashAttention-2/3, FlashInfer) — cuts attention memory and speeds prefill/decode; mathematically EXACT (no quality change). The DeepSeek-v4-Flash recipe enables FlashInfer autotune.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "FlashAttention / FlashInfer",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-fp8",
+      "kind": "technique",
+      "name": "FP8 (8-bit float)",
+      "summary": "Near-lossless 8-bit float; native on Hopper/Blackwell; safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "fp8",
+        "safetensors"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "8-bit floating point (E4M3/E5M2), near-lossless vs BF16 and hardware-native on Hopper/Blackwell — minimal quality loss for good throughput. safetensors; vLLM. Used by the DeepSeek-v4-Flash recipe (official FP8 weights + FP8 KV).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "FP8 / vLLM quantization docs + NVIDIA forum 372268",
+            "verification": "cited"
+          }
+        }
+      ]
+    },
+    {
+      "id": "technique-gguf-kquant",
+      "kind": "technique",
+      "name": "GGUF k-quant",
+      "summary": "Standard llama.cpp k-quant GGUF compression (Q4_K_M, Q5_K_M, Q8_0, …)",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "gguf"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Perplexity / KLD (calibrated on wiki text) is NOT a reliable proxy for chat or code quality — a quant that scores well on PPL can produce worse outputs. Prefer task-based evals over published PPL.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Unsloth GGUF analysis (via MODEL qwen35 card)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-gptq",
+      "kind": "technique",
+      "name": "GPTQ",
+      "summary": "Calibration-based post-training weight quant (INT4/INT3); safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "ptq",
+        "safetensors"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Layer-wise calibration PTQ, commonly INT4. Ships in safetensors; loaded by vLLM / transformers / SGLang (NOT llama.cpp). Mature; AWQ often edges it on 4-bit quality.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "GPTQ method / vLLM quantization docs",
+            "verification": "cited"
+          }
+        }
+      ]
+    },
+    {
+      "id": "technique-kv-eviction",
+      "kind": "technique",
+      "name": "KV eviction / compression (SnapKV, H2O, StreamingLLM)",
+      "summary": "Drop/compress less-important KV tokens — LOSSY at long context",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "memory",
+        "long-context"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "SnapKV / H2O / StreamingLLM evict or compress KV entries to fit long context in less memory — trades long-range coherence for footprint. A config-QUALITY factor: measure long-context quality before relying on it.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "SnapKV / H2O / StreamingLLM",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-kv-quant-bf16",
+      "kind": "technique",
+      "name": "KV-cache quant (bf16)",
+      "summary": "Lower KV memory / fix gibberish via --cache-type-k/v bf16 (llama.cpp)",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "memory"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "Gibberish output at low context or large KV — try `--cache-type-k bf16 --cache-type-v bf16`.",
+          "provenance": {
+            "asOf": "2026-04-17",
+            "source": "llama.cpp serving (observed on qwen3.5)",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-pagedattention",
+      "kind": "technique",
+      "name": "PagedAttention",
+      "summary": "KV-cache memory paging (vLLM) — eliminates fragmentation; LOSSLESS",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "memory",
+        "vllm"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Virtual-memory-style paging of the KV cache: near-zero fragmentation, enables high concurrency + long context in less memory. Mathematically exact — pure throughput/memory win, no quality change. vLLM core.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "PagedAttention / vLLM",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-pipeline-parallel",
+      "kind": "technique",
+      "name": "Pipeline parallelism (PP)",
+      "summary": "Split model layers across GPUs/nodes (inter-layer); tolerates slower links",
+      "visibility": "public",
+      "labels": [
+        "parallelism",
+        "multi-node"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Assigns layer ranges to different devices/nodes — far less interconnect-sensitive than TP, so it suits slower/multi-node links, at some pipeline-bubble latency cost. vLLM `--pipeline-parallel-size`. Lossless.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "vLLM distributed serving",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-prefix-caching",
+      "kind": "technique",
+      "name": "Prefix caching",
+      "summary": "Reuse KV for shared prompt prefixes (system/few-shot); LOSSLESS",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "scheduling"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Caches and reuses KV for repeated prompt prefixes — large TTFT/throughput win on shared context (system prompts, agents). Exact. DeepSeek recipe: `--enable-prefix-caching`.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "vLLM prefix caching",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-ray-serve",
+      "kind": "technique",
+      "name": "Ray / data parallelism",
+      "summary": "Replicate the model across nodes for throughput (multi-replica)",
+      "visibility": "public",
+      "labels": [
+        "parallelism",
+        "throughput",
+        "ray"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Ray-orchestrated multi-replica/multi-node serving for concurrency/throughput (vs TP/PP which split one replica). The AoE Qwen3.5-122B 56 tok/s result used a Ray cluster. Lossless.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Ray Serve / forum 365639",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-tensor-parallel",
+      "kind": "technique",
+      "name": "Tensor parallelism (TP)",
+      "summary": "Shard each layer's tensors across GPUs (intra-layer); needs fast interconnect",
+      "visibility": "public",
+      "labels": [
+        "parallelism",
+        "multi-gpu"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Splits attention/FFN matrices across N GPUs — lowers per-GPU memory and speeds compute, but is interconnect-bound (NVLink / RoCE). vLLM `--tensor-parallel-size`. The DeepSeek 2-Spark recipe uses TP=2 over ConnectX-7. Lossless.",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "vLLM distributed serving + forum 372268",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-unsloth-dynamic",
+      "kind": "technique",
+      "name": "Unsloth Dynamic GGUF (UD-Q*)",
+      "summary": "Per-tensor dynamic bit allocation protecting sensitive tensors; imatrix",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "gguf",
+        "unsloth",
+        "packager"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "UD-Q4_K_XL / UD-Q4_K_M protect quant-sensitive tensors (keep them at higher bit depth) while letting tolerant tensors go lower — better quality than flat k-quant at the same nominal bit depth. imatrix variants ~5–10% slower but higher quality at a given bit depth (worth it for long-context / precise tasks). MXFP4 retired from the Dynamic lineup (worse than Q4_K on many tensors; native-hardware only).",
+          "provenance": {
+            "asOf": "2026-06-19",
+            "source": "Unsloth GGUF analysis (via MODEL qwen35 card)",
+            "verification": "cited"
+          }
+        }
+      ]
+    }
+  ]
+}

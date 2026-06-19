@@ -1,0 +1,207 @@
+# Nemotron family (NVIDIA). Public + generic. Architecture VERIFIED against the
+# canonical nvidia/* HF config.json (2026-06-19) → authoritative; this CORRECTED
+# a card-mining error (the source card claimed "NoPE / 1M context", but the real
+# configs are model_type nemotron_h, a Mamba2-Transformer hybrid, with 256K
+# context). Our-fleet measurements (smoke scores, T7, GB10 tok/s) are NOT here.
+# Structure: family umbrella + variants (variant-of → model-nemotron).
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-nemotron
+  kind: model
+  name: Nemotron (family)
+  summary: NVIDIA open-weights family; nemotron_h Mamba2-Transformer hybrid; 256K context
+  visibility: public
+  labels: [nemotron, nvidia, open-weights, hybrid-ssm]
+  facets:
+    architecture:
+      attention: nemotron_h # Mamba2-Transformer hybrid (model_type); NOT a NoPE attention design
+      nativeContext: 262144 # 256K (max_position_embeddings) — corrected from a card error claiming 1M
+      vocab: 131072
+      modality: [text]
+      notes: "Hybrid state-space (Mamba2) + Transformer layers. Designed for coding, math, agentic, reasoning."
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/* HF config.json (verified: model_type nemotron_h, max_position_embeddings 262144, vocab 131072)"
+        verification: authoritative
+    license:
+      name: NVIDIA Open Model License
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/nvidia"
+        verification: cited
+    config:
+      thinking:
+        supported: true
+        always: true
+        tokens: "<think> / </think> (token IDs 12 / 13)"
+        disable: "no --reasoning-budget support confirmed; strip <think>...</think> in post-processing if needed"
+      sampling:
+        chat: { temp: 1.0, top_p: 1.0 }
+        toolCalling: { temp: 0.6, top_p: 0.95 }
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        CORRECTION: the source card's "NoPE / no positional embeddings / 1M
+        context" description was NOT supported by the canonical config.json —
+        real model_type is nemotron_h (Mamba2-Transformer hybrid), context 256K.
+        Do not rely on a 1M native context for this family.
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/* HF config.json vs MODEL nemotron card"
+        verification: authoritative
+    - kind: caveat
+      body: >-
+        Thinking is always on: no confirmed `--reasoning-budget` suppression —
+        thinking is structural (`<think>` tokens in the template). Strip
+        `<think>...</think>` blocks in post-processing if clean output is needed.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: "Ollama `think` flag unreliable for this family — use llama.cpp for reliable thinking behaviour."
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+        runtimes: [runtime-ollama, runtime-llamacpp]
+    - kind: note
+      body: "No vendor-published benchmark numbers in the source card — benchmark facets omitted pending a primary source."
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card"
+        verification: cited
+
+# ── variants (architecture verified vs HF config.json → authoritative) ───────
+- id: model-nemotron-nano-4b
+  kind: model
+  name: Nemotron 3 Nano 4B
+  summary: Smallest variant; DENSE ~4B (no experts); 256K context
+  visibility: public
+  labels: [nemotron, nano, small, dense]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16
+      params: "4B"
+      dense: true # CORRECTED: dense, not MoE (no n_routed_experts in config)
+      layers: 42
+      hidden: 3136
+      attentionHeads: 40
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16 config.json"
+        verification: authoritative
+    footprint:
+      q4: "~3 GB"
+      q8: "~5 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited
+
+- id: model-nemotron-nano-30b-a3b
+  kind: model
+  name: Nemotron 3 Nano 30B-A3B (MoE)
+  summary: Sparse MoE; 3B active at ~31B total; 256K context
+  visibility: public
+  labels: [nemotron, nano, moe]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+      params: "30B"
+      activeParams: "3B"
+      layers: 52
+      experts: "6/token of 128 routed"
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 config.json"
+        verification: authoritative
+    footprint:
+      q4: "~24 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited
+
+- id: model-nemotron-super-120b-a12b
+  kind: model
+  name: Nemotron 3 Super 120B-A12B (MoE)
+  summary: Largest variant; sparse MoE; 12B active at 120B total; 256K context
+  visibility: public
+  labels: [nemotron, super, moe]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
+      params: "120B"
+      activeParams: "12B"
+      layers: 88
+      experts: "22/token of 512 routed"
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json"
+        verification: authoritative
+    footprint:
+      q4: "64–72 GB"
+      q8: "~128 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Fine-tuning: BF16 LoRA ~256GB VRAM (multi-GPU); router-layer FT disabled
+        by default for stability; QLoRA is the practical single-node option.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+
+- id: model-nemotron-cascade-2-30b
+  kind: model
+  name: Nemotron Cascade-2 30B-A3B
+  summary: Cascade-2; post-trained from Nemotron-3-Nano-30B-A3B-Base; MoE 3B active
+  visibility: public
+  labels: [nemotron, cascade, moe, fine-tune]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+    - { rel: finetune-of, target: model-nemotron-nano-30b-a3b } # post-trained from the Nano-30B-A3B base
+  facets:
+    architecture:
+      hfRepo: nvidia/Nemotron-Cascade-2-30B-A3B
+      params: "30B"
+      activeParams: "3B" # FILLED from config (was "?" in the card)
+      layers: 52
+      experts: "6/token of 128 routed + 1 shared"
+      nativeContext: 262144 # FILLED from config (was "?" in the card)
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/Nemotron-Cascade-2-30B-A3B config.json"
+        verification: authoritative
+    footprint:
+      q4: "~24 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited

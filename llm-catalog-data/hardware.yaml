@@ -1,0 +1,43 @@
+# Hardware — accelerator/box CLASSES (not owned nodes). Owned fleet machines
+# (e.g. a specific owned node) live in the PRIVATE instance and `ref` an inventory
+# device; they never appear here. Public + generic.
+
+- id: hardware-dgx-spark
+  kind: hardware
+  name: DGX Spark (GB10)
+  summary: Unified-memory inference box; direct CUDA; clusterable; low power
+  visibility: public
+  labels: [spark, gb10, cuda]
+  relations:
+    - rel: prefer-over
+      target: hardware-strix-halo
+      rationale: Direct NVIDIA CUDA support, easy clustering, ~60-80W draw.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/"
+        confidence: medium
+  facets:
+    hardware:
+      compute: cuda
+      unifiedMemGB: 128
+      powerW: 70
+      clusterable: true
+  claims:
+    - kind: recommendation
+      body: >-
+        Two units (buy ASUS Ascent GX10 to save cost) can run DeepSeek-v4-Flash
+        at 1M context and stay comfortably under USD 10k; ~60-80W per unit.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/"
+        confidence: medium
+
+- id: hardware-strix-halo
+  kind: hardware
+  name: AMD Strix Halo
+  summary: APU-class unified-memory box; comparable price point to DGX Spark
+  visibility: public
+  labels: [amd, apu]
+  facets:
+    hardware:
+      compute: rocm

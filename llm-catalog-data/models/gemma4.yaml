@@ -1,0 +1,216 @@
+# Gemma 4 family (Google DeepMind). Public + generic — mined from public primary
+# sources (Google model card, HF, Unsloth notes). Our-fleet measurements
+# (smoke/T9 scores, GB10 tok/s, GB10 VRAM) are NOT here — they stay private and,
+# if shared, become sanitised access-paths with community attribution.
+#
+# Structure: one family umbrella entry (shared architecture/license/config/
+# caveats) + one entry per variant (variant-of → model-gemma4). DRY: shared facts
+# live once on the family; variant entries carry only what differs.
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-gemma4
+  kind: model
+  name: Gemma 4 (family)
+  summary: Google open-weights family; hybrid local-sliding + global attention
+  visibility: public
+  labels: [gemma, google, open-weights]
+  facets:
+    architecture:
+      attention: hybrid-sliding-global # interleaved local sliding + full global; final layer always global
+      notes: "Global layers use unified K/V with Proportional RoPE (p-RoPE) for long-context memory."
+      vocab: 262144
+    license:
+      spdx: apache-2.0
+      released: "2026"
+      trainingCutoff: "2025-01"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+    config:
+      thinking:
+        supported: true
+        disable: "--chat-template-kwargs '{\"enable_thinking\":false}'" # gemma4-native (llama.cpp)
+        disableGeneric: "--reasoning-budget 0"
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 64 } # Google recommendation
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: >-
+        Do NOT run any Gemma 4 GGUF on the CUDA 13.2 runtime — it produces poor
+        outputs. Use a known-good CUDA build.
+      provenance:
+        asOf: "2026-04-11"
+        source: "Unsloth note (via MODEL gemma4 card)"
+        verification: cited
+        versionPins: { cuda: "13.2-BAD" }
+    - kind: note
+      body: >-
+        Disable thinking reliably with `llama-server` + the gemma4-native
+        `enable_thinking:false`; `llama-cli` may not suppress thinking reliably.
+        Do not feed prior thinking output back into multi-turn history.
+      provenance:
+        asOf: "2026-04-17"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4 + llama.cpp"
+        verification: cited
+
+# ── variants ────────────────────────────────────────────────────────────────
+- id: model-gemma4-e2b
+  kind: model
+  name: Gemma 4 e2b
+  summary: On-device efficiency variant (Per-Layer Embeddings); fastest; small
+  visibility: public
+  labels: [gemma, efficiency, on-device]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "5.1B"
+      effectiveParams: "2.3B" # PLE: per-layer embedding tables are lookup-only
+      layers: 35
+      slidingWindow: 512
+      nativeContext: 131072
+      modality: [text, image, audio]
+      visionEncoderParams: "~150M"
+      audioEncoderParams: "~300M"
+    benchmarks: # Google published, instruction-tuned
+      mmluPro: 60.0
+      aime2026: 37.5
+      liveCodeBenchV6: 44.0
+      codeforcesElo: 633
+      gpqaDiamond: 43.4
+      tau2Agentic: 24.5
+      bigBenchExtraHard: 21.9
+      mmmlu: 67.4
+      mrcrV2_128k: 19.1
+      mmmuProVision: 44.2
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: >-
+        128K context + 512-token sliding window are architectural HARD caps
+        (PLE on-device design). `--ctx-size` above 131072 is silently clamped
+        (HTTP 400 only on inference). Usable ~100K; not for long-context tasks.
+      provenance:
+        asOf: "2026-04-14"
+        source: "GGUF metadata + server clamp log (verified)"
+        verification: reproduced
+
+- id: model-gemma4-e4b
+  kind: model
+  name: Gemma 4 e4b
+  summary: On-device efficiency variant; barrier candidate; PLE
+  visibility: public
+  labels: [gemma, efficiency, on-device]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "8B"
+      effectiveParams: "4.5B"
+      layers: 42
+      slidingWindow: 512
+      nativeContext: 131072
+      modality: [text, image, audio]
+      visionEncoderParams: "~150M"
+      audioEncoderParams: "~300M"
+    benchmarks:
+      mmluPro: 69.4
+      aime2026: 42.5
+      liveCodeBenchV6: 52.0
+      codeforcesElo: 940
+      gpqaDiamond: 58.6
+      tau2Agentic: 42.2
+      bigBenchExtraHard: 33.1
+      mmmlu: 76.6
+      mrcrV2_128k: 25.4
+      mmmuProVision: 52.6
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: "128K hard cap + 512 sliding window (same PLE limits as e2b)."
+      provenance:
+        asOf: "2026-04-14"
+        source: "GGUF metadata (verified)"
+        verification: reproduced
+
+- id: model-gemma4-26b
+  kind: model
+  name: Gemma 4 26B-A4B (MoE)
+  summary: Sparse MoE; ~4B active inference speed at 26B total; 256K context
+  visibility: public
+  labels: [gemma, moe]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "25.2B"
+      activeParams: "3.8B"
+      layers: 30
+      slidingWindow: 1024
+      nativeContext: 262144
+      experts: "8 active / 128 total" # CORRECTED: HF config has no shared-expert key (was "+ 1 shared")
+      modality: [text, image]
+      visionEncoderParams: "~550M"
+    benchmarks:
+      mmluPro: 82.6
+      aime2026: 88.3
+      liveCodeBenchV6: 77.1
+      codeforcesElo: 1718
+      gpqaDiamond: 82.3
+      tau2Agentic: 68.2
+      hleNoTools: 8.7
+      bigBenchExtraHard: 64.8
+      mmmlu: 86.3
+      mrcrV2_128k: 44.1
+      mmmuProVision: 73.8
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+
+- id: model-gemma4-31b
+  kind: model
+  name: Gemma 4 31B (dense)
+  summary: Largest dense variant; 256K context; strongest Gemma 4 benchmarks
+  visibility: public
+  labels: [gemma, dense]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "30.7B"
+      layers: 60
+      slidingWindow: 1024
+      nativeContext: 262144
+      modality: [text, image]
+      visionEncoderParams: "~550M"
+    benchmarks:
+      mmluPro: 85.2
+      aime2026: 89.2
+      liveCodeBenchV6: 80.0
+      codeforcesElo: 2150
+      gpqaDiamond: 84.3
+      tau2Agentic: 76.9
+      hleNoTools: 19.5
+      bigBenchExtraHard: 74.4
+      mmmlu: 88.4
+      mrcrV2_128k: 66.4
+      mmmuProVision: 76.9
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative

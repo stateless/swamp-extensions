@@ -1,0 +1,157 @@
+# Qwen 3.6 family (Alibaba / Qwen team). Public + generic — mined from public
+# primary sources (Qwen blog, HuggingFace, Unsloth guide). Our-fleet measurements
+# (T1-T5 smoke scores, GB10 tok/s, local bench) are NOT here — they stay private
+# and, if shared, become sanitised access-paths with community attribution.
+#
+# Structure: one family umbrella entry (shared architecture/license/config/
+# caveats) + one entry per variant (variant-of → model-qwen36). Only 35B-A3B is
+# released so far (2026-04-16); additional variants expected.
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-qwen36
+  kind: model
+  name: Qwen 3.6 (family)
+  summary: Alibaba open-weights multimodal family; hybrid Gated DeltaNet + Attention MoE
+  visibility: public
+  labels: [qwen, alibaba, open-weights, moe, multimodal]
+  facets:
+    architecture:
+      attention: hybrid-deltanet # Gated DeltaNet + Gated Attention, interleaved
+      notes: >-
+        Identical architecture to Qwen3.5. Layer pattern:
+        10 × (3 × (Gated DeltaNet → MoE) → 1 × (Gated Attention → MoE)).
+        MTP (multi-token prediction) present. Vision encoder present — requires
+        `--mmproj` for multimodal in llama.cpp; text-only omits `--mmproj`
+        (or vLLM `--language-model-only`).
+    license:
+      spdx: apache-2.0
+      released: "2026-04-16"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.6-35b-a3b"
+        verification: cited
+    config:
+      multilingual: 201 # languages supported
+      thinking:
+        supported: true # thinking on by default; <think>...\n\n before response
+        disable: "--chat-template-kwargs '{\"enable_thinking\":false}'" # qwen36-native
+        disableGeneric: "--reasoning-budget 0"
+        preserveThinking: "--chat-template-kwargs '{\"enable_thinking\":true,\"preserve_thinking\":true}'"
+        minContextForThinking: 128000 # tokens recommended to preserve thinking
+        note: >-
+          No `/think` `/nothink` soft-switch tokens (unlike Qwen3). Use
+          chat-template-kwargs or reasoning-budget instead.
+      sampling: # Qwen recommendation, per mode/use-case
+        thinkingGeneral: { temp: 1.0, top_p: 0.95, top_k: 20, presence_penalty: 1.5 }
+        thinkingCoding: { temp: 0.6, top_p: 0.95, top_k: 20, presence_penalty: 0.0 }
+        nonThinkingGeneral: { temp: 0.7, top_p: 0.8, top_k: 20, presence_penalty: 1.5 }
+        nonThinkingReasoning: { temp: 1.0, top_p: 0.95, top_k: 20, presence_penalty: 1.5 }
+        presence_penalty: "0–2 to reduce repetitions; higher may slightly cost quality"
+        repetition_penalty: "disabled or 1.0"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Thinking on by default (`<think>...\n\n` before response). Disable with
+        the qwen36-native `enable_thinking:false`; the soft-switch `/think`
+        `/nothink` tokens are NOT supported (unlike Qwen3). `preserve_thinking`
+        retains reasoning traces from prior turns to reduce redundant
+        re-reasoning in agent sessions and improve KV cache utilisation;
+        minimum recommended context to preserve thinking is 128K tokens.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Ollama incompatible — separate mmproj vision files are not handled; use
+        llama.cpp backends. Gibberish output can occur if context is too low; try
+        `--cache-type-k bf16 --cache-type-v bf16`. 128K minimum context
+        recommended to preserve thinking capability.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3.6 (via MODEL qwen36 card)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        `reasoning_content` split (llama.cpp OpenAI-compatible API, thinking
+        enabled): thinking tokens land in
+        `choices[0]["message"]["reasoning_content"]`, NOT `content`. For complex
+        prompts `content` may be empty — the answer must be read from
+        `reasoning_content`. Family-wide (all Qwen3.5/3.6 thinking models, not
+        version-specific). Client code must check both fields. The inline
+        `<think>` tag is what the Jinja template generates internally; the
+        llama.cpp API splits it into the two fields.
+      provenance:
+        asOf: "2026-04-17"
+        source: "MODEL qwen36 card (re-verify against primary source)"
+        verification: cited
+    - kind: note
+      body: >-
+        Unsloth GGUFs support a `developer` role for Codex/OpenCode agentic
+        tools. Qwen 3.6 adds improved agentic coding (frontend workflows,
+        repo-level reasoning) vs Qwen3.5.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
+
+# ── variants ────────────────────────────────────────────────────────────────
+- id: model-qwen36-35b-a3b
+  kind: model
+  name: Qwen 3.6 35B-A3B (MoE)
+  summary: Sparse MoE; 3B active at 35B total; 262K native (→1M YaRN); multimodal
+  visibility: public
+  labels: [qwen, moe, multimodal]
+  relations:
+    - { rel: variant-of, target: model-qwen36 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "35B"
+      activeParams: "3B"
+      layers: 40
+      experts: "8 routed + 1 shared / 256 total"
+      hiddenDim: 2048
+      nativeContext: 262144 # ~1M via YaRN
+      modality: [text, image, video]
+      mtp: true # multi-token prediction
+    benchmarks: # Qwen-published (instruction-tuned), Qwen3.6-35B-A3B column
+      sweBenchVerified: 73.4
+      sweBenchMultilingual: 67.2
+      terminalBench2: 51.5
+      qwenWebBench: 1397
+      mcpMark: 37.0
+      gpqaDiamond: 86.0
+      aime2026: 92.7
+      mmluPro: 85.2
+      liveCodeBenchV6: 80.4
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.6-35b-a3b"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        262K native context, extensible to ~1M via YaRN. Approximate memory
+        footprint by quant (vendor/community estimate): 3-bit ~17 GB, 4-bit
+        ~23 GB, 6-bit ~30 GB, 8-bit ~38 GB, BF16 ~70 GB.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3.6-35B-A3B + https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
+    - kind: note
+      body: >-
+        Only the 35B-A3B variant has been released (2026-04-16); additional
+        Qwen 3.6 variants are expected but not yet published. Vendor-published
+        benchmarks above are notably stronger on coding-agent tasks vs
+        Qwen3.5-35B-A3B (SWE-bench Verified +3.4, Terminal-Bench +11,
+        QwenWebBench +43%); general knowledge/math (MMLU-Pro, GPQA, AIME) is
+        comparable to 3.5.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.6-35b-a3b"
+        verification: cited

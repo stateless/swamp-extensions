@@ -1,0 +1,114 @@
+# Qwen3-Coder-Next (Alibaba / Qwen team). Public + generic — mined from the
+# MODEL qwen3coder card, which cites public primary sources (HuggingFace model
+# card, Unsloth guide). Our-fleet measurements (smoke quality scores, our tok/s,
+# Ollama-version-specific eval observations) are NOT here — they stay private.
+#
+# Single model (not a multi-variant family in the card), so one entry. Shared
+# entities (runtime-llamacpp, runtime-ollama) are referenced by id only, not defined here.
+
+- id: model-qwen3-coder-next
+  kind: model
+  name: Qwen3-Coder-Next
+  summary: Alibaba/Qwen coding-optimised MoE; ~3B active of ~80B; non-reasoning instruct; 256K context
+  visibility: public
+  labels: [qwen, alibaba, coder, moe, open-weights]
+  facets:
+    architecture:
+      attention: MoE # mixture-of-experts; ~3B active of ~80B total
+      params: "~80B"
+      activeParams: "~3B"
+      nativeContext: 262144 # 256K native
+      modality: [text]
+      notes: >-
+        Non-reasoning instruct — no thinking mode. Designed for long-horizon
+        agentic coding, complex tool use, and recovery from execution failures.
+        Qwen claims comparable performance to models with 10–20x more active
+        parameters.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        verification: cited
+    license:
+      spdx: apache-2.0
+      released: "2026-02"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        verification: cited
+    config:
+      thinking:
+        supported: false # non-reasoning instruct
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 40, min_p: 0.01, repeat_penalty: 1.0 } # Qwen recommendation; repeat_penalty disabled
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    footprint: # Unsloth-published per-quant memory requirements (generic, not our-fleet)
+      quants:
+        - { quant: Q4, memGB: "~46" }
+        - { quant: Q8, memGB: "~85" }
+        - { quant: "Q2/Q3", memGB: "~29", note: "usable, some quality loss" }
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        `--min-p 0.01` is required — llama.cpp defaults to 0.05, which diverges
+        from the Qwen-recommended sampling.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: issue
+      body: >-
+        Historical llama.cpp `vectorized key_gdiff` bug (fixed 2026-02-04) caused
+        looping and bad outputs. Re-download GGUFs and update llama.cpp if they
+        were downloaded before this date.
+      provenance:
+        asOf: "2026-02-04"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+    - kind: note
+      body: >-
+        Tool-calling parsing improved in llama.cpp on 2026-02-19; update
+        llama.cpp for best agentic/tool-use results.
+      provenance:
+        asOf: "2026-02-19"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        The HuggingFace `hf-qwen3-coder-next` build pulls a thinking variant —
+        `think:false` is ignored in some versions. Use the Unsloth GGUF for
+        reliable no-think behaviour.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: issue
+      body: >-
+        Q8 multi-shard registration is broken in Ollama 0.20.4 (bad
+        registration). Use Q4_K_M or serve via llama.cpp directly.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+        versionPins: { runtime: "ollama-0.20.4" }
+    - kind: note
+      body: >-
+        Fine-tuning fits on a single B200 GPU for BF16 LoRA via Unsloth.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: note
+      body: >-
+        GAP: the card publishes no vendor benchmark numbers (MMLU, LiveCodeBench,
+        etc.) for Qwen3-Coder-Next — benchmarks facet omitted. Re-mine the
+        HuggingFace model card if published figures are needed.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        verification: cited
