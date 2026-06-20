@@ -107,6 +107,19 @@
         asOf: "2026-06-19"
         source: "MODEL nemotron card (estimated)"
         verification: cited
+    benchmarks: # NVIDIA BF16 model card, reasoning-on
+      aime2025: 78.5
+      gpqaDiamond: 53.2 # card labels plain "GPQA" (Diamond not explicit)
+      ifEval: 92.0 # IFEval-Instruction (prompt-level 87.9)
+      ifBench: 44.2 # IFBench-Instruction
+      liveCodeBench: 51.8 # card says only "LCB" — version unstated (do NOT assume v6)
+      tau2Agentic: 39.8 # Tau2-Retail (airline 33.3, telecom 33.0)
+      bfcl: 61.1 # BFCL v3
+      provenance:
+        asOf: "2026-03-16"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16/raw/main/README.md"
+        verification: authoritative
+        note: "Reasoning-on. Not on card: mmluPro, aime2026, sweBenchVerified, mmmlu, mmlu, hle."
 
 - id: model-nemotron-nano-30b-a3b
   kind: model
@@ -139,6 +152,24 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/nemotron-3"
         verification: cited
+    benchmarks: # NVIDIA BF16 reference checkpoint, reasoning-on ("no tools" column)
+      mmluPro: 78.3
+      gpqaDiamond: 73.0 # card "GPQA (no tools)"; NVIDIA confirms = Diamond
+      aime2025: 89.1 # no-tools (with-tools/code 99.2)
+      liveCodeBenchV6: 68.3
+      sweBenchVerified: 38.8 # "SWE-Bench (OpenHands)" row
+      tau2Agentic: 49.0 # TauBench V2 avg (airline 48.0/retail 56.9/telecom 42.2)
+      bfcl: 53.8 # BFCL v4
+      ifBench: 71.5 # prompt
+      hle: 10.6 # no-tools (with-tools 15.5)
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          BF16 reference, reasoning-on. FP8 variant (same source) slightly lower:
+          mmluPro 78.1, gpqaDiamond 72.5, aime2025 87.7, lcbV6 67.6, bfcl 53.2, hle 10.3.
+          A third-party "GPQA Diamond 39.9" conflicts with official 73.0 and was discarded.
 
 - id: model-nemotron-super-120b-a12b
   kind: model
@@ -171,6 +202,24 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
         verification: cited
+    benchmarks: # NVIDIA BF16 model card, reasoning-on (enable_thinking=True), no-tools column
+      mmluPro: 83.73
+      gpqaDiamond: 79.23 # no-tools (with Python tools 82.70)
+      aime2025: 90.21 # no-tools
+      liveCodeBenchV5: 81.19 # card reports v5 only — NO v6 number exists
+      ifBench: 72.56 # prompt
+      hle: 18.26 # no-tools (with-tools 22.82)
+      tau2Agentic: 64.36 # Tau2 telecom (retail 62.83, airline 56.25)
+      sweBenchVerified: 60.47 # OpenHands harness (OpenCode 59.20, Codex 53.73)
+      provenance:
+        asOf: "2026-03-11"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          LiveCodeBench is v5 (81.19), NOT v6. Card also has MMLU-ProX (multilingual)
+          79.36 — not standard MMMLU. Extras: Arena-Hard-v2 73.88, RULER@1M 91.75.
+          BFCL v4 configured in NeMo Evaluator repro but no score published.
+
   claims:
     - kind: note
       body: >-
@@ -210,6 +259,25 @@
         asOf: "2026-06-19"
         source: "MODEL nemotron card (estimated)"
         verification: cited
+    benchmarks: # NVIDIA official HF model card (released 2026-03-19), reasoning-capable
+      mmluPro: 79.8
+      gpqaDiamond: 76.1
+      ifBench: 82.9 # prompt
+      aime2025: 92.4 # base (TIR variant 98.6)
+      aime2026: 90.9 # base (TIR variant 95.0)
+      sweBenchVerified: 50.2 # OpenHands harness
+      liveCodeBenchV6: 87.2 # v6 (2408-2505); TIR variant 88.4
+      tau2Agentic: 58.9 # tau-2-Bench
+      bfcl: 52.9 # BFCL v4
+      hle: 17.7 # no-tools
+      provenance:
+        asOf: "2026-03-19"
+        source: "https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          Several math/code rows have higher Tool-Integrated-Reasoning (TIR) variants
+          (noted inline). Card uses MMLU-Redux (86.3) and MMLU-ProX (72.5) — neither
+          is plain MMLU/MMMLU, omitted.
 
 # ── new variant: Nemotron-3-Nano-Omni-30B-A3B — multimodal (omni) sibling ─────
 - id: model-nemotron-nano-omni-30b-a3b
@@ -242,13 +310,47 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
         verification: cited
+    benchmarks: # NVIDIA Nemotron 3 Omni technical report (arXiv:2604.24954v1), Omni model's OWN column
+      # text (Table 10)
+      mmluPro: 77.3
+      gpqaDiamond: 72.2 # report "GPQA (no tools)"; methodology = GPQA-Diamond, avg-4
+      aime2025: 82.1 # no-tools, pass@1 avg-8
+      liveCodeBenchV5: 63.2 # v5 (07/24-05/25) — NOT v6
+      ifBench: 74.2 # prompt
+      tau2Telecom: 42.7 # TauBench V2 telecom (no airline/retail reported)
+      sciCode: 32.0
+      aaLcr: 41.0
+      # vision (Table 7, reasoning-on)
+      mmmu: 70.8
+      mathVista: 82.8
+      docvqa: 95.6
+      chartqa: 90.3
+      ai2d: 88.5
+      ocrBench: 86.6
+      textVqa: 81.0
+      infoVqa: 86.8
+      cvBench: 84.0
+      # video / audio
+      videoMme: 72.2 # w/o subtitles, reasoning-on
+      voiceBench: 89.4 # reasoning-on
+      openAsrWer: 5.95 # WER (lower=better), reasoning-off
+      mmau: 74.6 # reasoning-off
+      provenance:
+        asOf: "2026-04-27"
+        source: "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Omni-report.pdf"
+        verification: authoritative
+        note: >-
+          Omni model's OWN column (lower than its LLM backbone — a common confusion
+          point). Vision/video reasoning-on; ASR/MMAU reasoning-off. LiveCodeBench=v5
+          not v6. Not found: sweBenchVerified, bfcl, hle, mmmlu, mmlu, aime2026, lcbV6.
   claims:
     - kind: note
       body: >-
         Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads:
         audio/video/text/images/docs in, text out; 256K context. Unsloth
         positions it as "the strongest omni model for its size", surpassing
-        Qwen3-Omni-30B-A3B on every benchmark (no numeric scores published).
+        Qwen3-Omni-30B-A3B on every benchmark (Unsloth page publishes no numbers;
+        numeric scores added from the NVIDIA technical report — see benchmarks).
         Architecture (layers/experts) NOT independently verified vs config.json —
         inherited from the nemotron_h family; confidence medium.
       provenance:
@@ -279,6 +381,23 @@
         source: "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 (repo/recipe name) + family nemotron_h config"
         verification: cited
         confidence: medium
+    benchmarks: # Nemotron 3 Ultra technical report, Table 10 (post-trained, reasoning-first)
+      mmluPro: 86.8
+      gpqaDiamond: 87.0 # report "GPQA (no tools)" — Diamond not explicit; post-trained
+      sweBenchVerified: 70.7
+      liveCodeBenchV6: 89.0
+      tau2Agentic: 70.9 # TauBench V3 avg (airline 81.5/retail 86.4/telecom 92.9/banking 22.6)
+      ifBench: 81.7 # prompt loose
+      hle: 26.7 # no-tools (with-tools 37.4)
+      provenance:
+        asOf: "2026-06-09"
+        source: "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Ultra-Technical-Report.pdf"
+        verification: authoritative
+        note: >-
+          Table 10 (POST-trained), NOT the base-model Table 2 (which is much lower:
+          MMLU-Pro 79.07, GPQA 50.00, 5-shot). Extras: SWE-Bench Multilingual 67.7,
+          Terminal-Bench 2.1 56.4, RULER@1M 94.7, MMLU-ProX 83.0. No ifEval, aime,
+          bfcl, mmmlu, plain mmlu in the report eval.
   claims:
     - kind: note
       body: >-

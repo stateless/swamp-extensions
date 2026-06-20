@@ -148,6 +148,25 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
         verification: cited
+    benchmarks: # OpenAI official model card, Table 3 (Full Evaluations), high reasoning
+      mmlu: 85.3
+      gpqaDiamond: 74.2 # with tools (71.5 no-tools)
+      aime2025: 98.7 # with tools (91.7 no-tools)
+      aime2024: 96.0 # with tools (92.1 no-tools)
+      hle: 17.3 # Humanity's Last Exam, with tools (10.9 no-tools)
+      sweBenchVerified: 60.7
+      tauBenchRetail: 54.8 # tau-bench v1 retail (airline 38.0); NOT tau2-bench
+      mmmlu: 75.7 # 14-language average
+      codeforcesElo: 2516 # with tools (2230 no-tools)
+      provenance:
+        asOf: "2025-08-05"
+        source: "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
+        verification: authoritative
+        note: >-
+          High reasoning column. With-tools figures shown for AIME/HLE/Codeforces;
+          GPQA-D no-tools = 71.5. Card reports tau-bench v1 retail (54.8), NOT
+          tau2-bench. AIME 2025 (98.7) slightly exceeds the 120b (97.9) with tools.
+          No authoritative MMLU-Pro, BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 for 20b.
 
 - id: model-gpt-oss-120b
   kind: model
@@ -180,6 +199,27 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
         verification: cited
+    benchmarks: # OpenAI official model card, Table 3 (Full Evaluations), high reasoning
+      mmlu: 90.0
+      mmluPro: 80.8 # HF card metadata only (cited), NOT the OpenAI PDF — see note
+      gpqaDiamond: 80.9 # with tools (80.1 no-tools)
+      aime2025: 97.9 # with tools (92.5 no-tools)
+      aime2024: 96.6 # with tools (95.8 no-tools)
+      hle: 19.0 # Humanity's Last Exam, with tools (14.9 no-tools)
+      sweBenchVerified: 62.4
+      tauBenchRetail: 67.8 # tau-bench v1 retail (airline 49.2); NOT tau2-bench
+      mmmlu: 81.3 # 14-language average
+      codeforcesElo: 2622 # with tools (2463 no-tools)
+      provenance:
+        asOf: "2025-08-05"
+        source: "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
+        verification: authoritative
+        note: >-
+          High reasoning column. With-tools figures for AIME/HLE/Codeforces; GPQA-D
+          no-tools = 80.1. Card reports tau-bench v1 (NOT tau2). mmluPro=80.8 is the
+          one exception: sourced from huggingface.co/openai/gpt-oss-120b structured
+          eval metadata (verification: cited), not the OpenAI PDF; reasoning level
+          unspecified there. No BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 on the card.
 
 # ── access-path: gpt-oss-120b MXFP4 via vLLM on DGX Spark (eugr recipe) ───────
 - id: ap-gpt-oss-120b-spark-vllm-mxfp4

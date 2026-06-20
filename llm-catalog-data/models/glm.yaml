@@ -32,18 +32,24 @@
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
         verification: cited
-    benchmarks: # Unsloth-published (attributed to z.ai/GLM vendor figures)
+    benchmarks: # z.ai/GLM authoritative model card (these 7 are ALL it publishes for Flash)
       aime2025: 91.6
-      gpqaDiamond: 75.2
-      liveCodeBenchV6: 64.0
+      gpqaDiamond: 75.2 # card labels "GPQA"
+      liveCodeBenchV6: 64.0 # card labels "LCB v6"
       hle: 14.4
       sweBenchVerified: 59.2
-      tau2Agentic: 79.5
+      tau2Agentic: 79.5 # card labels "τ²-Bench"
       browseComp: 42.8
       provenance:
         asOf: "2026-06-20"
-        source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash (Unsloth aggregating GLM/z.ai vendor figures)"
-        verification: cited
+        source: "https://huggingface.co/zai-org/GLM-4.7-Flash/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          Vendor card publishes ONLY these 7 metrics. ifEval, mmluPro, ifBench,
+          aime2026, bfcl, mmmlu are NOT reported by z.ai for Flash (a circulating
+          85.6 MMLU-Pro / 67.9 IFBench snippet traces to no fetchable source — omitted).
+          MMLU-Pro 84.3 / GPQA-D 85.7 belong to full GLM-4.7, not Flash. Same 7 figures
+          previously sourced via Unsloth — provenance upgraded to the z.ai card.
     config:
       sampling: # Unsloth recommendation
         general: { temp: 1.0, top_p: 0.95, min_p: 0.01 }

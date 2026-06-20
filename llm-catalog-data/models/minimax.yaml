@@ -102,10 +102,15 @@
       browseComp: 76.3
       aime2025: 86.3
       gpqaDiamond: 85.2
+      bfcl: 76.8 # THIRD-PARTY, multi-turn SUBSET (not overall), BFCL version unconfirmed — see note
       provenance:
         asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/tutorials/minimax-m25 (Unsloth aggregating MiniMax vendor figures)"
         verification: cited
+        note: >-
+          bfcl 76.8 is the lone third-party figure here: from huggingface.co/blog/mlabonne/minimax-m25
+          (community), multi-turn function-calling subset, BFCL version (V3/V4) unconfirmed; NOT on the
+          official MiniMax card. Treat as third-party vs the Unsloth-aggregated vendor figures above.
     config:
       sampling: { temp: 1.0, top_p: 0.95, top_k: 40, min_p: 0.01 } # Unsloth recommendation
       maxContext: 196608
