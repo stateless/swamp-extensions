@@ -26,6 +26,17 @@
         asOf: "2026-06-20"
         source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card"
         verification: authoritative
+    footprint: # weights resident (MoE = ALL experts loaded); KV cache + activations extra
+      basis: weights-only
+      quants:
+        - { quant: q2,  memGB: 99,  note: "ds4 q2-imatrix — published to run on a 96/128GB box; consistent" }
+        - { quant: q4,  memGB: 160, note: "needs a 512GB-class box" }
+        - { quant: fp8, memGB: 284, note: "the 2x DGX Spark (256GB) cluster recipe — relies on expert offload" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b fp8~8b); cross-checked vs ds4 fit claims"
+        verification: estimated
+        confidence: low
   claims:
     - kind: note
       body: >-
@@ -301,6 +312,16 @@
         asOf: "2026-06-20"
         source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card"
         verification: authoritative
+    footprint: # weights resident (MoE = ALL experts loaded); KV cache + activations extra
+      basis: weights-only
+      quants:
+        - { quant: q2, memGB: 520, note: "PRO q2 runs on a 512GB-class Mac Studio (measured 9.56 t/s)" }
+        - { quant: q4, memGB: 900, note: "multi-node only" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b); cross-checked vs ds4 512GB fit"
+        verification: estimated
+        confidence: low
   claims:
     - kind: note
       body: >-

@@ -69,7 +69,7 @@
   labels: [self-host, gguf, model-coupled, deepseek, apple-silicon, cuda, rocm]
   facets:
     formats: [gguf] # loads ONLY antirez-packaged DeepSeek-V4 GGUF layouts — see caveat
-    platform: [metal, cuda, rocm] # Mac (Metal), DGX Spark (CUDA), Strix Halo (ROCm)
+    platform: [apple-silicon, cuda, rocm] # Mac, DGX Spark (CUDA), Strix Halo (ROCm)
     api: { apiSpec: openai-compat, anthropicCompat: true } # OpenAI + Anthropic-compatible REST
     # Novel capabilities the catalog has no shared technique vocabulary for yet —
     # captured here as runtime capabilities rather than per-access-path techniques.
@@ -116,23 +116,66 @@
         source: "https://github.com/antirez/ds4 (README)"
         confidence: low
 
-- id: runtime-mlx
+- id: runtime-mlx-lm
   kind: runtime
-  name: MLX (mlx-lm)
-  summary: Apple-Silicon inference framework; loads MLX-format weights only
+  name: mlx-lm
+  summary: Apple-Silicon inference engine built on the MLX framework; loads MLX-format weights
   visibility: public
-  labels: [self-host, apple-silicon, mlx]
+  labels: [self-host, apple-silicon, mlx, engine]
   facets:
     formats: [mlx]
-    platform: apple-silicon # MLX weights run only on Apple Silicon (M-series); not CUDA/ROCm
+    platform: apple-silicon # built on the MLX framework (Apple's CUDA/ROCm peer); M-series only
   claims:
     - kind: note
       body: >-
-        Weight container = a third ecosystem alongside GGUF (llama.cpp/ollama) and
-        safetensors (vLLM/transformers): MLX format runs only via mlx-lm / LM
-        Studio on Apple Silicon. Choosing a format therefore constrains both the
-        runtime AND the hardware.
+        mlx-lm is the ENGINE (the `pip install mlx-lm` package, with an
+        OpenAI-compatible `mlx_lm.server`); "MLX" itself is Apple's acceleration
+        FRAMEWORK (peer of CUDA/ROCm), and `mlx` is the weight FORMAT. The format
+        is a third ecosystem alongside GGUF (llama.cpp/ollama) and safetensors
+        (vLLM/SGLang): it runs only via mlx-lm / LM Studio on Apple Silicon, so
+        choosing it constrains both the engine AND the hardware. NOT "metal" —
+        Metal is the generic GPU API beneath everything Apple.
       provenance:
         asOf: "2026-06-19"
         source: "mlx-lm / Apple MLX"
+        verification: cited
+
+# A DISTRIBUTION of an engine — a packaged/containerised build of vLLM for GB10,
+# NOT a new engine and NOT a technique. Access-paths reference it via `built-with`
+# (the composition — model×engine×hw — stays the access-path). distribution-of
+# links it to the engine it ships, the way models use variant-of/finetune-of.
+- id: runtime-spark-vllm-docker
+  kind: runtime
+  name: spark-vllm-docker (eugr)
+  summary: Containerised vLLM build + cluster orchestration for DGX Spark (GB10)
+  visibility: public
+  labels: [distribution, docker, vllm, gb10, spark, cluster]
+  relations:
+    - { rel: distribution-of, target: runtime-vllm } # ships the vLLM engine, packaged for GB10
+  facets:
+    formats: [safetensors] # inherits the vLLM engine's loadable formats
+    platform: [cuda] # GB10 (arch 12.1a)
+    build:
+      repo: https://github.com/eugr/spark-vllm-docker
+      baseImage: "nvidia/cuda:13.0.2-devel-ubuntu24.04"
+      arch: "12.1a" # GB10
+      registryImage: null # no published image — locally built (default tag `vllm-node`)
+      orchestrator: "launch-cluster.sh (Ray + PyTorch-distributed; --solo for single node)"
+      supports: [fp8, int4-autoround, awq, nvfp4]
+  claims:
+    - kind: note
+      body: >-
+        Reproducible vLLM-on-GB10 distribution: base nvidia/cuda
+        13.0.2-devel-ubuntu24.04 (arch 12.1a), FlashInfer + fastsafetensors +
+        InstantTensor loading, a "mods" system for model-specific patches without
+        rebuild, non-privileged container w/ RDMA, prebuilt vLLM/FlashInfer
+        wheels. `./launch-cluster.sh [--solo] exec vllm serve <model> …`;
+        multi-node auto-discovery over IB/RDMA (NCCL). Ships recipes for Qwen3.5/
+        3.6, GLM-4.7, Gemma4, Nemotron, MiniMax-M2, gpt-oss, Step. No registry
+        image — built locally via build-and-copy.sh (tag `vllm-node`). An
+        alternative to the forum's aidendle94/sparkrun-vllm image. The engine is
+        vLLM (served-by); this entry is the packaged build (built-with).
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker (README)"
         verification: cited

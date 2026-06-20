@@ -162,3 +162,54 @@
         asOf: "2026-06-19"
         source: "https://huggingface.co/openai/gpt-oss-20b"
         verification: authoritative
+
+# ── access-path: gpt-oss-120b MXFP4 via vLLM on DGX Spark (eugr recipe) ───────
+- id: ap-gpt-oss-120b-spark-vllm-mxfp4
+  kind: access-path
+  name: GPT-OSS 120B · vLLM MXFP4 @ 1× DGX Spark (eugr recipe)
+  summary: OpenAI MXFP4 weights; solo-only; CUTLASS MXFP4 + FlashInfer; native 128K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gpt-oss-120b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-mxfp4 }
+    - { rel: uses-technique, target: technique-prefix-caching }
+    - { rel: uses-technique, target: technique-flashattention }
+  facets:
+    recipe:
+      download: { hfRepo: openai/gpt-oss-120b, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-mxfp4)" } # build_args: --exp-mxfp4
+      artifact: { quant: mxfp4, format: safetensors, kvCacheDtype: fp8 }
+      hardware: { units: 1, accel: GB10 } # solo_only: true
+      env: { VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8: "1" }
+      command: |
+        vllm serve openai/gpt-oss-120b \
+            --tool-call-parser openai \
+            --reasoning-parser openai_gptoss \
+            --enable-auto-tool-choice \
+            --gpu-memory-utilization 0.8 \
+            --enable-prefix-caching \
+            --load-format fastsafetensors \
+            --quantization mxfp4 \
+            --mxfp4-backend CUTLASS \
+            --mxfp4-layers moe,qkv,o,lm_head \
+            --attention-backend FLASHINFER \
+            --kv-cache-dtype fp8 \
+            --max-num-batched-tokens 8192 \
+            --host 0.0.0.0 \
+            --port 8000
+      serving:
+        # recipe sets no --max-model-len → vLLM uses the model's native 131072
+        maxNumBatchedTokens: 8192
+        toolCallParser: openai
+        reasoningParser: openai_gptoss
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+    outcome:
+      context: { tokens: 131072 } # native (recipe sets no max-model-len)
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+        verification: cited

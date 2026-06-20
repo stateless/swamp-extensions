@@ -35,6 +35,59 @@
         source: "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card"
         verification: authoritative
 
+# ── access-path: GLM-4.7-Flash AWQ via vLLM on DGX Spark (eugr recipe) ────────
+- id: ap-glm-47-flash-spark-vllm-awq
+  kind: access-path
+  name: GLM-4.7-Flash · vLLM AWQ @ 1× DGX Spark (eugr recipe)
+  summary: cyankiwi AWQ 4-bit; solo or cluster; ~40 t/s gen (from recipe comment); 198K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-glm-47-flash }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-awq }
+  facets:
+    recipe:
+      download: { hfRepo: cyankiwi/GLM-4.7-Flash-AWQ-4bit, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --pre-tf
+      artifact: { quant: awq, format: safetensors }
+      hardware: { units: 1, accel: GB10 } # tensor_parallel 1; solo allowed (cluster_only false)
+      command: |
+        vllm serve cyankiwi/GLM-4.7-Flash-AWQ-4bit \
+            --tool-call-parser glm47 \
+            --reasoning-parser glm45 \
+            --enable-auto-tool-choice \
+            --served-model-name glm-4.7-flash \
+            --max-model-len 202752 \
+            --max-num-batched-tokens 4096 \
+            --max-num-seqs 64 \
+            --gpu-memory-utilization 0.8 \
+            -tp 1 \
+            --host 0.0.0.0 \
+            --port 8000
+      serving:
+        maxModelLen: 202752
+        tensorParallel: 1
+        maxNumBatchedTokens: 4096
+        maxNumSeqs: 64
+        toolCallParser: glm47
+        reasoningParser: glm45
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml"
+    outcome:
+      context: { tokens: 202752 }
+      speed:
+        genTokS: 40
+        note: >-
+          from recipe comment ("~40 t/s generation in both single node and
+          cluster"), not a benchmark. Recipe warns vLLM is suboptimal for this
+          model even with the speed-optimization patch — slower than expected for
+          the active-param count; cluster helps prompt processing, not generation.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml"
+        verification: cited
+
 # Built 2026-06-19 from authoritative sources as a pipeline test:
 #   config.json (architecture) + model card (specs/benchmarks/license) +
 #   blog/arXiv (DSA/IndexShare narrative). Honest gaps marked; one benchmark
