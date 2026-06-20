@@ -85,6 +85,35 @@
         asOf: "2026-06-20"
         source: "https://huggingface.co/MiniMaxAI/MiniMax-M2.5/resolve/main/config.json"
         verification: authoritative
+    footprint: # Unsloth-published per-quant memory (weights-only); LARGE — multi-Spark
+      basis: weights-only
+      quants:
+        - { quant: "UD-Q3_K_XL", memGB: 101, note: "Unsloth-recommended balance (3-bit dynamic)" }
+        - { quant: Q8, memGB: 243 }
+        - { quant: BF16, memGB: 457, note: "original unquantized" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+        verification: cited
+    benchmarks: # Unsloth-published (attributed to MiniMax vendor figures)
+      sweBenchVerified: 80.2
+      sweBenchMultilingual: 51.3
+      sweBenchPro: 55.4
+      browseComp: 76.3
+      aime2025: 86.3
+      gpqaDiamond: 85.2
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25 (Unsloth aggregating MiniMax vendor figures)"
+        verification: cited
+    config:
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 40, min_p: 0.01 } # Unsloth recommendation
+      maxContext: 196608
+      recommendedQuant: "UD-Q3_K_XL"
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+        verification: cited
 
 - id: model-minimax-m27
   kind: model
@@ -300,4 +329,34 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+        verification: cited
+
+# ── GGUF self-host access-path (Unsloth llama.cpp; hardware-agnostic) ──────────
+# Large model — UD-Q3_K_XL is ~101GB; not single-Spark-class (needs ~128GB+ class).
+- id: ap-minimax-m25-gguf-llamacpp
+  kind: access-path
+  name: MiniMax-M2.5 · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q3_K_XL GGUF (~101GB); 192K context; flash-attn on
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-minimax-m25 }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+    - { rel: uses-technique, target: technique-flashattention }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q3_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/MiniMax-M2.5-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/MiniMax-M2.5-GGUF:UD-Q3_K_XL \
+          --ctx-size 16384 --flash-attn on \
+          --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40
+      serving: { maxModelLen: 196608, toolCallParser: minimax_m2, reasoningParser: minimax_m2 }
+      note: "UD-Q3_K_XL is the recommended size/accuracy balance for this large MoE; ~101GB weights."
+      procedure: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+    outcome:
+      context: { tokens: 196608 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
         verification: cited

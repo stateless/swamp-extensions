@@ -210,6 +210,14 @@
         vLLM `--speculative-config '{"method":"mtp","num_speculative_tokens":N}'`.
         Used by the Qwen3.6-NVFP4, Nemotron-3-Ultra and DeepSeek-V4 recipes.
       provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (mtp recipes)", verification: cited }
+    - kind: finding
+      body: >-
+        Pick N carefully — more tokens is not always faster. On Qwen3.5-122B
+        (forum 365639): MTP-1 ≈95% accept (~1.95 tok/step), MTP-2 ≈80% accept and
+        the throughput sweet spot. MTP-3 gains single-stream but LOSES −32.9% on
+        loaded N=8 concurrency (79.91→60.13 tok/s) and regresses past N≈3-5 — pin
+        MTP-2 (posts 71, 435). DGX (bandwidth-bound) prefers lower N than RTX (post 26).
+      provenance: { asOf: "2026-06-20", source: "https://forums.developer.nvidia.com/t/365639 (posts 71, 435, 26)", verification: cited }
 
 - id: technique-dflash
   kind: technique
@@ -347,6 +355,27 @@
     - kind: note
       body: "Ray-orchestrated multi-replica/multi-node serving for concurrency/throughput (vs TP/PP which split one replica). The AoE Qwen3.5-122B 56 tok/s result used a Ray cluster. Lossless."
       provenance: { asOf: "2026-06-19", source: "Ray Serve / forum 365639", verification: cited }
+
+- id: technique-int8-lmhead
+  kind: technique
+  name: INT8 LM head (shared-weight Triton GEMV)
+  summary: Quantize the LM-head / output projection to INT8 via a shared-weight Triton GEMV kernel
+  visibility: public
+  labels: [quantization, decode, throughput, triton, int8]
+  facets: { qualityImpact: lossy } # INT8 on the output head — small quality risk, decode-throughput win
+  claims:
+    - kind: finding
+      body: >-
+        Quantizing the LM head to INT8 lifted Qwen3.5-122B single-Spark decode ~+15%
+        (38.4 → 44 tok/s, post 71) atop AutoRound-INT4 + FP8 + MTP. Mechanism:
+        runtime per-channel quant (no calibration); a shared-weight Triton GEMV reads
+        the weight matrix once per batch, not per token — bandwidth util 24% → 84%.
+        The head (248K × 3072 ≈ 729MB BF16) was ~24% of every decode step. v2.4 added
+        @triton.autotune over 8 configs for a further +1.2% (post 398).
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://forums.developer.nvidia.com/t/365639 (posts 71, 398)"
+        verification: cited
 
 # Context extension — run BEYOND a model's native context via RoPE scaling/YaRN.
 - id: technique-context-extension

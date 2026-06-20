@@ -133,6 +133,18 @@
         asOf: "2026-06-19"
         source: "https://qwen.ai/blog?id=qwen3.6-35b-a3b"
         verification: cited
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 17 }
+        - { quant: "4-bit", memGB: 23, note: "UD-Q4_K_XL recommended balance" }
+        - { quant: "6-bit", memGB: 30 }
+        - { quant: "8-bit", memGB: 38 }
+        - { quant: BF16, memGB: 70 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
   claims:
     - kind: note
       body: >-
@@ -383,4 +395,42 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml"
+        verification: cited
+
+# ── GGUF self-host access-path (Unsloth llama.cpp; hardware-agnostic) ──────────
+- id: ap-qwen36-35b-gguf-llamacpp
+  kind: access-path
+  name: Qwen3.6-35B-A3B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4_K_XL GGUF (~23GB); 262K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen36-35b-a3b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/Qwen3.6-35B-A3B-GGUF" }
+      command: |
+        export LLAMA_CACHE="unsloth/Qwen3.6-35B-A3B-GGUF"
+        ./llama.cpp/llama-cli -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL \
+          --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.00
+      serving: { maxModelLen: 262144 }
+      note: "thinking-general sampling (temp 1.0/top_p 0.95/top_k 20/min_p 0.0); recommended output 32768. Multimodal needs --mmproj; use llama.cpp not Ollama."
+      procedure: "https://unsloth.ai/docs/models/qwen3.6"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.6"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Unsloth reports ~240 tok/s on an RTX 6000 with MTP enabled
+        (--spec-draft-n-max 2); Unsloth quants land on the KLD SOTA Pareto
+        frontier (21/22 sizes). Generic vendor/packager figures, not our-fleet.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.6"
         verification: cited

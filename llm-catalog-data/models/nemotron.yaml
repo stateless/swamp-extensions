@@ -130,11 +130,14 @@
         asOf: "2026-06-19"
         source: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 config.json"
         verification: authoritative
-    footprint:
-      q4: "~24 GB"
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 24, note: "UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36 }
       provenance:
-        asOf: "2026-06-19"
-        source: "MODEL nemotron card (estimated)"
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3"
         verification: cited
 
 - id: model-nemotron-super-120b-a12b
@@ -159,12 +162,14 @@
         asOf: "2026-06-19"
         source: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json"
         verification: authoritative
-    footprint:
-      q4: "64–72 GB"
-      q8: "~128 GB"
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 68, note: "64–72GB range; UD-Q4_K_XL recommended (UD-Q2_K_XL minimum)" }
+        - { quant: "8-bit", memGB: 128 }
       provenance:
-        asOf: "2026-06-19"
-        source: "MODEL nemotron card (estimated)"
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
         verification: cited
   claims:
     - kind: note
@@ -205,6 +210,52 @@
         asOf: "2026-06-19"
         source: "MODEL nemotron card (estimated)"
         verification: cited
+
+# ── new variant: Nemotron-3-Nano-Omni-30B-A3B — multimodal (omni) sibling ─────
+- id: model-nemotron-nano-omni-30b-a3b
+  kind: model
+  name: Nemotron 3 Nano Omni 30B-A3B (MoE, multimodal)
+  summary: Omni multimodal MoE; 3B active at 30B total; audio/video/image/docs in, text out; 256K
+  visibility: public
+  labels: [nemotron, nano, moe, multimodal, omni]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      attention: nemotron_h # family hybrid Mamba2-Transformer (config.json not independently fetched for this variant)
+      params: "30B"
+      activeParams: "3B"
+      nativeContext: 262144 # 256K per Unsloth
+      vocab: 131072
+      modality: [audio, video, text, image] # "audio, video, text, images and docs as input, with text output"
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni + family nemotron_h config"
+        verification: cited
+        confidence: medium
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 25, note: "UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads:
+        audio/video/text/images/docs in, text out; 256K context. Unsloth
+        positions it as "the strongest omni model for its size", surpassing
+        Qwen3-Omni-30B-A3B on every benchmark (no numeric scores published).
+        Architecture (layers/experts) NOT independently verified vs config.json —
+        inherited from the nemotron_h family; confidence medium.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        verification: cited
+        confidence: medium
 
 # ── new variant: Nemotron-3-Ultra (550B-A55B) — served only by the 4× recipe ──
 - id: model-nemotron-ultra-550b-a55b
@@ -406,4 +457,85 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+        verification: cited
+
+# ── GGUF self-host access-paths (Unsloth llama.cpp; hardware-agnostic) ─────────
+- id: ap-nemotron-nano-30b-gguf-llamacpp
+  kind: access-path
+  name: Nemotron-3-Nano-30B-A3B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4_K_XL GGUF (~24GB); 256K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-nano-30b-a3b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/Nemotron-3-Nano-30B-A3B-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/Nemotron-3-Nano-30B-A3B-GGUF:UD-Q4_K_XL \
+          --ctx-size 32768 --temp 0.6 --top-p 0.95
+      serving: { maxModelLen: 262144 }
+      note: "tool-calling: temp 0.6/top_p 0.95; general chat: temp 1.0/top_p 1.0. Thinking always-on (strip <think> if needed); use llama.cpp not Ollama. Context extensible toward 1M as RAM allows."
+      procedure: "https://unsloth.ai/docs/models/nemotron-3"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3"
+        verification: cited
+
+- id: ap-nemotron-super-120b-gguf-llamacpp
+  kind: access-path
+  name: Nemotron-3-Super-120B-A12B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth GGUF (~64-72GB 4-bit / UD-Q2_K_XL minimum); 256K; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-super-120b-a12b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF:UD-Q4_K_XL \
+          --ctx-size 16384 --temp 1.0 --top-p 1.0
+      serving: { maxModelLen: 262144 }
+      note: "Unsloth recommends UD-Q2_K_XL minimum. general chat: temp 1.0/top_p 1.0; tool-calling: temp 0.6/top_p 0.95. Thinking always-on."
+      procedure: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
+        verification: cited
+
+- id: ap-nemotron-nano-omni-30b-gguf-llamacpp
+  kind: access-path
+  name: Nemotron-3-Nano-Omni-30B-A3B · llama.cpp GGUF (Unsloth, multimodal)
+  summary: Unsloth UD-Q4_K_XL GGUF + mmproj (~25GB); omni multimodal; 256K; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-nano-omni-30b-a3b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF", mmproj: "mmproj-BF16.gguf" }
+      command: |
+        ./llama.cpp/llama-cli \
+          --model unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf \
+          --mmproj unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/mmproj-BF16.gguf \
+          --temp 0.6 --top-p 0.95 --min-p 0.01
+      serving: { maxModelLen: 262144 }
+      note: "Multimodal (audio/video/image/docs in) REQUIRES --mmproj; thinking-mode sampling temp 0.6/top_p 0.95/min_p 0.01."
+      procedure: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
         verification: cited

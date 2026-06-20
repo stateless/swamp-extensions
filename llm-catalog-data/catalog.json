@@ -562,6 +562,59 @@
       }
     },
     {
+      "id": "ap-gemma4-26b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Gemma 4 26B-A4B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~17GB); 262K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gemma4-26b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/gemma-4-26B-A4B-it-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 64\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "Google default sampling temp 1.0/top_p 0.95/top_k 64. Do NOT run Gemma 4 GGUF on CUDA 13.2 (bad outputs). Disable thinking via llama-server enable_thinking:false.",
+          "procedure": "https://unsloth.ai/docs/models/gemma-4"
+        }
+      }
+    },
+    {
       "id": "ap-gemma4-26b-spark-vllm-fp8",
       "kind": "access-path",
       "name": "Gemma 4 26B-A4B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
@@ -644,6 +697,114 @@
             "reasoningParser": "gemma4"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-gemma4-31b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Gemma 4 31B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~18.5GB); 262K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gemma4-31b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/gemma-4-31B-it-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 64\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "Google default sampling temp 1.0/top_p 0.95/top_k 64. Do NOT run Gemma 4 GGUF on CUDA 13.2.",
+          "procedure": "https://unsloth.ai/docs/models/gemma-4"
+        }
+      }
+    },
+    {
+      "id": "ap-glm-47-flash-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "GLM-4.7-Flash · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~18GB); 202K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-glm-47-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 202752
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/GLM-4.7-Flash-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli \\\n  --model unsloth/GLM-4.7-Flash-GGUF/GLM-4.7-Flash-UD-Q4_K_XL.gguf \\\n  --ctx-size 16384 --seed 3407 --temp 1.0 --top-p 0.95 --min-p 0.01\n",
+          "serving": {
+            "maxModelLen": 202752,
+            "toolCallParser": "glm47",
+            "reasoningParser": "glm45"
+          },
+          "note": "general: temp 1.0/top_p 0.95; tool-calling: temp 0.7/top_p 1.0; repeat-penalty disabled or 1.0.",
+          "procedure": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
         }
       }
     },
@@ -757,6 +918,60 @@
       }
     },
     {
+      "id": "ap-gpt-oss-120b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "GPT-OSS 120B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth GGUF (~66GB 1-bit / ~74GB Q4); native 128K; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gpt-oss-120b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 131072
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "Q4",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/gpt-oss-120b-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/gpt-oss-120b-GGUF:UD-Q4_K_XL --jinja -ngl 99 \\\n  --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0\n",
+          "serving": {
+            "minContext": 16384,
+            "maxModelLen": 131072
+          },
+          "note": "temp fixed 1.0; q3 hub build broken — use Q4+; reasoning effort via Harmony chat template.",
+          "procedure": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        }
+      }
+    },
+    {
       "id": "ap-gpt-oss-120b-spark-vllm-mxfp4",
       "kind": "access-path",
       "name": "GPT-OSS 120B · vLLM MXFP4 @ 1× DGX Spark (eugr recipe)",
@@ -840,6 +1055,60 @@
       }
     },
     {
+      "id": "ap-gpt-oss-20b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "GPT-OSS 20B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth GGUF (F16; 2-bit near-identical); ~14GB; native 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gpt-oss-20b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 131072
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "F16",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/gpt-oss-20b-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/gpt-oss-20b-GGUF:F16 --jinja -ngl 99 \\\n  --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0\n",
+          "serving": {
+            "minContext": 16384,
+            "maxModelLen": 131072
+          },
+          "note": "temp fixed 1.0 (do not lower); reasoning effort low/medium/high via Harmony chat template. 2-bit (~11.5GB) reportedly near-identical to F16.",
+          "procedure": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        }
+      }
+    },
+    {
       "id": "ap-minimax-m2-spark-vllm-awq",
       "kind": "access-path",
       "name": "MiniMax-M2 · vLLM AWQ @ 2× DGX Spark (eugr recipe)",
@@ -916,6 +1185,65 @@
             "reasoningParser": "minimax_m2"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-minimax-m25-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "MiniMax-M2.5 · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q3_K_XL GGUF (~101GB); 192K context; flash-attn on",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-minimax-m25"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 196608
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/minimax-m25",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q3_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/MiniMax-M2.5-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/MiniMax-M2.5-GGUF:UD-Q3_K_XL \\\n  --ctx-size 16384 --flash-attn on \\\n  --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40\n",
+          "serving": {
+            "maxModelLen": 196608,
+            "toolCallParser": "minimax_m2",
+            "reasoningParser": "minimax_m2"
+          },
+          "note": "UD-Q3_K_XL is the recommended size/accuracy balance for this large MoE; ~101GB weights.",
+          "procedure": "https://unsloth.ai/docs/models/tutorials/minimax-m25"
         }
       }
     },
@@ -1163,6 +1491,59 @@
       }
     },
     {
+      "id": "ap-nemotron-nano-30b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Nemotron-3-Nano-30B-A3B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~24GB); 256K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-nano-30b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/Nemotron-3-Nano-30B-A3B-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/Nemotron-3-Nano-30B-A3B-GGUF:UD-Q4_K_XL \\\n  --ctx-size 32768 --temp 0.6 --top-p 0.95\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "tool-calling: temp 0.6/top_p 0.95; general chat: temp 1.0/top_p 1.0. Thinking always-on (strip <think> if needed); use llama.cpp not Ollama. Context extensible toward 1M as RAM allows.",
+          "procedure": "https://unsloth.ai/docs/models/nemotron-3"
+        }
+      }
+    },
+    {
       "id": "ap-nemotron-nano-30b-spark-vllm-nvfp4",
       "kind": "access-path",
       "name": "Nemotron-3-Nano-30B-A3B · vLLM NVFP4 @ 1× DGX Spark (eugr recipe)",
@@ -1239,6 +1620,113 @@
             "reasoningParser": "nano_v3"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-nemotron-nano-omni-30b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Nemotron-3-Nano-Omni-30B-A3B · llama.cpp GGUF (Unsloth, multimodal)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF + mmproj (~25GB); omni multimodal; 256K; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-nano-omni-30b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF",
+            "mmproj": "mmproj-BF16.gguf"
+          },
+          "command": "./llama.cpp/llama-cli \\\n  --model unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf \\\n  --mmproj unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/mmproj-BF16.gguf \\\n  --temp 0.6 --top-p 0.95 --min-p 0.01\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "Multimodal (audio/video/image/docs in) REQUIRES --mmproj; thinking-mode sampling temp 0.6/top_p 0.95/min_p 0.01.",
+          "procedure": "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        }
+      }
+    },
+    {
+      "id": "ap-nemotron-super-120b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Nemotron-3-Super-120B-A12B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth GGUF (~64-72GB 4-bit / UD-Q2_K_XL minimum); 256K; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-super-120b-a12b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF:UD-Q4_K_XL \\\n  --ctx-size 16384 --temp 1.0 --top-p 1.0\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "Unsloth recommends UD-Q2_K_XL minimum. general chat: temp 1.0/top_p 1.0; tool-calling: temp 0.6/top_p 0.95. Thinking always-on.",
+          "procedure": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
         }
       }
     },
@@ -1427,6 +1915,59 @@
             "reasoningParser": "nemotron_v3"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen3-coder-next-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Qwen3-Coder-Next · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~46GB); 256K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen3-coder-next"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/Qwen3-Coder-Next-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli \\\n  --model unsloth/Qwen3-Coder-Next-GGUF/Qwen3-Coder-Next-UD-Q4_K_XL.gguf \\\n  --seed 3407 --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "--min-p 0.01 required (llama.cpp default 0.05 diverges); set 32768 ctx for less memory. Non-reasoning instruct.",
+          "procedure": "https://unsloth.ai/docs/models/qwen3-coder-next"
         }
       }
     },
@@ -1635,8 +2176,8 @@
     {
       "id": "ap-qwen35-122b-spark-vllm",
       "kind": "access-path",
-      "name": "Qwen3.5-122B · vLLM @ 1× Spark — Albond (current best)",
-      "summary": "AutoRound INT4 + Qwen FP8 shared-expert layers + MTP-1; 38.4 tok/s single-Spark",
+      "name": "Qwen3.5-122B · vLLM @ 1× Spark — forum 365639 v2.4 (current best)",
+      "summary": "AutoRound INT4 + FP8 shared-experts + INT8 LM head + MTP-2 (v2.4, vLLM 0.19.1-pinned); 52 avg / 55 peak tok/s single-Spark",
       "visibility": "public",
       "labels": [],
       "relations": [
@@ -1661,6 +2202,18 @@
           "target": "technique-fp8"
         },
         {
+          "rel": "uses-technique",
+          "target": "technique-int8-lmhead"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-mtp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
           "rel": "built-with",
           "target": "runtime-spark-vllm-docker"
         }
@@ -1668,28 +2221,100 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Config progression (Albond): v1 AutoRound INT4 = 28.3 tok/s → v2 added Qwen FP8 shared-expert layers + MTP-1 = 38.4. Only the current-best config is a live entry; the full v1→v2 evolution is in this file's git history.",
+          "body": "Config progression (forum 365639): 28.3 (AutoRound INT4) → 38.4 (+FP8 shared-experts + MTP-1, Albond) → 44 (+INT8 LM head, +15%, post 71) → 51 (+MTP-2, +33%, post 71) → 52 (v2.4 backports, FINAL, post 398). Only the current-best (v2.4) is a live entry; the full progression is in git history.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
             "verification": "cited"
           }
         },
         {
           "kind": "finding",
-          "body": "MTP-1 alone is the biggest win; the hybrid INT4+FP8 adds only ~2 tok/s on top of AutoRound+MTP (36.5 → 38.4).",
+          "body": "Speculative decoding is the dominant lever: MTP-1 is the single biggest win (hybrid INT4+FP8 adds only ~2 tok/s atop AutoRound+MTP, 36.5→38.4); MTP-2 adds ~16% (44→51); INT8 LM head ~+15% (38.4→44). All decode-path — footprint unchanged across the chain.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "Independently replicated: a.fairaizl reproduced ~52.0/53.3 mean (vs Albond's 51.6 ref) on TWO different boxes — a DGX Spark Founders AND an ASUS GX10 — confirming the recipe ports beyond Founders hardware; ~105 tok/s aggregated across the two (post 431). Also topofocus 50 tok/s single node (post 426), norman.2 36.7-40 hybrid-only (post 9), erlendboe MTP-2>MTP-1 single Spark (post 28).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "MTP-2 (not MTP-3) is the deliberate pin: MTP-2 accept ≈80% on the 122B (post 71); MTP-3 gains single-stream but loses −32.9% on loaded N=8 throughput (49.65→45.31 single, 79.91→60.13 @N=8) — a.fairaizl chose MTP-2 on both nodes (post 435).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "PIN vLLM 0.19.1 (commit 2a69949bd). v0.20.1 regresses ~9% (50.3→46.1 … 54.2→48.5): `splitting_ops` now splits DeltaNet `gdn_attention_core` (36/48 layers) + deepseek_v4_attention out of the decode CUDA graph → launch overhead. Albond froze at 0.19.1 with no plans to chase 0.20.1 (post 395/398).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Dead-ends on a single Spark: NVFP4 = 16.6 tok/s (FP4 CUTLASS missing on SM121, Marlin-SM80 fallback — posts 1/35); DFlash spec-decode k=5 −15% / k=15 −47%, accept <5%, degrades code tasks (posts 355/361); EAGLE-3 slower than MTP-2 on DeltaNet (post 29). MTP-2 + INT8-head remains best.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "Production runbook (drewid74 — builds on Albond's recipe; posted in thread 365639): post PD-wedge-fix the ASUS GX10 (spark2) EXCEEDS the DGX Founders (spark1) — ~54 vs ~52 tok/s, 262K max-len, 0.85 GMU, short prompts; per-task mean 53.3 (Q&A 53.6 / Code 55.4 / JSON 53.9 / Math 50.0 / LongCode 57.0). Both nodes now match/exceed Albond's 51.6 ref. Opt stack (cumulative): FlashInfer +16%, hybrid INT4+FP8 +8.8%, MTP-2 +25%, INT8 LM head +33%(+1.2%).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "GB10 memory budget (drewid74 runbook): the CUDA driver permanently reserves ~22GiB → ~100GiB usable of 128. GMU 0.85 = validated safe ceiling for 262K max-len; 0.90 FAILS (needs 109.52GiB); 0.80 passes the budget check but SILENTLY OOM-kills EngineCore during CUDA-graph capture. The fix for the 0.80 OOM is `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`, NOT lowering GMU. Higher GMU also needs a page-cache flush + disabling gdm3 (~16GiB held).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "FlashInfer JIT OOM (drewid74 runbook): without `MAX_JOBS=2` + `FLASHINFER_NVCC_THREADS=1`, FlashInfer's JIT spawns 20-32 parallel `cicc` compilers (1-4GiB each) and exhausts unified memory → OOM-kill (signal 9). These env vars are MANDATORY on GB10. `VLLM_MARLIN_USE_ATOMIC_ADD=1` adds ~5-7 tok/s. First boot 25-45 min (weights+JIT+graph); cache mounts → 7-10 min.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "ASUS GX10 PD-firmware wedge (drewid74 runbook): after OOM-kills/crash-loops the USB-C Power-Delivery firmware can wedge — throughput 30-50% low, SM clock pinned at 611/708 MHz (vs 2400-2600), power <15W, NO throttle reasons shown, and `nvidia-smi -lgc` is accepted but ignored. Fix = AC COLD DRAIN: poweroff, unplug the brick from the wall 90-120s (60s insufficient), replug, restart. Persistent → ASUS support for PD firmware ≥5.8. (Founders units not affected.)",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
             "verification": "cited"
           }
         },
         {
           "kind": "note",
-          "body": "Corroborated by norman.2 (~38.6-40 tok/s, same hybrid+MTP config, community vLLM docker).",
+          "body": "Source variance on MTP-2 accept rate: forum post 71 cites ~80%, the drewid74 runbook cites ~95% — likely different harness/workload. Both agree MTP-2 is the throughput sweet spot; the accept figure is approximate.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "asOf": "2026-06-20",
+            "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
             "verification": "cited"
           }
         }
@@ -1698,25 +2323,61 @@
         "outcome": {
           "quality": {
             "measured": null,
-            "note": "No output-quality measured for this AutoRound-INT4 config — INT4 quant CAN degrade outputs, so speed alone doesn't certify it. Reference ceiling = model-qwen35-122b published benchmarks; treat as UNVERIFIED for quality until an eval on THIS config exists.",
+            "note": "Attempted, inconclusive. (a) The hybrid-FP8 step is quality-neutral vs pure INT4 (author-verified, post 6) — but that's hybrid-vs-INT4, NOT INT4-vs-full-precision. (b) MTP / INT8-head are lossless/near-lossless (post 70). (c) A real eval (tool-eval-bench) scored 60-87/100 across same-config repeats — too noisy at N=15 to differentiate (post 435). So INT4-weights quality is still UNCERTIFIED, but no longer no-data.",
             "verification": "unverified"
           },
           "speed": {
-            "genTokS": 38.4,
-            "range": "36.3-39.9 across Q&A/code/JSON/math/long-code",
-            "note": "title claims 51 tok/s; author's VERIFIED single-Spark figure is 38.4"
+            "genTokS": 52,
+            "genTokS32k": 48,
+            "progression": [
+              {
+                "config": "AutoRound INT4 (v1)",
+                "tokS": 28.3
+              },
+              {
+                "config": "+ FP8 shared-expert layers + MTP-1 (Albond v2)",
+                "tokS": 38.4
+              },
+              {
+                "config": "+ INT8 LM head (shared-weight Triton GEMV)",
+                "tokS": 44,
+                "gain": "+15%",
+                "post": 71
+              },
+              {
+                "config": "+ MTP-2 (num_speculative_tokens:2)",
+                "tokS": 51,
+                "gain": "+33% vs 38.4",
+                "post": 71
+              },
+              {
+                "config": "+ v2.4 backports (triton.autotune +1.2%; PR#38325 swapAB FP8 GEMM +0.76%)",
+                "tokS": 52,
+                "note": "FINAL — avg 51.6±0.3, peak 54.9",
+                "post": 398
+              }
+            ],
+            "concurrency": [
+              {
+                "n": 8,
+                "aggregateTokS": 79.9,
+                "note": "MTP-2 loaded, single node — post 435"
+              }
+            ],
+            "range": "36.3-39.9 across Q&A/code/JSON/math/long-code (measured at the 38.4 config)",
+            "note": "Single-request, SHORT prompt (~30-50 tok); decays with depth — ~48 @32K (post 72/396). Decode tok/s, MTP-accounted; vLLM ~2.3x faster than Ollama."
           },
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
             "verification": "cited"
           }
         },
         "recipe": {
           "build": {
             "runtime": "vLLM",
-            "version": "0.19",
-            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+            "version": "0.19.1 (commit 2a69949bd) — PINNED; 0.20.1 regresses ~9% (see caveat)",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node); also drewid74 docker runbook (cu130, torch 2.12.0)"
           },
           "artifact": {
             "quant": "hybrid INT4 (AutoRound) + FP8 (Qwen official, 144 shared-expert dense layers)",
@@ -1726,8 +2387,22 @@
             "units": 1,
             "accel": "GB10"
           },
-          "technique": "MTP-1 speculative decoding (~95% accept); ~95-line vLLM INC quant patch",
-          "procedure": "https://forums.developer.nvidia.com/t/365639"
+          "technique": "v2.4: MTP-2 (num_speculative_tokens:2) + INT8 LM head (Triton GEMV) + FlashInfer backend + ~95-line vLLM INC quant patch + v2.4 backports via install.sh (triton.autotune on the head GEMV +1.2%; vLLM PR#38325 swapAB SM120 FP8 GEMM M≤64 +0.76%)",
+          "serving": {
+            "gpuMemoryUtilization": 0.85,
+            "attentionBackend": "FLASHINFER",
+            "maxModelLen": 262144,
+            "reasoningParser": "qwen3"
+          },
+          "env": {
+            "MAX_JOBS": "2",
+            "FLASHINFER_NVCC_THREADS": "1",
+            "VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS": "1",
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1",
+            "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+            "VLLM_USE_FLASHINFER_SAMPLER": "0"
+          },
+          "procedure": "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public"
         }
       }
     },
@@ -1773,8 +2448,8 @@
           "kind": "caveat",
           "body": "RECONCILIATION: results span 28.3 (v1) → 36.5 (AutoRound+MTP) → 38.4 (v2 hybrid, single Spark) → 56 (AoE Ray cluster). The title's \"51 tok/s\" sits between single-Spark v2 and the cluster — it is NOT the verified single-Spark number (38.4). Also: llama-benchy reports ~20 tok/s because it measures decode steps, not user-facing throughput — a metric disagreement, not a config one.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://forums.developer.nvidia.com/t/365639 (Albond)",
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)",
             "verification": "cited"
           }
         }
@@ -1899,8 +2574,8 @@
     {
       "id": "ap-qwen35-122b-spark-vllm-int4-autoround",
       "kind": "access-path",
-      "name": "Qwen3.5-122B-A10B · vLLM INT4-AutoRound @ 2× DGX Spark (eugr recipe)",
-      "summary": "Intel INT4-AutoRound; TP=2 Ray; qwen3_xml parser; 256K context",
+      "name": "Qwen3.5-122B-A10B · vLLM INT4-AutoRound @ DGX Spark (eugr recipe; solo-capable)",
+      "summary": "Intel INT4-AutoRound; fits 1× Spark (~66GB); TP=2 is the 2-Spark throughput option; qwen3_xml parser; 256K context",
       "visibility": "public",
       "labels": [],
       "relations": [
@@ -1970,7 +2645,7 @@
             "format": "safetensors"
           },
           "hardware": {
-            "units": 2,
+            "units": 1,
             "accel": "GB10"
           },
           "mods": [
@@ -1988,6 +2663,59 @@
             "reasoningParser": "qwen3"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-int4-autoround.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-35b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Qwen3.5-35B-A3B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4 GGUF (~22GB); 262K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-35b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.5",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/Qwen3.5-35B-A3B-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 20\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "runs on a 22GB device at 4-bit; multimodal needs --mmproj; use llama.cpp not Ollama. thinking-general sampling.",
+          "procedure": "https://unsloth.ai/docs/models/qwen3.5"
         }
       }
     },
@@ -2514,6 +3242,122 @@
             "reasoningParser": "qwen3"
           },
           "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/3x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-9b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Qwen3.5-9B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth GGUF (~6.5GB 4-bit); 262K context; small-footprint self-host",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-9b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.5",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/Qwen3.5-9B-GGUF"
+          },
+          "command": "./llama.cpp/llama-cli -hf unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 20\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "Unsloth Dynamic 2.0 (UD-Q2_K_XL minimum); multimodal needs --mmproj; use llama.cpp not Ollama (mmproj). thinking-general sampling.",
+          "procedure": "https://unsloth.ai/docs/models/qwen3.5"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen36-35b-gguf-llamacpp",
+      "kind": "access-path",
+      "name": "Qwen3.6-35B-A3B · llama.cpp GGUF (Unsloth)",
+      "summary": "Unsloth UD-Q4_K_XL GGUF (~23GB); 262K context; single-Spark-class",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen36-35b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-llamacpp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-gguf-kquant"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-unsloth-dynamic"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Unsloth reports ~240 tok/s on an RTX 6000 with MTP enabled (--spec-draft-n-max 2); Unsloth quants land on the KLD SOTA Pareto frontier (21/22 sizes). Generic vendor/packager figures, not our-fleet.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.6",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "artifact": {
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "packager": "unsloth",
+            "hfRepo": "unsloth/Qwen3.6-35B-A3B-GGUF"
+          },
+          "command": "export LLAMA_CACHE=\"unsloth/Qwen3.6-35B-A3B-GGUF\"\n./llama.cpp/llama-cli -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.00\n",
+          "serving": {
+            "maxModelLen": 262144
+          },
+          "note": "thinking-general sampling (temp 1.0/top_p 0.95/top_k 20/min_p 0.0); recommended output 32768. Multimodal needs --mmproj; use llama.cpp not Ollama.",
+          "procedure": "https://unsloth.ai/docs/models/qwen3.6"
         }
       }
     },
@@ -3127,6 +3971,42 @@
             "source": "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/",
             "confidence": "medium"
           }
+        },
+        {
+          "kind": "caveat",
+          "body": "Usable memory < 128GB: the CUDA driver permanently reserves ~22GB, leaving ~100-106GB for weights+KV. vLLM `gpu_memory_utilization` 0.85 is the validated safe ceiling for a ~110GB-class load (0.90 fails — needs ~109.5GB; 0.80 silently OOMs at CUDA-graph capture unless `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory; set `multi-user.target` (no display manager) to reclaim it for inference. Our dgx1 is already headless (verified 2026-06-20: gdm/lightdm/sddm inactive, default target multi-user, only ~0.4GB in use idle).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "USB-C Power-Delivery firmware WEDGE (seen on ASUS GX10; not DGX Founders): after OOM-kills / crash-loops the PD firmware can pin the SM clock at 611/708MHz (vs 2400-2600), power <15W, with NO throttle reason reported and `nvidia-smi -lgc` silently ignored — throughput 30-50% low. Fix = AC cold drain (poweroff, unplug brick from wall 90-120s, replug); persistent → request ASUS PD firmware >=5.8. Worth a smart-plug for remote drains.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "nvidia-smi can't report GB10 unified memory (memory.used/total/reserved = N/A, \"Not Supported\") — use `free`/vLLM's memory profiler / tegrastats instead. dgx1 live: NVIDIA GB10, driver 580.159.03, CUDA 13.0, kernel 6.17.0-1021-nvidia (DGX OS 7).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "verification": "cited"
+          }
         }
       ],
       "facets": {
@@ -3134,7 +4014,8 @@
           "compute": "cuda",
           "unifiedMemGB": 128,
           "powerW": 70,
-          "clusterable": true
+          "clusterable": true,
+          "driverReservedGB": 22
         }
       }
     },
@@ -3401,6 +4282,30 @@
           "experts": "8 active / 128 total",
           "visionEncoderParams": "~550M"
         },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 17,
+              "note": "16–18GB range; UD-Q4_K_XL recommended"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 29,
+              "note": "28–30GB range"
+            },
+            {
+              "quant": "BF16",
+              "memGB": 52
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
+        },
         "benchmarks": {
           "mmluPro": 82.6,
           "aime2026": 88.3,
@@ -3450,6 +4355,30 @@
           "layers": 60,
           "slidingWindow": 1024,
           "visionEncoderParams": "~550M"
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 18.5,
+              "note": "17–20GB range; UD-Q4_K_XL recommended"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 36,
+              "note": "34–38GB range"
+            },
+            {
+              "quant": "BF16",
+              "memGB": 62
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
         },
         "benchmarks": {
           "mmluPro": 85.2,
@@ -3515,6 +4444,29 @@
           "visionEncoderParams": "~150M",
           "audioEncoderParams": "~300M"
         },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 4
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 6.5,
+              "note": "5–8GB range; 8-bit recommended for E-series"
+            },
+            {
+              "quant": "BF16",
+              "memGB": 10
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
+        },
         "benchmarks": {
           "mmluPro": 60,
           "aime2026": 37.5,
@@ -3578,6 +4530,30 @@
           "visionEncoderParams": "~150M",
           "audioEncoderParams": "~300M"
         },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 5.75,
+              "note": "5.5–6GB range"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 10.5,
+              "note": "9–12GB range"
+            },
+            {
+              "quant": "BF16",
+              "memGB": 16
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gemma-4",
+            "verification": "cited"
+          }
+        },
         "benchmarks": {
           "mmluPro": 69.4,
           "aime2026": 42.5,
@@ -3638,6 +4614,61 @@
             "asOf": "2026-06-20",
             "source": "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card",
             "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "UD-Q4_K_XL",
+              "memGB": 18,
+              "note": "Unsloth-recommended 4-bit dynamic; ~18GB RAM/unified"
+            },
+            {
+              "quant": "F16",
+              "memGB": 32,
+              "note": "full precision"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash",
+            "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "aime2025": 91.6,
+          "gpqaDiamond": 75.2,
+          "liveCodeBenchV6": 64,
+          "hle": 14.4,
+          "sweBenchVerified": 59.2,
+          "tau2Agentic": 79.5,
+          "browseComp": 42.8,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash (Unsloth aggregating GLM/z.ai vendor figures)",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "sampling": {
+            "general": {
+              "temp": 1,
+              "top_p": 0.95,
+              "min_p": 0.01
+            },
+            "toolCalling": {
+              "temp": 0.7,
+              "top_p": 1
+            },
+            "repeat_penalty": "disabled or 1.0"
+          },
+          "maxContext": 202752,
+          "recommendedQuant": "UD-Q4_K_XL",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash",
+            "verification": "cited"
           }
         }
       }
@@ -3904,6 +4935,25 @@
             "source": "https://huggingface.co/openai/gpt-oss-20b",
             "verification": "authoritative"
           }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "1-bit",
+              "memGB": 66,
+              "note": "Unsloth recommends ~66GB unified memory for 6+ tok/s; q3 hub build broken — use Q4+"
+            },
+            {
+              "quant": "Q4",
+              "memGB": 74
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3940,6 +4990,26 @@
             "asOf": "2026-06-19",
             "source": "https://huggingface.co/openai/gpt-oss-20b",
             "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "2-bit",
+              "memGB": 11.5,
+              "note": "near-identical to F16 per Unsloth (MoE-aware quant)"
+            },
+            {
+              "quant": "F16",
+              "memGB": 14,
+              "note": "Unsloth recommends ~14GB unified memory for 6+ tok/s"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
+            "verification": "cited"
           }
         }
       }
@@ -4037,6 +5107,58 @@
             "asOf": "2026-06-20",
             "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2.5/resolve/main/config.json",
             "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "UD-Q3_K_XL",
+              "memGB": 101,
+              "note": "Unsloth-recommended balance (3-bit dynamic)"
+            },
+            {
+              "quant": "Q8",
+              "memGB": 243
+            },
+            {
+              "quant": "BF16",
+              "memGB": 457,
+              "note": "original unquantized"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/minimax-m25",
+            "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "sweBenchVerified": 80.2,
+          "sweBenchMultilingual": 51.3,
+          "sweBenchPro": 55.4,
+          "browseComp": 76.3,
+          "aime2025": 86.3,
+          "gpqaDiamond": 85.2,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/minimax-m25 (Unsloth aggregating MiniMax vendor figures)",
+            "verification": "cited"
+          }
+        },
+        "config": {
+          "sampling": {
+            "temp": 1,
+            "top_p": 0.95,
+            "top_k": 40,
+            "min_p": 0.01
+          },
+          "maxContext": 196608,
+          "recommendedQuant": "UD-Q3_K_XL",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/tutorials/minimax-m25",
+            "verification": "cited"
           }
         }
       }
@@ -4274,10 +5396,21 @@
           }
         },
         "footprint": {
-          "q4": "~24 GB",
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 24,
+              "note": "UD-Q4_K_XL recommended"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 36
+            }
+          ],
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "MODEL nemotron card (estimated)",
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3",
             "verification": "cited"
           }
         }
@@ -4333,6 +5466,78 @@
       }
     },
     {
+      "id": "model-nemotron-nano-omni-30b-a3b",
+      "kind": "model",
+      "name": "Nemotron 3 Nano Omni 30B-A3B (MoE, multimodal)",
+      "summary": "Omni multimodal MoE; 3B active at 30B total; audio/video/image/docs in, text out; 256K",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "nano",
+        "moe",
+        "multimodal",
+        "omni"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads: audio/video/text/images/docs in, text out; 256K context. Unsloth positions it as \"the strongest omni model for its size\", surpassing Qwen3-Omni-30B-A3B on every benchmark (no numeric scores published). Architecture (layers/experts) NOT independently verified vs config.json — inherited from the nemotron_h family; confidence medium.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "nemotron_h",
+          "params": "30B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "audio",
+            "video",
+            "text",
+            "image"
+          ],
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni + family nemotron_h config",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 25,
+              "note": "UD-Q4_K_XL recommended"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 36
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
       "id": "model-nemotron-super-120b-a12b",
       "kind": "model",
       "name": "Nemotron 3 Super 120B-A12B (MoE)",
@@ -4379,11 +5584,21 @@
           }
         },
         "footprint": {
-          "q4": "64–72 GB",
-          "q8": "~128 GB",
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 68,
+              "note": "64–72GB range; UD-Q4_K_XL recommended (UD-Q2_K_XL minimum)"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 128
+            }
+          ],
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "MODEL nemotron card (estimated)",
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super",
             "verification": "cited"
           }
         }
@@ -4512,10 +5727,10 @@
         },
         {
           "kind": "note",
-          "body": "GAP: the card publishes no vendor benchmark numbers (MMLU, LiveCodeBench, etc.) for Qwen3-Coder-Next — benchmarks facet omitted. Re-mine the HuggingFace model card if published figures are needed.",
+          "body": "UPDATE (2026-06-20): SWE-bench/Terminal-Bench/Aider figures NOW filled from the Unsloth guide (benchmarks facet), superseding the earlier \"no vendor numbers\" gap. MMLU/LiveCodeBench still absent from the sources.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
             "verification": "cited"
           }
         }
@@ -4563,24 +5778,38 @@
           }
         },
         "footprint": {
+          "basis": "weights-only",
           "quants": [
             {
               "quant": "Q4",
-              "memGB": "~46"
+              "memGB": 46,
+              "note": "Q4_K_M advised; runs on 46GB RAM/VRAM/unified"
             },
             {
               "quant": "Q8",
-              "memGB": "~85"
+              "memGB": 85
             },
             {
               "quant": "Q2/Q3",
-              "memGB": "~29",
-              "note": "usable, some quality loss"
+              "memGB": 29,
+              "note": "3-bit a sensible minimum; some quality loss"
             }
           ],
           "provenance": {
-            "asOf": "2026-06-19",
+            "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/qwen3-coder-next",
+            "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "sweBenchVerified": 70.6,
+          "sweBenchMultilingual": 62.8,
+          "sweBenchPro": 44.3,
+          "terminalBench2": 36.2,
+          "aider": 66.2,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3-coder-next (Unsloth aggregating Qwen vendor figures)",
             "verification": "cited"
           }
         }
@@ -4711,6 +5940,28 @@
             "video"
           ]
         },
+        "footprint": {
+          "basis": "weights-only",
+          "kvGbPer1k": 0.1,
+          "quants": [
+            {
+              "quant": "int4",
+              "memGB": 71,
+              "note": "hybrid INT4 experts + FP8 on 144 dense layers ≈ 67-71GB weights (MEASURED: 71 @post398, 67 @drewid74 runbook; pure-INT4 ≈66GB). Single-Spark FIT is generic to INT4; the recipe's value is THROUGHPUT (28→52 tok/s) — see ap-qwen35-122b-spark-vllm. At 262K: ~67-71GB weights + ~27GB(0.85)/39GB(0.90) KV; driver reserves ~22GB, so 0.85 GMU is the safe ceiling (0.90 fails)."
+            },
+            {
+              "quant": "fp8",
+              "memGB": 122,
+              "note": "full FP8 — needs ~2 units"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "MEASURED — forum 365639 post 398 (71GB+39GB@0.90) + github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (67GB+27GB@0.85); fp8 estimated",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        },
         "benchmarks": {
           "mmluPro": 86.7,
           "gpqaDiamond": 86.6,
@@ -4758,6 +6009,37 @@
           ],
           "layers": 64,
           "hidden": 5120
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "3-bit",
+              "memGB": 14
+            },
+            {
+              "quant": "4-bit",
+              "memGB": 17,
+              "note": "runs on an 18GB device at 4-bit"
+            },
+            {
+              "quant": "6-bit",
+              "memGB": 24
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 30
+            },
+            {
+              "quant": "BF16",
+              "memGB": 54
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.5",
+            "verification": "cited"
+          }
         },
         "benchmarks": {
           "mmluPro": 86.1,
@@ -4818,6 +6100,37 @@
           "layers": 40,
           "experts": "8/token of 256 routed + 1 shared",
           "hidden": 2048
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "3-bit",
+              "memGB": 17
+            },
+            {
+              "quant": "4-bit",
+              "memGB": 22,
+              "note": "runs on a 22GB device at 4-bit (UD-Q4)"
+            },
+            {
+              "quant": "6-bit",
+              "memGB": 30
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 38
+            },
+            {
+              "quant": "BF16",
+              "memGB": 70
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.5",
+            "verification": "cited"
+          }
         },
         "benchmarks": {
           "mmluPro": 85.3,
@@ -4911,6 +6224,36 @@
           ],
           "layers": 32,
           "hidden": 4096
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "3-bit",
+              "memGB": 5.5
+            },
+            {
+              "quant": "4-bit",
+              "memGB": 6.5
+            },
+            {
+              "quant": "6-bit",
+              "memGB": 9
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 13
+            },
+            {
+              "quant": "BF16",
+              "memGB": 19
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.5",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -5092,6 +6435,37 @@
           "provenance": {
             "asOf": "2026-06-19",
             "source": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+            "verification": "cited"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "3-bit",
+              "memGB": 17
+            },
+            {
+              "quant": "4-bit",
+              "memGB": 23,
+              "note": "UD-Q4_K_XL recommended balance"
+            },
+            {
+              "quant": "6-bit",
+              "memGB": 30
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 38
+            },
+            {
+              "quant": "BF16",
+              "memGB": 70
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://unsloth.ai/docs/models/qwen3.6",
             "verification": "cited"
           }
         }
@@ -5784,6 +7158,35 @@
       ]
     },
     {
+      "id": "technique-int8-lmhead",
+      "kind": "technique",
+      "name": "INT8 LM head (shared-weight Triton GEMV)",
+      "summary": "Quantize the LM-head / output projection to INT8 via a shared-weight Triton GEMV kernel",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "decode",
+        "throughput",
+        "triton",
+        "int8"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "Quantizing the LM head to INT8 lifted Qwen3.5-122B single-Spark decode ~+15% (38.4 → 44 tok/s, post 71) atop AutoRound-INT4 + FP8 + MTP. Mechanism: runtime per-channel quant (no calibration); a shared-weight Triton GEMV reads the weight matrix once per batch, not per token — bandwidth util 24% → 84%. The head (248K × 3072 ≈ 729MB BF16) was ~24% of every decode step. v2.4 added @triton.autotune over 8 configs for a further +1.2% (post 398).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (posts 71, 398)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
       "id": "technique-kv-eviction",
       "kind": "technique",
       "name": "KV eviction / compression (SnapKV, H2O, StreamingLLM)",
@@ -5884,6 +7287,15 @@
           "provenance": {
             "asOf": "2026-06-20",
             "source": "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (mtp recipes)",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "Pick N carefully — more tokens is not always faster. On Qwen3.5-122B (forum 365639): MTP-1 ≈95% accept (~1.95 tok/step), MTP-2 ≈80% accept and the throughput sweet spot. MTP-3 gains single-stream but LOSES −32.9% on loaded N=8 concurrency (79.91→60.13 tok/s) and regresses past N≈3-5 — pin MTP-2 (posts 71, 435). DGX (bandwidth-bound) prefers lower N than RTX (post 26).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://forums.developer.nvidia.com/t/365639 (posts 71, 435, 26)",
             "verification": "cited"
           }
         }
