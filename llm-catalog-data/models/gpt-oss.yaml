@@ -128,7 +128,9 @@
   facets:
     architecture:
       attention: alternating-swa-full
-      params: "20B"
+      params: "21B"
+      activeParams: "3.6B" # MoE: 32 experts, 4 active per token
+      experts: "4/token of 32"
       nativeContext: 131072
       modality: [text]
       notes: >-
@@ -136,8 +138,8 @@
         reasoning. Approx. on-disk size ~14GB at dynamic Q4 / ~20GB at F16; 2-bit
         (~11.5GB) reportedly near-identical to F16 (~14GB) per the card.
       provenance:
-        asOf: "2026-06-19"
-        source: "https://huggingface.co/openai/gpt-oss-20b"
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/openai/gpt-oss-20b (+ /raw/main/config.json)"
         verification: authoritative
     footprint: # weights-only; Unsloth run guide
       basis: weights-only
@@ -179,7 +181,9 @@
   facets:
     architecture:
       attention: alternating-swa-full
-      params: "120B"
+      params: "117B"
+      activeParams: "5.1B" # MoE: 128 experts, 4 active per token
+      experts: "4/token of 128"
       nativeContext: 131072
       modality: [text]
       notes: >-
@@ -187,8 +191,8 @@
         reasoning. Approx. on-disk size ~66GB at 1-bit / ~74GB at Q4. The card warns
         the `hf-gpt-oss:120b-q3` hub build is broken — use Q4 or above.
       provenance:
-        asOf: "2026-06-19"
-        source: "https://huggingface.co/openai/gpt-oss-20b"
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/openai/gpt-oss-120b (+ /raw/main/config.json)"
         verification: authoritative
     footprint: # weights-only; Unsloth run guide (fits a single DGX Spark)
       basis: weights-only

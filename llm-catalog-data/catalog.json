@@ -4015,7 +4015,8 @@
           "unifiedMemGB": 128,
           "powerW": 70,
           "clusterable": true,
-          "driverReservedGB": 22
+          "driverReservedGB": 22,
+          "memBandwidthGBs": 273
         }
       }
     },
@@ -4925,15 +4926,17 @@
       "facets": {
         "architecture": {
           "attention": "alternating-swa-full",
-          "params": "120B",
+          "params": "117B",
+          "activeParams": "5.1B",
           "nativeContext": 131072,
           "modality": [
             "text"
           ],
+          "experts": "4/token of 128",
           "notes": "Comparative positioning: rivals o4-mini; strong function calling and CoT reasoning. Approx. on-disk size ~66GB at 1-bit / ~74GB at Q4. The card warns the `hf-gpt-oss:120b-q3` hub build is broken — use Q4 or above.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://huggingface.co/openai/gpt-oss-20b",
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/openai/gpt-oss-120b (+ /raw/main/config.json)",
             "verification": "authoritative"
           }
         },
@@ -4999,15 +5002,17 @@
       "facets": {
         "architecture": {
           "attention": "alternating-swa-full",
-          "params": "20B",
+          "params": "21B",
+          "activeParams": "3.6B",
           "nativeContext": 131072,
           "modality": [
             "text"
           ],
+          "experts": "4/token of 32",
           "notes": "Comparative positioning: rivals o3-mini; strong function calling and CoT reasoning. Approx. on-disk size ~14GB at dynamic Q4 / ~20GB at F16; 2-bit (~11.5GB) reportedly near-identical to F16 (~14GB) per the card.",
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "https://huggingface.co/openai/gpt-oss-20b",
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/openai/gpt-oss-20b (+ /raw/main/config.json)",
             "verification": "authoritative"
           }
         },
