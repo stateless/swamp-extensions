@@ -77,6 +77,16 @@
       modality: [text, image, audio]
       visionEncoderParams: "~150M"
       audioEncoderParams: "~300M"
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 4 }
+        - { quant: "8-bit", memGB: 6.5, note: "5–8GB range; 8-bit recommended for E-series" }
+        - { quant: BF16, memGB: 10 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
     benchmarks: # Google published, instruction-tuned
       mmluPro: 60.0
       aime2026: 37.5
@@ -122,6 +132,16 @@
       modality: [text, image, audio]
       visionEncoderParams: "~150M"
       audioEncoderParams: "~300M"
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 5.75, note: "5.5–6GB range" }
+        - { quant: "8-bit", memGB: 10.5, note: "9–12GB range" }
+        - { quant: BF16, memGB: 16 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
     benchmarks:
       mmluPro: 69.4
       aime2026: 42.5
@@ -164,6 +184,16 @@
       experts: "8 active / 128 total" # CORRECTED: HF config has no shared-expert key (was "+ 1 shared")
       modality: [text, image]
       visionEncoderParams: "~550M"
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 17, note: "16–18GB range; UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 29, note: "28–30GB range" }
+        - { quant: BF16, memGB: 52 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
     benchmarks:
       mmluPro: 82.6
       aime2026: 88.3
@@ -198,6 +228,16 @@
       nativeContext: 262144
       modality: [text, image]
       visionEncoderParams: "~550M"
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 18.5, note: "17–20GB range; UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36, note: "34–38GB range" }
+        - { quant: BF16, memGB: 62 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
     benchmarks:
       mmluPro: 85.2
       aime2026: 89.2
@@ -264,4 +304,57 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml"
+        verification: cited
+
+# ── GGUF self-host access-paths (Unsloth llama.cpp; hardware-agnostic) ─────────
+- id: ap-gemma4-26b-gguf-llamacpp
+  kind: access-path
+  name: Gemma 4 26B-A4B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4_K_XL GGUF (~17GB); 262K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gemma4-26b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/gemma-4-26B-A4B-it-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL \
+          --temp 1.0 --top-p 0.95 --top-k 64
+      serving: { maxModelLen: 262144 }
+      note: "Google default sampling temp 1.0/top_p 0.95/top_k 64. Do NOT run Gemma 4 GGUF on CUDA 13.2 (bad outputs). Disable thinking via llama-server enable_thinking:false."
+      procedure: "https://unsloth.ai/docs/models/gemma-4"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
+
+- id: ap-gemma4-31b-gguf-llamacpp
+  kind: access-path
+  name: Gemma 4 31B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4_K_XL GGUF (~18.5GB); 262K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gemma4-31b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/gemma-4-31B-it-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
+          --temp 1.0 --top-p 0.95 --top-k 64
+      serving: { maxModelLen: 262144 }
+      note: "Google default sampling temp 1.0/top_p 0.95/top_k 64. Do NOT run Gemma 4 GGUF on CUDA 13.2."
+      procedure: "https://unsloth.ai/docs/models/gemma-4"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
         verification: cited

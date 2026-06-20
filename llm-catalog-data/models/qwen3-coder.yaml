@@ -44,13 +44,24 @@
         source: "https://unsloth.ai/docs/models/qwen3-coder-next"
         verification: cited
     footprint: # Unsloth-published per-quant memory requirements (generic, not our-fleet)
+      basis: weights-only
       quants:
-        - { quant: Q4, memGB: "~46" }
-        - { quant: Q8, memGB: "~85" }
-        - { quant: "Q2/Q3", memGB: "~29", note: "usable, some quality loss" }
+        - { quant: Q4, memGB: 46, note: "Q4_K_M advised; runs on 46GB RAM/VRAM/unified" }
+        - { quant: Q8, memGB: 85 }
+        - { quant: "Q2/Q3", memGB: 29, note: "3-bit a sensible minimum; some quality loss" }
       provenance:
-        asOf: "2026-06-19"
+        asOf: "2026-06-20"
         source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    benchmarks: # Unsloth-published (attributed to Qwen vendor figures)
+      sweBenchVerified: 70.6
+      sweBenchMultilingual: 62.8
+      sweBenchPro: 44.3
+      terminalBench2: 36.2
+      aider: 66.2
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next (Unsloth aggregating Qwen vendor figures)"
         verification: cited
   claims:
     - kind: caveat
@@ -105,12 +116,12 @@
         verification: cited
     - kind: note
       body: >-
-        GAP: the card publishes no vendor benchmark numbers (MMLU, LiveCodeBench,
-        etc.) for Qwen3-Coder-Next — benchmarks facet omitted. Re-mine the
-        HuggingFace model card if published figures are needed.
+        UPDATE (2026-06-20): SWE-bench/Terminal-Bench/Aider figures NOW filled
+        from the Unsloth guide (benchmarks facet), superseding the earlier "no
+        vendor numbers" gap. MMLU/LiveCodeBench still absent from the sources.
       provenance:
-        asOf: "2026-06-19"
-        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
         verification: cited
 
 # ── access-paths: eugr spark-vllm-docker recipes (DGX Spark / GB10) ───────────
@@ -202,4 +213,32 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-int4-autoround.yaml"
+        verification: cited
+
+# ── GGUF self-host access-path (Unsloth llama.cpp; hardware-agnostic) ──────────
+- id: ap-qwen3-coder-next-gguf-llamacpp
+  kind: access-path
+  name: Qwen3-Coder-Next · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4_K_XL GGUF (~46GB); 256K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen3-coder-next }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/Qwen3-Coder-Next-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli \
+          --model unsloth/Qwen3-Coder-Next-GGUF/Qwen3-Coder-Next-UD-Q4_K_XL.gguf \
+          --seed 3407 --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40
+      serving: { maxModelLen: 262144 }
+      note: "--min-p 0.01 required (llama.cpp default 0.05 diverges); set 32768 ctx for less memory. Non-reasoning instruct."
+      procedure: "https://unsloth.ai/docs/models/qwen3-coder-next"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
         verification: cited

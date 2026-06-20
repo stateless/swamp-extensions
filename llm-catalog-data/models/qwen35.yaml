@@ -91,6 +91,18 @@
       hidden: 2048
       nativeContext: 262144
       modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 17 }
+        - { quant: "4-bit", memGB: 22, note: "runs on a 22GB device at 4-bit (UD-Q4)" }
+        - { quant: "6-bit", memGB: 30 }
+        - { quant: "8-bit", memGB: 38 }
+        - { quant: BF16, memGB: 70 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
     benchmarks: # Qwen-published, thinking mode
       mmluPro: 85.3
       gpqaDiamond: 84.2
@@ -127,6 +139,17 @@
       activeParams: "10B"
       nativeContext: 262144
       modality: [text, image, video]
+    footprint: # weights resident; KV is GMU-dependent (vLLM allocates ~available−weights), NOT tiny at long context
+      basis: weights-only
+      kvGbPer1k: 0.10 # ≈27GB KV @262K at the RUNNABLE 0.85 GMU (drewid74 runbook); the 39GB@256K figure (post 398) is the 0.90 allocation, but 0.90 FAILS on GB10 — so model the config that actually runs. The ~1-in-4 full-attention layers carry KV despite the DeltaNet majority.
+      quants:
+        - { quant: int4, memGB: 71, note: "hybrid INT4 experts + FP8 on 144 dense layers ≈ 67-71GB weights (MEASURED: 71 @post398, 67 @drewid74 runbook; pure-INT4 ≈66GB). Single-Spark FIT is generic to INT4; the recipe's value is THROUGHPUT (28→52 tok/s) — see ap-qwen35-122b-spark-vllm. At 262K: ~67-71GB weights + ~27GB(0.85)/39GB(0.90) KV; driver reserves ~22GB, so 0.85 GMU is the safe ceiling (0.90 fails)." }
+        - { quant: fp8, memGB: 122, note: "full FP8 — needs ~2 units" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "MEASURED — forum 365639 post 398 (71GB+39GB@0.90) + github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (67GB+27GB@0.85); fp8 estimated"
+        verification: cited
+        confidence: medium
     benchmarks:
       mmluPro: 86.7
       gpqaDiamond: 86.6
@@ -184,6 +207,18 @@
       hidden: 5120
       nativeContext: 262144
       modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 14 }
+        - { quant: "4-bit", memGB: 17, note: "runs on an 18GB device at 4-bit" }
+        - { quant: "6-bit", memGB: 24 }
+        - { quant: "8-bit", memGB: 30 }
+        - { quant: BF16, memGB: 54 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
     benchmarks:
       mmluPro: 86.1
       gpqaDiamond: 85.5
@@ -214,6 +249,18 @@
       hidden: 4096
       nativeContext: 262144
       modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 5.5 }
+        - { quant: "4-bit", memGB: 6.5 }
+        - { quant: "6-bit", memGB: 9 }
+        - { quant: "8-bit", memGB: 13 }
+        - { quant: BF16, memGB: 19 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
 
 # ── self-host configs: Qwen3.5-122B on DGX Spark via vLLM (forum 365639) ─────
 #  LINEAGE STRATEGY: a config's LINEAR progression (Albond v1 → v2 → …) is NOT
@@ -226,53 +273,152 @@
 
 - id: ap-qwen35-122b-spark-vllm
   kind: access-path
-  name: Qwen3.5-122B · vLLM @ 1× Spark — Albond (current best)
-  summary: AutoRound INT4 + Qwen FP8 shared-expert layers + MTP-1; 38.4 tok/s single-Spark
+  name: Qwen3.5-122B · vLLM @ 1× Spark — forum 365639 v2.4 (current best)
+  summary: AutoRound INT4 + FP8 shared-experts + INT8 LM head + MTP-2 (v2.4, vLLM 0.19.1-pinned); 52 avg / 55 peak tok/s single-Spark
   visibility: public
   relations:
     - { rel: of-model, target: model-qwen35-122b }
     - { rel: served-by, target: runtime-vllm }
     - { rel: runs-on, target: hardware-dgx-spark }
     - { rel: uses-technique, target: technique-autoround } # quant method
-    - { rel: uses-technique, target: technique-fp8 } # + FP8 for shared-expert layers
+    - { rel: uses-technique, target: technique-fp8 } # FP8 for shared-expert dense layers
+    - { rel: uses-technique, target: technique-int8-lmhead } # INT8 LM head (Triton GEMV) — +15% (post 71)
+    - { rel: uses-technique, target: technique-mtp } # MTP-2 speculative decoding (num_speculative_tokens:2)
+    - { rel: uses-technique, target: technique-flashattention } # FlashInfer attention backend (+16%, drewid74 runbook)
     - { rel: built-with, target: runtime-spark-vllm-docker } # vLLM distribution for GB10 (norman.2's "community vLLM docker")
   facets:
     recipe:
-      build: { runtime: vLLM, version: "0.19", image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      build: { runtime: vLLM, version: "0.19.1 (commit 2a69949bd) — PINNED; 0.20.1 regresses ~9% (see caveat)", image: "eugr/spark-vllm-docker (local build, tag vllm-node); also drewid74 docker runbook (cu130, torch 2.12.0)" }
       artifact: { quant: "hybrid INT4 (AutoRound) + FP8 (Qwen official, 144 shared-expert dense layers)", format: safetensors }
       hardware: { units: 1, accel: GB10 }
-      technique: "MTP-1 speculative decoding (~95% accept); ~95-line vLLM INC quant patch"
-      procedure: "https://forums.developer.nvidia.com/t/365639"
+      technique: "v2.4: MTP-2 (num_speculative_tokens:2) + INT8 LM head (Triton GEMV) + FlashInfer backend + ~95-line vLLM INC quant patch + v2.4 backports via install.sh (triton.autotune on the head GEMV +1.2%; vLLM PR#38325 swapAB SM120 FP8 GEMM M≤64 +0.76%)"
+      serving: { gpuMemoryUtilization: 0.85, attentionBackend: FLASHINFER, maxModelLen: 262144, reasoningParser: qwen3 }
+      env: # GB10-mandatory (drewid74 runbook); without the first two, FlashInfer JIT OOM-kills the engine
+        MAX_JOBS: "2"                                 # throttle FlashInfer JIT (else 20-32 cicc procs exhaust unified mem)
+        FLASHINFER_NVCC_THREADS: "1"
+        VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "1" # estimate (not capture) graph mem — fixes silent OOM at low GMU
+        VLLM_MARLIN_USE_ATOMIC_ADD: "1"               # ~+5-7 tok/s
+        PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
+        VLLM_USE_FLASHINFER_SAMPLER: "0"
+      procedure: "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public"
     outcome:
       speed:
-        genTokS: 38.4
-        range: "36.3-39.9 across Q&A/code/JSON/math/long-code"
-        note: "title claims 51 tok/s; author's VERIFIED single-Spark figure is 38.4"
+        genTokS: 52 # v2.4 FINAL, single-request, short prompt — post 398 (avg 51.6±0.3, peak 54.9)
+        genTokS32k: 48 # single-request at 32K filled context — post 72/396
+        progression: # all single-Spark, single-request, short prompts, warm — measured (forum 365639)
+          - { config: "AutoRound INT4 (v1)", tokS: 28.3 }
+          - { config: "+ FP8 shared-expert layers + MTP-1 (Albond v2)", tokS: 38.4 }
+          - { config: "+ INT8 LM head (shared-weight Triton GEMV)", tokS: 44, gain: "+15%", post: 71 }
+          - { config: "+ MTP-2 (num_speculative_tokens:2)", tokS: 51, gain: "+33% vs 38.4", post: 71 }
+          - { config: "+ v2.4 backports (triton.autotune +1.2%; PR#38325 swapAB FP8 GEMM +0.76%)", tokS: 52, note: "FINAL — avg 51.6±0.3, peak 54.9", post: 398 }
+        concurrency:
+          - { n: 8, aggregateTokS: 79.9, note: "MTP-2 loaded, single node — post 435" }
+        range: "36.3-39.9 across Q&A/code/JSON/math/long-code (measured at the 38.4 config)"
+        note: "Single-request, SHORT prompt (~30-50 tok); decays with depth — ~48 @32K (post 72/396). Decode tok/s, MTP-accounted; vLLM ~2.3x faster than Ollama."
       quality:
-        measured: null # the thread reports THROUGHPUT only, not output quality
+        measured: null # INT4-weights quality still uncertified — but the thread now HAS signal, not zero-data
         note: >-
-          No output-quality measured for this AutoRound-INT4 config — INT4 quant
-          CAN degrade outputs, so speed alone doesn't certify it. Reference
-          ceiling = model-qwen35-122b published benchmarks; treat as UNVERIFIED
-          for quality until an eval on THIS config exists.
+          Attempted, inconclusive. (a) The hybrid-FP8 step is quality-neutral vs
+          pure INT4 (author-verified, post 6) — but that's hybrid-vs-INT4, NOT
+          INT4-vs-full-precision. (b) MTP / INT8-head are lossless/near-lossless
+          (post 70). (c) A real eval (tool-eval-bench) scored 60-87/100 across
+          same-config repeats — too noisy at N=15 to differentiate (post 435).
+          So INT4-weights quality is still UNCERTIFIED, but no longer no-data.
         verification: unverified
       provenance: &fwd365639
-        asOf: "2026-06-19"
-        source: "https://forums.developer.nvidia.com/t/365639 (Albond)"
+        asOf: "2026-06-20"
+        source: "https://forums.developer.nvidia.com/t/365639 (Albond; v2.4 final post 398)"
         verification: cited
   claims:
     - kind: note
       body: >-
-        Config progression (Albond): v1 AutoRound INT4 = 28.3 tok/s → v2 added
-        Qwen FP8 shared-expert layers + MTP-1 = 38.4. Only the current-best config
-        is a live entry; the full v1→v2 evolution is in this file's git history.
+        Config progression (forum 365639): 28.3 (AutoRound INT4) → 38.4 (+FP8
+        shared-experts + MTP-1, Albond) → 44 (+INT8 LM head, +15%, post 71) → 51
+        (+MTP-2, +33%, post 71) → 52 (v2.4 backports, FINAL, post 398). Only the
+        current-best (v2.4) is a live entry; the full progression is in git history.
       provenance: *fwd365639
     - kind: finding
-      body: "MTP-1 alone is the biggest win; the hybrid INT4+FP8 adds only ~2 tok/s on top of AutoRound+MTP (36.5 → 38.4)."
+      body: >-
+        Speculative decoding is the dominant lever: MTP-1 is the single biggest win
+        (hybrid INT4+FP8 adds only ~2 tok/s atop AutoRound+MTP, 36.5→38.4); MTP-2
+        adds ~16% (44→51); INT8 LM head ~+15% (38.4→44). All decode-path — footprint
+        unchanged across the chain.
       provenance: *fwd365639
+    - kind: finding
+      body: >-
+        Independently replicated: a.fairaizl reproduced ~52.0/53.3 mean (vs Albond's
+        51.6 ref) on TWO different boxes — a DGX Spark Founders AND an ASUS GX10 —
+        confirming the recipe ports beyond Founders hardware; ~105 tok/s aggregated
+        across the two (post 431). Also topofocus 50 tok/s single node (post 426),
+        norman.2 36.7-40 hybrid-only (post 9), erlendboe MTP-2>MTP-1 single Spark
+        (post 28).
+      provenance: *fwd365639
+    - kind: finding
+      body: >-
+        MTP-2 (not MTP-3) is the deliberate pin: MTP-2 accept ≈80% on the 122B
+        (post 71); MTP-3 gains single-stream but loses −32.9% on loaded N=8
+        throughput (49.65→45.31 single, 79.91→60.13 @N=8) — a.fairaizl chose MTP-2
+        on both nodes (post 435).
+      provenance: *fwd365639
+    - kind: caveat
+      body: >-
+        PIN vLLM 0.19.1 (commit 2a69949bd). v0.20.1 regresses ~9% (50.3→46.1 …
+        54.2→48.5): `splitting_ops` now splits DeltaNet `gdn_attention_core` (36/48
+        layers) + deepseek_v4_attention out of the decode CUDA graph → launch
+        overhead. Albond froze at 0.19.1 with no plans to chase 0.20.1 (post 395/398).
+      provenance: *fwd365639
+    - kind: caveat
+      body: >-
+        Dead-ends on a single Spark: NVFP4 = 16.6 tok/s (FP4 CUTLASS missing on
+        SM121, Marlin-SM80 fallback — posts 1/35); DFlash spec-decode k=5 −15% /
+        k=15 −47%, accept <5%, degrades code tasks (posts 355/361); EAGLE-3 slower
+        than MTP-2 on DeltaNet (post 29). MTP-2 + INT8-head remains best.
+      provenance: *fwd365639
+    - kind: finding
+      body: >-
+        Production runbook (drewid74 — builds on Albond's recipe; posted in thread
+        365639): post PD-wedge-fix the ASUS GX10 (spark2) EXCEEDS the DGX Founders
+        (spark1) — ~54 vs ~52 tok/s,
+        262K max-len, 0.85 GMU, short prompts; per-task mean 53.3 (Q&A 53.6 / Code
+        55.4 / JSON 53.9 / Math 50.0 / LongCode 57.0). Both nodes now match/exceed
+        Albond's 51.6 ref. Opt stack (cumulative): FlashInfer +16%, hybrid INT4+FP8
+        +8.8%, MTP-2 +25%, INT8 LM head +33%(+1.2%).
+      provenance: &runbook365639
+        asOf: "2026-06-20"
+        source: "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public"
+        verification: cited
+    - kind: caveat
+      body: >-
+        GB10 memory budget (drewid74 runbook): the CUDA driver permanently reserves
+        ~22GiB → ~100GiB usable of 128. GMU 0.85 = validated safe ceiling for 262K
+        max-len; 0.90 FAILS (needs 109.52GiB); 0.80 passes the budget check but
+        SILENTLY OOM-kills EngineCore during CUDA-graph capture. The fix for the
+        0.80 OOM is `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`, NOT lowering GMU.
+        Higher GMU also needs a page-cache flush + disabling gdm3 (~16GiB held).
+      provenance: *runbook365639
+    - kind: caveat
+      body: >-
+        FlashInfer JIT OOM (drewid74 runbook): without `MAX_JOBS=2` +
+        `FLASHINFER_NVCC_THREADS=1`, FlashInfer's JIT spawns 20-32 parallel `cicc`
+        compilers (1-4GiB each) and exhausts unified memory → OOM-kill (signal 9).
+        These env vars are MANDATORY on GB10. `VLLM_MARLIN_USE_ATOMIC_ADD=1` adds
+        ~5-7 tok/s. First boot 25-45 min (weights+JIT+graph); cache mounts → 7-10 min.
+      provenance: *runbook365639
+    - kind: caveat
+      body: >-
+        ASUS GX10 PD-firmware wedge (drewid74 runbook): after OOM-kills/crash-loops
+        the USB-C Power-Delivery firmware can wedge — throughput 30-50% low, SM clock
+        pinned at 611/708 MHz (vs 2400-2600), power <15W, NO throttle reasons shown,
+        and `nvidia-smi -lgc` is accepted but ignored. Fix = AC COLD DRAIN: poweroff,
+        unplug the brick from the wall 90-120s (60s insufficient), replug, restart.
+        Persistent → ASUS support for PD firmware ≥5.8. (Founders units not affected.)
+      provenance: *runbook365639
     - kind: note
-      body: "Corroborated by norman.2 (~38.6-40 tok/s, same hybrid+MTP config, community vLLM docker)."
-      provenance: *fwd365639
+      body: >-
+        Source variance on MTP-2 accept rate: forum post 71 cites ~80%, the drewid74
+        runbook cites ~95% — likely different harness/workload. Both agree MTP-2 is
+        the throughput sweet spot; the accept figure is approximate.
+      provenance: *runbook365639
 
 - id: ap-qwen35-122b-spark-vllm-aoe-ray
   kind: access-path
@@ -367,8 +513,8 @@
 # kept as its own entry with a `replicates` edge to the forum entry.
 - id: ap-qwen35-122b-spark-vllm-int4-autoround
   kind: access-path
-  name: Qwen3.5-122B-A10B · vLLM INT4-AutoRound @ 2× DGX Spark (eugr recipe)
-  summary: Intel INT4-AutoRound; TP=2 Ray; qwen3_xml parser; 256K context
+  name: Qwen3.5-122B-A10B · vLLM INT4-AutoRound @ DGX Spark (eugr recipe; solo-capable)
+  summary: Intel INT4-AutoRound; fits 1× Spark (~66GB); TP=2 is the 2-Spark throughput option; qwen3_xml parser; 256K context
   visibility: public
   relations:
     - { rel: of-model, target: model-qwen35-122b }
@@ -385,7 +531,7 @@
       download: { hfRepo: Intel/Qwen3.5-122B-A10B-int4-AutoRound, format: safetensors }
       build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
       artifact: { quant: int4-autoround, format: safetensors }
-      hardware: { units: 2, accel: GB10 }
+      hardware: { units: 1, accel: GB10 } # INT4 (~66GB) fits ONE 128GB Spark — recipe flags `solo_only`; TP=2 is the throughput default for a 2-unit run, not a minimum
       mods: [mods/fix-qwen3.5-chat-template]
       env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1" }
       command: |
@@ -713,6 +859,59 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-a17B-fp8.yaml"
+        verification: cited
+
+# ── GGUF self-host access-paths (Unsloth llama.cpp; hardware-agnostic) ─────────
+- id: ap-qwen35-9b-gguf-llamacpp
+  kind: access-path
+  name: Qwen3.5-9B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth GGUF (~6.5GB 4-bit); 262K context; small-footprint self-host
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-9b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/Qwen3.5-9B-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL \
+          --temp 1.0 --top-p 0.95 --top-k 20
+      serving: { maxModelLen: 262144 }
+      note: "Unsloth Dynamic 2.0 (UD-Q2_K_XL minimum); multimodal needs --mmproj; use llama.cpp not Ollama (mmproj). thinking-general sampling."
+      procedure: "https://unsloth.ai/docs/models/qwen3.5"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
+
+- id: ap-qwen35-35b-gguf-llamacpp
+  kind: access-path
+  name: Qwen3.5-35B-A3B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth UD-Q4 GGUF (~22GB); 262K context; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-qwen35-35b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: "UD-Q4_K_XL", format: gguf, packager: unsloth, hfRepo: "unsloth/Qwen3.5-35B-A3B-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_XL \
+          --temp 1.0 --top-p 0.95 --top-k 20
+      serving: { maxModelLen: 262144 }
+      note: "runs on a 22GB device at 4-bit; multimodal needs --mmproj; use llama.cpp not Ollama. thinking-general sampling."
+      procedure: "https://unsloth.ai/docs/models/qwen3.5"
+    outcome:
+      context: { tokens: 262144 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
         verification: cited
 
 # ── gateway access-paths (same models as the self-host paths above; real

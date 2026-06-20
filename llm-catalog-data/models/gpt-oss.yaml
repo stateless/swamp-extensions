@@ -139,6 +139,15 @@
         asOf: "2026-06-19"
         source: "https://huggingface.co/openai/gpt-oss-20b"
         verification: authoritative
+    footprint: # weights-only; Unsloth run guide
+      basis: weights-only
+      quants:
+        - { quant: "2-bit", memGB: 11.5, note: "near-identical to F16 per Unsloth (MoE-aware quant)" }
+        - { quant: F16, memGB: 14, note: "Unsloth recommends ~14GB unified memory for 6+ tok/s" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
 
 - id: model-gpt-oss-120b
   kind: model
@@ -162,6 +171,15 @@
         asOf: "2026-06-19"
         source: "https://huggingface.co/openai/gpt-oss-20b"
         verification: authoritative
+    footprint: # weights-only; Unsloth run guide (fits a single DGX Spark)
+      basis: weights-only
+      quants:
+        - { quant: "1-bit", memGB: 66, note: "Unsloth recommends ~66GB unified memory for 6+ tok/s; q3 hub build broken — use Q4+" }
+        - { quant: Q4, memGB: 74 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
 
 # ── access-path: gpt-oss-120b MXFP4 via vLLM on DGX Spark (eugr recipe) ───────
 - id: ap-gpt-oss-120b-spark-vllm-mxfp4
@@ -212,4 +230,57 @@
       provenance:
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+        verification: cited
+
+# ── GGUF self-host access-paths (Unsloth llama.cpp; hardware-agnostic) ─────────
+- id: ap-gpt-oss-20b-gguf-llamacpp
+  kind: access-path
+  name: GPT-OSS 20B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth GGUF (F16; 2-bit near-identical); ~14GB; native 128K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gpt-oss-20b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: F16, format: gguf, packager: unsloth, hfRepo: "unsloth/gpt-oss-20b-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/gpt-oss-20b-GGUF:F16 --jinja -ngl 99 \
+          --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0
+      serving: { minContext: 16384, maxModelLen: 131072 }
+      note: "temp fixed 1.0 (do not lower); reasoning effort low/medium/high via Harmony chat template. 2-bit (~11.5GB) reportedly near-identical to F16."
+      procedure: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+    outcome:
+      context: { tokens: 131072 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+
+- id: ap-gpt-oss-120b-gguf-llamacpp
+  kind: access-path
+  name: GPT-OSS 120B · llama.cpp GGUF (Unsloth)
+  summary: Unsloth GGUF (~66GB 1-bit / ~74GB Q4); native 128K; single-Spark-class
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gpt-oss-120b }
+    - { rel: served-by, target: runtime-llamacpp }
+    - { rel: uses-technique, target: technique-gguf-kquant }
+    - { rel: uses-technique, target: technique-unsloth-dynamic }
+  facets:
+    recipe:
+      artifact: { quant: Q4, format: gguf, packager: unsloth, hfRepo: "unsloth/gpt-oss-120b-GGUF" }
+      command: |
+        ./llama.cpp/llama-cli -hf unsloth/gpt-oss-120b-GGUF:UD-Q4_K_XL --jinja -ngl 99 \
+          --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0
+      serving: { minContext: 16384, maxModelLen: 131072 }
+      note: "temp fixed 1.0; q3 hub build broken — use Q4+; reasoning effort via Harmony chat template."
+      procedure: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+    outcome:
+      context: { tokens: 131072 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
         verification: cited

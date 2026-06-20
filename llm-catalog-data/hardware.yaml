@@ -20,6 +20,7 @@
     hardware:
       compute: cuda
       unifiedMemGB: 128
+      driverReservedGB: 22 # CUDA driver permanently reserves ~22GB → ~100-106GB usable for model+KV
       powerW: 70
       clusterable: true
   claims:
@@ -31,6 +32,40 @@
         asOf: "2026-06-19"
         source: "https://www.reddit.com/r/LocalLLM/comments/1u5m6i1/"
         confidence: medium
+    - kind: caveat
+      body: >-
+        Usable memory < 128GB: the CUDA driver permanently reserves ~22GB, leaving
+        ~100-106GB for weights+KV. vLLM `gpu_memory_utilization` 0.85 is the
+        validated safe ceiling for a ~110GB-class load (0.90 fails — needs ~109.5GB;
+        0.80 silently OOMs at CUDA-graph capture unless
+        `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`).
+      provenance: &spark-runbook
+        asOf: "2026-06-20"
+        source: "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory;
+        set `multi-user.target` (no display manager) to reclaim it for inference.
+        Our dgx1 is already headless (verified 2026-06-20: gdm/lightdm/sddm inactive,
+        default target multi-user, only ~0.4GB in use idle).
+      provenance: *spark-runbook
+    - kind: caveat
+      body: >-
+        USB-C Power-Delivery firmware WEDGE (seen on ASUS GX10; not DGX Founders):
+        after OOM-kills / crash-loops the PD firmware can pin the SM clock at
+        611/708MHz (vs 2400-2600), power <15W, with NO throttle reason reported and
+        `nvidia-smi -lgc` silently ignored — throughput 30-50% low. Fix = AC cold
+        drain (poweroff, unplug brick from wall 90-120s, replug); persistent →
+        request ASUS PD firmware >=5.8. Worth a smart-plug for remote drains.
+      provenance: *spark-runbook
+    - kind: note
+      body: >-
+        nvidia-smi can't report GB10 unified memory (memory.used/total/reserved =
+        N/A, "Not Supported") — use `free`/vLLM's memory profiler / tegrastats
+        instead. dgx1 live: NVIDIA GB10, driver 580.159.03, CUDA 13.0, kernel
+        6.17.0-1021-nvidia (DGX OS 7).
+      provenance: *spark-runbook
 
 - id: hardware-apple-silicon
   kind: hardware
