@@ -4646,8 +4646,9 @@
           "browseComp": 42.8,
           "provenance": {
             "asOf": "2026-06-20",
-            "source": "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash (Unsloth aggregating GLM/z.ai vendor figures)",
-            "verification": "cited"
+            "source": "https://huggingface.co/zai-org/GLM-4.7-Flash/raw/main/README.md",
+            "verification": "authoritative",
+            "note": "Vendor card publishes ONLY these 7 metrics. ifEval, mmluPro, ifBench, aime2026, bfcl, mmmlu are NOT reported by z.ai for Flash (a circulating 85.6 MMLU-Pro / 67.9 IFBench snippet traces to no fetchable source — omitted). MMLU-Pro 84.3 / GPQA-D 85.7 belong to full GLM-4.7, not Flash. Same 7 figures previously sourced via Unsloth — provenance upgraded to the z.ai card."
           }
         },
         "config": {
@@ -4954,6 +4955,24 @@
             "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
             "verification": "cited"
           }
+        },
+        "benchmarks": {
+          "mmlu": 90,
+          "mmluPro": 80.8,
+          "gpqaDiamond": 80.9,
+          "aime2025": 97.9,
+          "aime2024": 96.6,
+          "hle": 19,
+          "sweBenchVerified": 62.4,
+          "tauBenchRetail": 67.8,
+          "mmmlu": 81.3,
+          "codeforcesElo": 2622,
+          "provenance": {
+            "asOf": "2025-08-05",
+            "source": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
+            "verification": "authoritative",
+            "note": "High reasoning column. With-tools figures for AIME/HLE/Codeforces; GPQA-D no-tools = 80.1. Card reports tau-bench v1 (NOT tau2). mmluPro=80.8 is the one exception: sourced from huggingface.co/openai/gpt-oss-120b structured eval metadata (verification: cited), not the OpenAI PDF; reasoning level unspecified there. No BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 on the card."
+          }
         }
       }
     },
@@ -5010,6 +5029,23 @@
             "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune",
             "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "mmlu": 85.3,
+          "gpqaDiamond": 74.2,
+          "aime2025": 98.7,
+          "aime2024": 96,
+          "hle": 17.3,
+          "sweBenchVerified": 60.7,
+          "tauBenchRetail": 54.8,
+          "mmmlu": 75.7,
+          "codeforcesElo": 2516,
+          "provenance": {
+            "asOf": "2025-08-05",
+            "source": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
+            "verification": "authoritative",
+            "note": "High reasoning column. With-tools figures shown for AIME/HLE/Codeforces; GPQA-D no-tools = 71.5. Card reports tau-bench v1 retail (54.8), NOT tau2-bench. AIME 2025 (98.7) slightly exceeds the 120b (97.9) with tools. No authoritative MMLU-Pro, BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 for 20b."
           }
         }
       }
@@ -5140,10 +5176,12 @@
           "browseComp": 76.3,
           "aime2025": 86.3,
           "gpqaDiamond": 85.2,
+          "bfcl": 76.8,
           "provenance": {
             "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/tutorials/minimax-m25 (Unsloth aggregating MiniMax vendor figures)",
-            "verification": "cited"
+            "verification": "cited",
+            "note": "bfcl 76.8 is the lone third-party figure here: from huggingface.co/blog/mlabonne/minimax-m25 (community), multi-turn function-calling subset, BFCL version (V3/V4) unconfirmed; NOT on the official MiniMax card. Treat as third-party vs the Unsloth-aggregated vendor figures above."
           }
         },
         "config": {
@@ -5356,6 +5394,24 @@
             "source": "MODEL nemotron card (estimated)",
             "verification": "cited"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 79.8,
+          "gpqaDiamond": 76.1,
+          "ifBench": 82.9,
+          "aime2025": 92.4,
+          "aime2026": 90.9,
+          "sweBenchVerified": 50.2,
+          "liveCodeBenchV6": 87.2,
+          "tau2Agentic": 58.9,
+          "bfcl": 52.9,
+          "hle": 17.7,
+          "provenance": {
+            "asOf": "2026-03-19",
+            "source": "https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B/raw/main/README.md",
+            "verification": "authoritative",
+            "note": "Several math/code rows have higher Tool-Integrated-Reasoning (TIR) variants (noted inline). Card uses MMLU-Redux (86.3) and MMLU-ProX (72.5) — neither is plain MMLU/MMMLU, omitted."
+          }
         }
       }
     },
@@ -5413,6 +5469,23 @@
             "source": "https://unsloth.ai/docs/models/nemotron-3",
             "verification": "cited"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 78.3,
+          "gpqaDiamond": 73,
+          "aime2025": 89.1,
+          "liveCodeBenchV6": 68.3,
+          "sweBenchVerified": 38.8,
+          "tau2Agentic": 49,
+          "bfcl": 53.8,
+          "ifBench": 71.5,
+          "hle": 10.6,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8/raw/main/README.md",
+            "verification": "authoritative",
+            "note": "BF16 reference, reasoning-on. FP8 variant (same source) slightly lower: mmluPro 78.1, gpqaDiamond 72.5, aime2025 87.7, lcbV6 67.6, bfcl 53.2, hle 10.3. A third-party \"GPQA Diamond 39.9\" conflicts with official 73.0 and was discarded."
+          }
         }
       }
     },
@@ -5462,6 +5535,21 @@
             "source": "MODEL nemotron card (estimated)",
             "verification": "cited"
           }
+        },
+        "benchmarks": {
+          "aime2025": 78.5,
+          "gpqaDiamond": 53.2,
+          "ifEval": 92,
+          "ifBench": 44.2,
+          "liveCodeBench": 51.8,
+          "tau2Agentic": 39.8,
+          "bfcl": 61.1,
+          "provenance": {
+            "asOf": "2026-03-16",
+            "source": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16/raw/main/README.md",
+            "verification": "authoritative",
+            "note": "Reasoning-on. Not on card: mmluPro, aime2026, sweBenchVerified, mmmlu, mmlu, hle."
+          }
         }
       }
     },
@@ -5487,7 +5575,7 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads: audio/video/text/images/docs in, text out; 256K context. Unsloth positions it as \"the strongest omni model for its size\", surpassing Qwen3-Omni-30B-A3B on every benchmark (no numeric scores published). Architecture (layers/experts) NOT independently verified vs config.json — inherited from the nemotron_h family; confidence medium.",
+          "body": "Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads: audio/video/text/images/docs in, text out; 256K context. Unsloth positions it as \"the strongest omni model for its size\", surpassing Qwen3-Omni-30B-A3B on every benchmark (Unsloth page publishes no numbers; numeric scores added from the NVIDIA technical report — see benchmarks). Architecture (layers/experts) NOT independently verified vs config.json — inherited from the nemotron_h family; confidence medium.",
           "provenance": {
             "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni",
@@ -5533,6 +5621,35 @@
             "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni",
             "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "mmluPro": 77.3,
+          "gpqaDiamond": 72.2,
+          "aime2025": 82.1,
+          "liveCodeBenchV5": 63.2,
+          "ifBench": 74.2,
+          "tau2Telecom": 42.7,
+          "sciCode": 32,
+          "aaLcr": 41,
+          "mmmu": 70.8,
+          "mathVista": 82.8,
+          "docvqa": 95.6,
+          "chartqa": 90.3,
+          "ai2d": 88.5,
+          "ocrBench": 86.6,
+          "textVqa": 81,
+          "infoVqa": 86.8,
+          "cvBench": 84,
+          "videoMme": 72.2,
+          "voiceBench": 89.4,
+          "openAsrWer": 5.95,
+          "mmau": 74.6,
+          "provenance": {
+            "asOf": "2026-04-27",
+            "source": "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Omni-report.pdf",
+            "verification": "authoritative",
+            "note": "Omni model's OWN column (lower than its LLM backbone — a common confusion point). Vision/video reasoning-on; ASR/MMAU reasoning-off. LiveCodeBench=v5 not v6. Not found: sweBenchVerified, bfcl, hle, mmmlu, mmlu, aime2026, lcbV6."
           }
         }
       }
@@ -5601,6 +5718,22 @@
             "source": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super",
             "verification": "cited"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 83.73,
+          "gpqaDiamond": 79.23,
+          "aime2025": 90.21,
+          "liveCodeBenchV5": 81.19,
+          "ifBench": 72.56,
+          "hle": 18.26,
+          "tau2Agentic": 64.36,
+          "sweBenchVerified": 60.47,
+          "provenance": {
+            "asOf": "2026-03-11",
+            "source": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16/raw/main/README.md",
+            "verification": "authoritative",
+            "note": "LiveCodeBench is v5 (81.19), NOT v6. Card also has MMLU-ProX (multilingual) 79.36 — not standard MMMLU. Extras: Arena-Hard-v2 73.88, RULER@1M 91.75. BFCL v4 configured in NeMo Evaluator repro but no score published."
+          }
         }
       }
     },
@@ -5649,6 +5782,21 @@
             "source": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 (repo/recipe name) + family nemotron_h config",
             "verification": "cited",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmluPro": 86.8,
+          "gpqaDiamond": 87,
+          "sweBenchVerified": 70.7,
+          "liveCodeBenchV6": 89,
+          "tau2Agentic": 70.9,
+          "ifBench": 81.7,
+          "hle": 26.7,
+          "provenance": {
+            "asOf": "2026-06-09",
+            "source": "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Ultra-Technical-Report.pdf",
+            "verification": "authoritative",
+            "note": "Table 10 (POST-trained), NOT the base-model Table 2 (which is much lower: MMLU-Pro 79.07, GPQA 50.00, 5-shot). Extras: SWE-Bench Multilingual 67.7, Terminal-Bench 2.1 56.4, RULER@1M 94.7, MMLU-ProX 83.0. No ifEval, aime, bfcl, mmmlu, plain mmlu in the report eval."
           }
         }
       }
@@ -5970,11 +6118,13 @@
           "sweBenchVerified": 72,
           "liveCodeBenchV6": 78.9,
           "tau2Agentic": 79.5,
+          "bfcl": 72.2,
           "mmmlu": 86.7,
           "provenance": {
             "asOf": "2026-06-19",
             "source": "https://qwen.ai/blog?id=qwen3.5",
-            "verification": "cited"
+            "verification": "cited",
+            "note": "bfcl (BFCL V4 overall) from huggingface.co/Qwen/Qwen3.5-122B-A10B card; rest from the blog."
           }
         }
       }
@@ -6140,11 +6290,13 @@
           "sweBenchVerified": 69.2,
           "liveCodeBenchV6": 74.6,
           "tau2Agentic": 81.2,
+          "bfcl": 67.3,
           "mmmlu": 85.2,
           "provenance": {
             "asOf": "2026-06-19",
             "source": "https://qwen.ai/blog?id=qwen3.5",
-            "verification": "cited"
+            "verification": "cited",
+            "note": "bfcl (BFCL V4 overall) from the Qwen HF card; rest from the blog."
           }
         }
       }
