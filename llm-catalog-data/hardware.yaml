@@ -21,6 +21,7 @@
       compute: cuda
       unifiedMemGB: 128
       driverReservedGB: 22 # CUDA driver permanently reserves ~22GB → ~100-106GB usable for model+KV
+      memBandwidthGBs: 273 # LPDDR5x unified — decode is bandwidth-bound; tok/s ≈ bw ÷ (activeParams × bytes/quant). Roofline aligns with optimised serving: 122B-A10B int4 ≈51, dense-27B int4 ≈19.
       powerW: 70
       clusterable: true
   claims:
