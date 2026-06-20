@@ -20,6 +20,15 @@ import { nodeClassMap, sanitiseForContribution } from "./contribute.ts";
 import { idFromRepo, ingestHfConfig } from "./ingest.ts";
 import { parseOpenRouterFeed, refreshGatewayCost } from "./sync.ts";
 import { buildReconciliation } from "./reconcile.ts";
+import {
+  buildCapacityPlan,
+  buildDeploymentPlans,
+  decodeTokSEstimate,
+  footprintGB,
+  qualityScore,
+  resolveWeights,
+} from "./capacity.ts";
+import { CapacityArgsSchema, PlanArgsSchema } from "./schemas.ts";
 
 Deno.test("reconcile: gather + compare every config for a target", () => {
   const entries = [
@@ -413,4 +422,295 @@ Deno.test("global args: entries default to [] and accept a catalog", () => {
     ],
   });
   assertEquals(parsed.entries.length, 2);
+});
+
+// --- capacity -------------------------------------------------------------
+
+const CAP_ENTRIES = [
+  EntrySchema.parse({
+    id: "hardware-box", kind: "hardware", name: "Box", summary: "h",
+    visibility: "public", facets: { hardware: { unifiedMemGB: 128 } },
+  }),
+  EntrySchema.parse({ // stored footprint → 17GB at q4
+    id: "model-a", kind: "model", name: "A", summary: "m", visibility: "public",
+    facets: {
+      architecture: { params: "30B", nativeContext: 262144 },
+      footprint: { quants: [{ quant: "q4", memGB: 17 }] },
+    },
+  }),
+  EntrySchema.parse({ // no footprint → computed from params (~225GB at q4)
+    id: "model-big", kind: "model", name: "Big", summary: "m", visibility: "public",
+    facets: { architecture: { params: "400B", nativeContext: 262144 } },
+  }),
+  EntrySchema.parse({
+    id: "ap-a-local", kind: "access-path", name: "a-local", summary: "a", visibility: "public",
+    relations: [
+      { rel: "of-model", target: "model-a" },
+      { rel: "served-by", target: "runtime-vllm" },
+      { rel: "runs-on", target: "hardware-box" },
+    ],
+    facets: { recipe: { artifact: { quant: "q4" } }, outcome: { context: { tokens: 200000 }, speed: { genTokS: 30 } } },
+  }),
+  EntrySchema.parse({
+    id: "ap-big-local", kind: "access-path", name: "big-local", summary: "b", visibility: "public",
+    relations: [
+      { rel: "of-model", target: "model-big" },
+      { rel: "served-by", target: "runtime-vllm" },
+      { rel: "runs-on", target: "hardware-box" },
+    ],
+    facets: { recipe: { artifact: { quant: "q4" } }, outcome: { context: { tokens: 200000 }, speed: { genTokS: 12 } } },
+  }),
+  EntrySchema.parse({
+    id: "ap-a-cloud", kind: "access-path", name: "a-cloud", summary: "c", visibility: "public",
+    relations: [
+      { rel: "of-model", target: "model-a" },
+      { rel: "via-provider", target: "provider-openrouter" },
+    ],
+    facets: { cost: { perMTokOutUsd: 0.5, provenance: { asOf: "x", source: "feed" } } },
+  }),
+];
+
+Deno.test("footprintGB: stored facet overrides; else params × quant-bits", () => {
+  const a = CAP_ENTRIES.find((e) => e.id === "model-a")!;
+  const big = CAP_ENTRIES.find((e) => e.id === "model-big")!;
+  assertEquals(footprintGB(a, "q4"), 17); // stored
+  assertEquals(footprintGB(big, "q4"), Math.round((400 * 4.5) / 8)); // computed = 225
+});
+
+Deno.test("capacity: bin-packs against host free memory, ranks local-first", () => {
+  const plan = buildCapacityPlan(
+    CapacityArgsSchema.parse({ task: "writing", host: "hardware-box" }),
+    CAP_ENTRIES,
+  );
+  assertEquals(plan.hostGB, 128);
+  assertEquals(plan.freeGB, 128);
+  // a-local fits (17GB ≤ 128) and ranks first (local-first); big-local is unmet (225 > 128)
+  assertEquals(plan.recommendations[0].accessPath, "ap-a-local");
+  assertEquals(plan.recommendations[0].placement, "local:hardware-box");
+  assert(plan.unmet.some((u) => u.includes("ap-big-local")));
+  // cloud still listed (prefer-local), after local
+  assert(plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+});
+
+Deno.test("capacity: co-resident reservation shrinks the fit budget", () => {
+  const plan = buildCapacityPlan(
+    CapacityArgsSchema.parse({
+      task: "writing", host: "hardware-box",
+      coresident: [{ label: "agent", reserveGB: 120 }],
+    }),
+    CAP_ENTRIES,
+  );
+  assertEquals(plan.freeGB, 8); // 128 - 120
+  // a-local (17GB) no longer fits → unmet; no local recs, cloud remains
+  assert(plan.unmet.some((u) => u.includes("ap-a-local")));
+  assert(!plan.recommendations.some((r) => r.placement.startsWith("local")));
+  assert(plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+});
+
+Deno.test("capacity: node-count gate rules out multi-unit recipes on a single host", () => {
+  const entries = [
+    EntrySchema.parse({
+      id: "hardware-box", kind: "hardware", name: "Box", summary: "h",
+      visibility: "public", facets: { hardware: { unifiedMemGB: 128 } },
+    }),
+    EntrySchema.parse({
+      id: "model-c", kind: "model", name: "C", summary: "m", visibility: "public",
+      facets: { architecture: { params: "120B", nativeContext: 131072 } },
+    }),
+    EntrySchema.parse({ // 2-unit cluster recipe (units: 2)
+      id: "ap-c-2x", kind: "access-path", name: "c2x", summary: "a", visibility: "public",
+      relations: [
+        { rel: "of-model", target: "model-c" },
+        { rel: "served-by", target: "runtime-vllm" },
+        { rel: "runs-on", target: "hardware-box" },
+      ],
+      facets: { recipe: { artifact: { quant: "fp8" }, hardware: { units: 2 } }, outcome: { context: { tokens: 131072 } } },
+    }),
+    EntrySchema.parse({ // Ray cluster by config string (no units) → inferred ≥2
+      id: "ap-c-ray", kind: "access-path", name: "cray", summary: "a", visibility: "public",
+      relations: [
+        { rel: "of-model", target: "model-c" },
+        { rel: "served-by", target: "runtime-vllm" },
+        { rel: "runs-on", target: "hardware-box" },
+      ],
+      facets: { recipe: { artifact: { quant: "int4" }, hardware: { config: "Ray cluster (multi-node)" } }, outcome: { context: { tokens: 131072 } } },
+    }),
+  ];
+  // single host (hostUnits defaults to 1): both multi-unit recipes ruled out
+  const solo = buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-box" }), entries);
+  assertEquals(solo.recommendations.length, 0);
+  assert(solo.unmet.some((u) => u.includes("ap-c-2x") && u.includes("2 units")));
+  assert(solo.unmet.some((u) => u.includes("ap-c-ray")));
+  // give it 2 units: the 2× recipe now fits (total budget 256GB)
+  const cluster = buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-box", hostUnits: 2 }), entries);
+  assertEquals(cluster.hostGB, 256);
+  assert(cluster.recommendations.some((r) => r.accessPath === "ap-c-2x" && r.units === 2));
+});
+
+Deno.test("capacity: driver-reserved memory shrinks the usable budget", () => {
+  const entries = [
+    EntrySchema.parse({
+      id: "hardware-gb10", kind: "hardware", name: "GB10", summary: "h",
+      visibility: "public", facets: { hardware: { unifiedMemGB: 128, driverReservedGB: 22 } },
+    }),
+  ];
+  const plan = buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-gb10" }), entries);
+  assertEquals(plan.hostGB, 106); // 128 installed - 22 driver-reserved
+});
+
+Deno.test("capacity: privacy local-only drops every cloud path", () => {
+  const plan = buildCapacityPlan(
+    CapacityArgsSchema.parse({ task: "writing", host: "hardware-box", privacy: "local-only" }),
+    CAP_ENTRIES,
+  );
+  assert(plan.recommendations.every((r) => r.placement.startsWith("local")));
+  assert(!plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+});
+
+// ── capacity-v2: profiles, throughput estimate, deployment planner ──────────
+
+const V2_ENTRIES = [
+  EntrySchema.parse({
+    id: "hardware-spark2", kind: "hardware", name: "Spark2", summary: "h",
+    visibility: "public",
+    facets: { hardware: { unifiedMemGB: 128, driverReservedGB: 22, memBandwidthGBs: 273 } },
+  }),
+  EntrySchema.parse({ // small agent specialist (MoE, 3B active, fast)
+    id: "model-agent", kind: "model", name: "Agent", summary: "m", visibility: "public",
+    facets: {
+      architecture: { params: "35B", activeParams: "3B", nativeContext: 262144, attention: "gqa" },
+      footprint: { kvGbPer1k: 0.02, quants: [{ quant: "int4", memGB: 19 }] },
+      benchmarks: { tau2Agentic: 84, bfcl: 75, ifEval: 94, ifBench: 78 },
+    },
+  }),
+  EntrySchema.parse({ // big all-rounder (MoE, 10B active)
+    id: "model-allrounder", kind: "model", name: "All", summary: "m", visibility: "public",
+    facets: {
+      architecture: { params: "122B", activeParams: "10B", nativeContext: 262144 },
+      footprint: { kvGbPer1k: 0.10, quants: [{ quant: "int4", memGB: 71 }] },
+      benchmarks: { tau2Agentic: 79, bfcl: 72, ifEval: 93, ifBench: 76, mmluPro: 87, gpqaDiamond: 87 },
+    },
+  }),
+  EntrySchema.parse({ // dense writing specialist — strong IF, but slow (dense → no activeParams)
+    id: "model-writer", kind: "model", name: "Writer", summary: "m", visibility: "public",
+    facets: {
+      architecture: { params: "27B", nativeContext: 200000, attention: "dense" },
+      footprint: { kvGbPer1k: 0.02, quants: [{ quant: "int4", memGB: 15 }] },
+      benchmarks: { ifEval: 95, mmluPro: 85, mmmlu: 85 },
+    },
+  }),
+  EntrySchema.parse({
+    id: "ap-agent", kind: "access-path", name: "agent", summary: "a", visibility: "public",
+    relations: [{ rel: "of-model", target: "model-agent" }, { rel: "runs-on", target: "hardware-spark2" }],
+    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 262144 }, speed: { genTokS: 90 } } },
+  }),
+  EntrySchema.parse({
+    id: "ap-allrounder", kind: "access-path", name: "all", summary: "a", visibility: "public",
+    relations: [{ rel: "of-model", target: "model-allrounder" }, { rel: "runs-on", target: "hardware-spark2" }],
+    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 262144 }, speed: { genTokS: 52 } } },
+  }),
+  EntrySchema.parse({ // NO measured genTokS → throughput must be estimated
+    id: "ap-writer", kind: "access-path", name: "writer", summary: "a", visibility: "public",
+    relations: [{ rel: "of-model", target: "model-writer" }, { rel: "runs-on", target: "hardware-spark2" }],
+    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 200000 } } },
+  }),
+];
+
+Deno.test("decodeTokSEstimate: bandwidth ÷ active-params×bytes (MoE sparsity drives speed)", () => {
+  const hw = V2_ENTRIES.find((e) => e.id === "hardware-spark2")!;
+  const all = V2_ENTRIES.find((e) => e.id === "model-allrounder")!; // 10B active
+  const writer = V2_ENTRIES.find((e) => e.id === "model-writer")!; // 27B dense
+  // 273 / (10 × 4.3/8) ≈ 50.8 — near the measured 52 for the optimised recipe.
+  const estAll = decodeTokSEstimate(all, "int4", hw)!;
+  assert(estAll > 48 && estAll < 54, `allrounder est ${estAll}`);
+  // dense 27B: 273 / (27 × 4.3/8) ≈ 18.8 — far SLOWER despite being smaller total.
+  const estWriter = decodeTokSEstimate(writer, "int4", hw)!;
+  assert(estWriter > 17 && estWriter < 21, `writer est ${estWriter}`);
+  assert(estAll > estWriter); // the sparsity inversion: bigger MoE beats smaller dense
+});
+
+Deno.test("qualityScore: weighted average, renormalised, with coverage + synonyms", () => {
+  const w = resolveWeights("agents")!;
+  const agent = V2_ENTRIES.find((e) => e.id === "model-agent")!;
+  const writer = V2_ENTRIES.find((e) => e.id === "model-writer")!;
+  const qa = qualityScore(agent, w)!;
+  assertEquals(qa.coverage, 1); // all 4 agent dims present
+  assert(qa.score > 80 && qa.score < 86);
+  // writer only has ifEval of the agent dims → thin coverage, score = that lone dim
+  const qw = qualityScore(writer, w)!;
+  assertEquals(qw.coverage, 0.25);
+  assertEquals(qw.score, 95);
+  // synonym: a card reporting tauBenchRetail (not tau2Agentic) still scores the tau2 dim
+  const syn = qualityScore(
+    { facets: { benchmarks: { tauBenchRetail: 67.8 } } },
+    { tau2Agentic: 1 },
+  )!;
+  assertEquals(syn.score, 67.8);
+});
+
+Deno.test("capacity: a profile ranks local recs by quality, fills estimated tok/s", () => {
+  const plan = buildCapacityPlan(
+    CapacityArgsSchema.parse({ task: "agentwork", host: "hardware-spark2", profile: "agents" }),
+    V2_ENTRIES,
+  );
+  // model-agent outscores the all-rounder on the agents profile → ranks first
+  assertEquals(plan.recommendations[0].model, "model-agent");
+  assert((plan.recommendations[0].qualityScore ?? 0) > 80);
+  // the writer path had no measured genTokS → estimate filled in + flagged
+  const wr = plan.recommendations.find((r) => r.accessPath === "ap-writer")!;
+  assert(wr.decodeTokS && wr.decodeTokS > 17 && wr.decodeTokS < 21);
+  assertEquals(wr.decodeTokSEstimated, true);
+});
+
+Deno.test("plan: enumerates shared vs split on a Pareto front", () => {
+  const result = buildDeploymentPlans(
+    PlanArgsSchema.parse({
+      host: "hardware-spark2",
+      workloads: [
+        { label: "writing", profile: "writing", minContext: 32768 },
+        { label: "agents", profile: "agents", minContext: 32768 },
+      ],
+    }),
+    V2_ENTRIES,
+  );
+  assertEquals(result.freeGB, 106); // 128 - 22 driver
+  const shared = result.plans.find((p) => p.kind === "shared");
+  const split = result.plans.find((p) => p.kind === "split");
+  // shared: the all-rounder serves BOTH (only model strong on both profiles & fits)
+  assert(shared, "expected a shared plan");
+  assertEquals(shared!.models, ["model-allrounder"]);
+  assertEquals(shared!.workloads.length, 2);
+  // split: a specialist per workload — agent model for agents, writer for writing
+  assert(split, "expected a split plan");
+  assertEquals(split!.models.length, 2);
+  assert(split!.models.includes("model-agent"));
+  assert(split!.models.includes("model-writer"));
+  // split pays isolation overhead (one extra server) → totalGB includes +2
+  assert((split!.totalGB ?? 0) > 0);
+  // every returned plan actually fits the budget
+  assert(result.plans.every((p) => (p.freeAfterGB ?? 0) >= 0));
+  // at least one plan is on the Pareto front
+  assert(result.plans.some((p) => p.pareto));
+});
+
+Deno.test("plan: a very tight budget rules out the split, a small shared survives", () => {
+  const result = buildDeploymentPlans(
+    PlanArgsSchema.parse({
+      host: "hardware-spark2",
+      // squeeze so two co-resident servers can't both fit, but one small model can
+      coresident: [{ label: "other", reserveGB: 76 }],
+      workloads: [
+        { label: "writing", profile: "writing", minContext: 200000 },
+        { label: "agents", profile: "agents", minContext: 200000 },
+      ],
+    }),
+    V2_ENTRIES,
+  );
+  assertEquals(result.freeGB, 30); // 106 - 76
+  // split (writer ~19 + agent ~23 + iso 2 ≈ 44) exceeds 30 → ruled out, reported
+  assert(!result.plans.some((p) => p.kind === "split"));
+  assert(result.unmet.some((u) => u.includes("split")));
+  // a small single shared model still fits and serves both (compromised but viable)
+  assert(result.plans.some((p) => p.kind === "shared"));
+  assert(result.plans.every((p) => (p.freeAfterGB ?? 0) >= 0));
 });

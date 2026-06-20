@@ -173,6 +173,13 @@ export const HardwareFacetSchema = z.object({
   unifiedMemGB: z.number().nonnegative().optional().describe(
     "Unified memory (e.g. GB10 / DGX Spark), GB.",
   ),
+  driverReservedGB: z.number().nonnegative().optional().describe(
+    "Memory the driver/firmware permanently reserves (e.g. GB10 ~22GB) — usable < installed.",
+  ),
+  memBandwidthGBs: z.number().positive().optional().describe(
+    "Memory bandwidth (GB/s). Decode is bandwidth-bound, so the throughput " +
+      "estimator uses it: decodeTokS ≈ memBandwidthGBs ÷ (activeParams × bytes/quant).",
+  ),
   powerW: z.number().nonnegative().optional(),
   clusterable: z.boolean().optional().describe(
     "Can multiple units cluster for a bigger model (e.g. 2× Spark)?",
@@ -314,6 +321,130 @@ export const ReconciliationSchema = z.object({
   hardware: z.string().optional(),
   count: z.number().int().nonnegative(),
   configs: z.array(z.object({ id: z.string() }).catchall(z.unknown())),
+}).catchall(z.unknown());
+
+/** Arguments for `capacity` — an inference-capacity intent to resolve. */
+export const CapacityArgsSchema = z.object({
+  task: z.string().min(1).describe(
+    "Workload label (e.g. 'long-form-writing', 'coding-agent') — for labelling; " +
+      "ranking is driven by the numeric constraints below.",
+  ),
+  profile: z.string().optional().describe(
+    "Workload profile (agents | coding | reasoning | writing | general) — a weighted " +
+      "quality-dimension vector. When set, each recommendation gets a qualityScore " +
+      "(weighted benchmark average) and ranking prefers quality within the local tier.",
+  ),
+  profileWeights: z.record(z.string(), z.number()).optional().describe(
+    "Custom benchmark→weight map, overrides the named `profile` (e.g. " +
+      "{ tau2Agentic: 0.5, bfcl: 0.5 }). Keys are benchmark facet keys.",
+  ),
+  host: z.string().optional().describe(
+    "Hardware id (e.g. 'hardware-dgx-spark') setting the local memory budget for " +
+      "the fit/bin-pack check. Omit for a cloud-only answer.",
+  ),
+  hostUnits: z.number().int().positive().default(1).describe(
+    "How many units of `host` are available (e.g. 2 for a 2× Spark cluster). " +
+      "Total budget = hostUnits × unifiedMemGB; a recipe needing more units than " +
+      "this is ruled out (the cluster/node-count gate).",
+  ),
+  minContext: z.number().int().positive().optional().describe(
+    "Required context window (tokens).",
+  ),
+  minDecodeTokS: z.number().positive().optional().describe(
+    "Required decode throughput (tok/s).",
+  ),
+  privacy: z.enum(["local-only", "prefer-local", "any"]).default("prefer-local")
+    .describe(
+      "Hard gate: 'local-only' drops every via-provider (cloud) option; " +
+        "'prefer-local' ranks local first; 'any' ranks purely on the Pareto vector.",
+    ),
+  maxCostPerMTokOut: z.number().optional().describe(
+    "Cloud cost ceiling (USD per M output tokens); filters pricier gateway paths.",
+  ),
+  coresident: z.array(
+    z.object({
+      label: z.string(),
+      reserveGB: z.number().describe(
+        "Memory held out for this always-on workload.",
+      ),
+    }),
+  ).default([]).describe(
+    "Workloads that must keep running on `host` concurrently (e.g. the agent " +
+      "driver during a writing session) — their GB is subtracted before the fit check.",
+  ),
+  topK: z.number().int().positive().default(3).describe(
+    "Max recommendations to return.",
+  ),
+  catalogUrl: z.string().optional().describe(
+    "Public catalog source to include alongside local/private entries " +
+      "(https URL or local path); defaults to the instance `catalogUrl`.",
+  ),
+});
+export type CapacityArgs = z.infer<typeof CapacityArgsSchema>;
+
+/** A capacity plan — the ranked recommendation set for one intent. */
+export const CapacityPlanSchema = z.object({
+  task: z.string(),
+  host: z.string().optional(),
+  recommendations: z.array(
+    z.object({ accessPath: z.string() }).catchall(z.unknown()),
+  ),
+}).catchall(z.unknown());
+
+/** One workload demand in a multi-workload deployment question. */
+export const WorkloadSchema = z.object({
+  label: z.string().min(1).describe(
+    "Workload name, e.g. 'writing' or 'coding-agent'.",
+  ),
+  profile: z.string().optional().describe(
+    "Named profile (agents | coding | reasoning | writing | general).",
+  ),
+  profileWeights: z.record(z.string(), z.number()).optional().describe(
+    "Custom benchmark→weight map; overrides `profile`.",
+  ),
+  minContext: z.number().int().positive().optional(),
+  minDecodeTokS: z.number().positive().optional(),
+});
+
+/**
+ * Arguments for `plan` — the deployment planner. Given a SET of concurrent
+ * workloads on a host, enumerate one-shared-model vs split-model deployments on
+ * a Pareto front (quality × throughput × memory headroom). Gather-don't-pick:
+ * it returns the trade, ranked, not a single winner.
+ */
+export const PlanArgsSchema = z.object({
+  host: z.string().min(1).describe(
+    "Hardware id setting the memory + bandwidth budget (e.g. 'hardware-dgx-spark').",
+  ),
+  hostUnits: z.number().int().positive().default(1).describe(
+    "Units of `host` available (node-count gate + total budget).",
+  ),
+  workloads: z.array(WorkloadSchema).min(1).describe(
+    "The concurrent demands to place — e.g. a writing session + a coding agent.",
+  ),
+  coresident: z.array(
+    z.object({ label: z.string(), reserveGB: z.number() }),
+  ).default([]).describe(
+    "Non-LLM always-on reservations (GB) subtracted before any fit.",
+  ),
+  isolationOverheadGB: z.number().nonnegative().default(2).describe(
+    "Per-additional-server overhead (CUDA context + activation buffers) charged to " +
+      "split plans — one shared server pays it once, N split servers pay it N times.",
+  ),
+  topK: z.number().int().positive().default(4).describe("Max plans to return."),
+  catalogUrl: z.string().optional().describe(
+    "Public catalog source (https URL or local path); defaults to instance catalogUrl.",
+  ),
+});
+export type PlanArgs = z.infer<typeof PlanArgsSchema>;
+
+/** A deployment plan set — Pareto-ranked one-shared vs split options. */
+export const DeploymentPlanSchema = z.object({
+  host: z.string(),
+  hostUnits: z.number(),
+  plans: z.array(
+    z.object({ kind: z.string() }).catchall(z.unknown()),
+  ),
 }).catchall(z.unknown());
 
 /** Arguments for `sync` — refresh gateway prices from a provider feed. */

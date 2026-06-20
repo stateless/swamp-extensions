@@ -36,11 +36,15 @@
 
 import { z } from "npm:zod@4";
 import {
+  CapacityArgsSchema,
+  CapacityPlanSchema,
   ContributeArgsSchema,
+  DeploymentPlanSchema,
   EntrySchema,
   type GlobalArgs,
   GlobalArgsSchema,
   IngestArgsSchema,
+  PlanArgsSchema,
   PruneArgsSchema,
   ReconcileArgsSchema,
   ReconciliationSchema,
@@ -50,6 +54,7 @@ import {
 import { nodeClassMap, sanitiseForContribution } from "./contribute.ts";
 import { type HfConfig, hfConfigUrl, ingestHfConfig } from "./ingest.ts";
 import { buildReconciliation } from "./reconcile.ts";
+import { buildCapacityPlan, buildDeploymentPlans } from "./capacity.ts";
 import {
   OPENROUTER_FEED,
   parseOpenRouterFeed,
@@ -109,7 +114,7 @@ interface MethodResult {
 /** The `@stateless/llm-catalog` model definition. */
 export const model = {
   type: "@stateless/llm-catalog",
-  version: "2026.06.19.2",
+  version: "2026.06.21.1",
   globalArguments: GlobalArgsSchema,
   resources: {
     entry: {
@@ -157,6 +162,27 @@ export const model = {
         "lineage, verification. The GATHER for an agent to reason over; it does " +
         "not pick a winner.",
       schema: ReconciliationSchema,
+      lifetime: "infinite" as const,
+      garbageCollection: 20,
+    },
+    "capacity-plan": {
+      description:
+        "A ranked recommendation set produced by `capacity` for one inference " +
+        "intent (task + host + co-resident reservations + privacy/cost policy): " +
+        "candidate access-paths bin-packed against the host's free memory, local " +
+        "vs cloud arbitrated. The decision material — small, not the catalog.",
+      schema: CapacityPlanSchema,
+      lifetime: "infinite" as const,
+      garbageCollection: 20,
+    },
+    "deployment-plan": {
+      description:
+        "A Pareto-ranked set of deployment options produced by `plan` for a SET " +
+        "of concurrent workloads on a host: one-shared-model vs split-of-" +
+        "specialists, each scored on guaranteed quality × throughput × memory " +
+        "headroom. Answers 'one big model for everything, or split?' by showing " +
+        "the trade — it does not pre-decide it.",
+      schema: DeploymentPlanSchema,
       lifetime: "infinite" as const,
       garbageCollection: 20,
     },
@@ -554,6 +580,153 @@ export const model = {
           status: removedStatus,
         });
         return { dataHandles: handles };
+      },
+    },
+    capacity: {
+      description:
+        "Resolve an inference-capacity INTENT (task + host + co-resident " +
+        "reservations + privacy/cost policy) into a small ranked Pareto set " +
+        "across ALL models — candidate access-paths bin-packed against the host's " +
+        "free unified memory, local vs cloud arbitrated. The token-efficient " +
+        "capability oracle: intent in, the decision out (not the catalog). " +
+        "Footprint = a stored footprint facet else computed from verified params.",
+      arguments: CapacityArgsSchema,
+      execute: async (
+        args: {
+          task: string;
+          profile?: string;
+          profileWeights?: Record<string, number>;
+          host?: string;
+          hostUnits?: number;
+          minContext?: number;
+          minDecodeTokS?: number;
+          privacy?: "local-only" | "prefer-local" | "any";
+          maxCostPerMTokOut?: number;
+          coresident?: { label: string; reserveGB: number }[];
+          topK?: number;
+          catalogUrl?: string;
+        },
+        ctx: MethodContext,
+      ): Promise<MethodResult> => {
+        const declared = ctx.globalArgs.entries;
+        const declaredIds = new Set(declared.map((e) => e.id));
+        const pool = [...declared];
+        // Fold in the public catalog (private entries shadow public on id).
+        const catalogUrl = args.catalogUrl ?? ctx.globalArgs.catalogUrl;
+        if (catalogUrl) {
+          const text = /^https?:\/\//.test(catalogUrl)
+            ? await (await fetch(catalogUrl)).text()
+            : await Deno.readTextFile(catalogUrl);
+          const parsed = JSON.parse(text);
+          const pub: unknown[] = Array.isArray(parsed)
+            ? parsed
+            : parsed.entries ?? [];
+          for (const raw of pub) {
+            const e = EntrySchema.parse(raw);
+            if (!declaredIds.has(e.id)) pool.push(e);
+          }
+        }
+        const plan = buildCapacityPlan(
+          CapacityArgsSchema.parse(args),
+          pool,
+        );
+        const handle = await ctx.writeResource(
+          "capacity-plan",
+          `capacity-${args.task}`,
+          plan,
+        );
+        ctx.logger.info(
+          "capacity {task} on {host}: {n} rec(s), {free} free, {unmet} unmet",
+          {
+            task: args.task,
+            host: args.host ?? "cloud",
+            n: plan.recommendations.length,
+            free: plan.freeGB === undefined ? "n/a" : `${plan.freeGB}GB`,
+            unmet: plan.unmet.length,
+          },
+        );
+        for (const r of plan.recommendations) {
+          ctx.logger.info("  {ap}: {placement} | {q} | {speed} tok/s | {fit}", {
+            ap: r.accessPath,
+            placement: r.placement,
+            q: r.quant ?? r.perMTokOutUsd != null
+              ? `$${r.perMTokOutUsd}/MTok`
+              : (r.quant ?? "-"),
+            speed: r.decodeTokS ?? "-",
+            fit: r.needGB != null ? `${r.needGB}GB` : "-",
+          });
+        }
+        return { dataHandles: [handle] };
+      },
+    },
+    plan: {
+      description:
+        "Deployment planner: given a SET of concurrent workloads (each with a " +
+        "quality profile) on a host, enumerate one-shared-model vs split-of-" +
+        "specialists deployments and rank them on a Pareto front (guaranteed " +
+        "quality × throughput × memory headroom). Gather-don't-pick: returns the " +
+        "trade between a single all-rounder and per-task specialists. Throughput " +
+        "uses measured genTokS where known, else a bandwidth estimate (flagged).",
+      arguments: PlanArgsSchema,
+      execute: async (
+        args: {
+          host: string;
+          hostUnits?: number;
+          workloads: {
+            label: string;
+            profile?: string;
+            profileWeights?: Record<string, number>;
+            minContext?: number;
+            minDecodeTokS?: number;
+          }[];
+          coresident?: { label: string; reserveGB: number }[];
+          isolationOverheadGB?: number;
+          topK?: number;
+          catalogUrl?: string;
+        },
+        ctx: MethodContext,
+      ): Promise<MethodResult> => {
+        const declared = ctx.globalArgs.entries;
+        const declaredIds = new Set(declared.map((e) => e.id));
+        const pool = [...declared];
+        const catalogUrl = args.catalogUrl ?? ctx.globalArgs.catalogUrl;
+        if (catalogUrl) {
+          const text = /^https?:\/\//.test(catalogUrl)
+            ? await (await fetch(catalogUrl)).text()
+            : await Deno.readTextFile(catalogUrl);
+          const parsed = JSON.parse(text);
+          const pub: unknown[] = Array.isArray(parsed)
+            ? parsed
+            : parsed.entries ?? [];
+          for (const raw of pub) {
+            const e = EntrySchema.parse(raw);
+            if (!declaredIds.has(e.id)) pool.push(e);
+          }
+        }
+        const result = buildDeploymentPlans(PlanArgsSchema.parse(args), pool);
+        const handle = await ctx.writeResource(
+          "deployment-plan",
+          `plan-${args.workloads.map((w) => w.label).join("+")}`,
+          result,
+        );
+        ctx.logger.info(
+          "plan on {host}×{units}: {n} plan(s), {free} free, {unmet} unmet",
+          {
+            host: args.host,
+            units: result.hostUnits,
+            n: result.plans.length,
+            free: result.freeGB === undefined ? "n/a" : `${result.freeGB}GB`,
+            unmet: result.unmet.length,
+          },
+        );
+        for (const p of result.plans) {
+          ctx.logger.info("  [{kind}{pareto}] {verdict}", {
+            kind: p.kind,
+            pareto: p.pareto ? "*" : "",
+            verdict: p.verdict,
+          });
+        }
+        return { dataHandles: [handle] };
       },
     },
   },

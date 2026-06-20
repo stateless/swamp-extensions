@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/llm-catalog"
-version: "2026.06.19.2"
+version: "2026.06.21.1"
 description: >-
   A sourced, versioned knowledge base of LLM-ops knowledge — NOT a control plane
   for running models, but the structured, CEL-queryable record that running
