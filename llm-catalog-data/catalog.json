@@ -562,6 +562,167 @@
       }
     },
     {
+      "id": "ap-gemma4-26b-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Gemma 4 26B-A4B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "Online FP8 quant; TP=2 Ray; gemma4 tool/reasoning parsers; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gemma4-26b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "google/gemma-4-26B-A4B-it",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "command": "vllm serve google/gemma-4-26B-A4B-it \\\n  --max-model-len 262144 \\\n  --gpu-memory-utilization 0.8 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --load-format safetensors \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser gemma4 \\\n  --reasoning-parser gemma4 \\\n  --quantization fp8 \\\n  --kv-cache-dtype fp8 \\\n  --max-num-batched-tokens 8192 \\\n  -tp 2 --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "gemma4",
+            "reasoningParser": "gemma4"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-glm-47-flash-spark-vllm-awq",
+      "kind": "access-path",
+      "name": "GLM-4.7-Flash · vLLM AWQ @ 1× DGX Spark (eugr recipe)",
+      "summary": "cyankiwi AWQ 4-bit; solo or cluster; ~40 t/s gen (from recipe comment); 198K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-glm-47-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-awq"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "genTokS": 40,
+            "note": "from recipe comment (\"~40 t/s generation in both single node and cluster\"), not a benchmark. Recipe warns vLLM is suboptimal for this model even with the speed-optimization patch — slower than expected for the active-param count; cluster helps prompt processing, not generation."
+          },
+          "context": {
+            "tokens": 202752
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "cyankiwi/GLM-4.7-Flash-AWQ-4bit",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "awq",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 1,
+            "accel": "GB10"
+          },
+          "command": "vllm serve cyankiwi/GLM-4.7-Flash-AWQ-4bit \\\n    --tool-call-parser glm47 \\\n    --reasoning-parser glm45 \\\n    --enable-auto-tool-choice \\\n    --served-model-name glm-4.7-flash \\\n    --max-model-len 202752 \\\n    --max-num-batched-tokens 4096 \\\n    --max-num-seqs 64 \\\n    --gpu-memory-utilization 0.8 \\\n    -tp 1 \\\n    --host 0.0.0.0 \\\n    --port 8000\n",
+          "serving": {
+            "maxModelLen": 202752,
+            "tensorParallel": 1,
+            "maxNumBatchedTokens": 4096,
+            "maxNumSeqs": 64,
+            "toolCallParser": "glm47",
+            "reasoningParser": "glm45"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml"
+        }
+      }
+    },
+    {
       "id": "ap-glm-52-openrouter",
       "kind": "access-path",
       "name": "GLM-5.2 · OpenRouter (gateway)",
@@ -592,6 +753,848 @@
         "api": {
           "apiSpec": "openai-compat",
           "providerModelId": "z-ai/glm-5.2"
+        }
+      }
+    },
+    {
+      "id": "ap-gpt-oss-120b-spark-vllm-mxfp4",
+      "kind": "access-path",
+      "name": "GPT-OSS 120B · vLLM MXFP4 @ 1× DGX Spark (eugr recipe)",
+      "summary": "OpenAI MXFP4 weights; solo-only; CUTLASS MXFP4 + FlashInfer; native 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-gpt-oss-120b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-mxfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 131072
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "openai/gpt-oss-120b",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-mxfp4)"
+          },
+          "artifact": {
+            "quant": "mxfp4",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 1,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8": "1"
+          },
+          "command": "vllm serve openai/gpt-oss-120b \\\n    --tool-call-parser openai \\\n    --reasoning-parser openai_gptoss \\\n    --enable-auto-tool-choice \\\n    --gpu-memory-utilization 0.8 \\\n    --enable-prefix-caching \\\n    --load-format fastsafetensors \\\n    --quantization mxfp4 \\\n    --mxfp4-backend CUTLASS \\\n    --mxfp4-layers moe,qkv,o,lm_head \\\n    --attention-backend FLASHINFER \\\n    --kv-cache-dtype fp8 \\\n    --max-num-batched-tokens 8192 \\\n    --host 0.0.0.0 \\\n    --port 8000\n",
+          "serving": {
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "openai",
+            "reasoningParser": "openai_gptoss"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-minimax-m2-spark-vllm-awq",
+      "kind": "access-path",
+      "name": "MiniMax-M2 · vLLM AWQ @ 2× DGX Spark (eugr recipe)",
+      "summary": "QuantTrio AWQ 4-bit; cluster-only (TP=2, Ray); 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-minimax-m2"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-awq"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 128000
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "QuantTrio/MiniMax-M2-AWQ",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "awq",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "command": "vllm serve QuantTrio/MiniMax-M2-AWQ \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization 0.8 \\\n    -tp 2 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 128000 \\\n    --load-format fastsafetensors \\\n    --enable-auto-tool-choice \\\n    --tool-call-parser minimax_m2 \\\n    --reasoning-parser minimax_m2\n",
+          "serving": {
+            "maxModelLen": 128000,
+            "tensorParallel": 2,
+            "toolCallParser": "minimax_m2",
+            "reasoningParser": "minimax_m2"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-minimax-m25-spark-vllm-awq",
+      "kind": "access-path",
+      "name": "MiniMax-M2.5 · vLLM AWQ @ 2× DGX Spark (eugr recipe)",
+      "summary": "cyankiwi AWQ 4-bit; cluster-only (TP=2, Ray); 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-minimax-m25"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-awq"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 128000
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "cyankiwi/MiniMax-M2.5-AWQ-4bit",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "awq",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "command": "vllm serve cyankiwi/MiniMax-M2.5-AWQ-4bit \\\n    --trust-remote-code \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization 0.8 \\\n    -tp 2 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 128000 \\\n    --load-format fastsafetensors \\\n    --enable-auto-tool-choice \\\n    --tool-call-parser minimax_m2 \\\n    --reasoning-parser minimax_m2\n",
+          "serving": {
+            "maxModelLen": 128000,
+            "tensorParallel": 2,
+            "toolCallParser": "minimax_m2",
+            "reasoningParser": "minimax_m2"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-minimax-m25-spark-vllm-fp8-4x",
+      "kind": "access-path",
+      "name": "MiniMax-M2.5 · vLLM FP8 @ 4× DGX Spark (eugr 4x-cluster recipe)",
+      "summary": "MiniMaxAI FP8 base on a 4-node mesh (TP=4, Ray, SPREAD); 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-minimax-m25"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 128000
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "MiniMaxAI/MiniMax-M2.5",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 4,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_DISTRIBUTED_EXECUTOR_CONFIG": "{\"placement_group_options\":{\"strategy\":\"SPREAD\"}}"
+          },
+          "command": "vllm serve MiniMaxAI/MiniMax-M2.5 \\\n    --trust-remote-code \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization 0.90 \\\n    -tp 4 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 128000 \\\n    --load-format fastsafetensors \\\n    --enable-auto-tool-choice \\\n    --tool-call-parser minimax_m2 \\\n    --reasoning-parser minimax_m2_append_think\n",
+          "serving": {
+            "maxModelLen": 128000,
+            "tensorParallel": 4,
+            "toolCallParser": "minimax_m2",
+            "reasoningParser": "minimax_m2_append_think"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-minimax-m27-spark-vllm-awq",
+      "kind": "access-path",
+      "name": "MiniMax-M2.7 · vLLM AWQ @ 2× DGX Spark (eugr recipe)",
+      "summary": "cyankiwi AWQ 4-bit; cluster-only (TP=2, Ray); 192K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-minimax-m27"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-awq"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 196608
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "cyankiwi/MiniMax-M2.7-AWQ-4bit",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "awq",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "command": "vllm serve cyankiwi/MiniMax-M2.7-AWQ-4bit \\\n    --trust-remote-code \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization 0.8 \\\n    -tp 2 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 196608 \\\n    --load-format fastsafetensors \\\n    --enable-auto-tool-choice \\\n    --tool-call-parser minimax_m2 \\\n    --reasoning-parser minimax_m2\n",
+          "serving": {
+            "maxModelLen": 196608,
+            "tensorParallel": 2,
+            "toolCallParser": "minimax_m2",
+            "reasoningParser": "minimax_m2"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-nemotron-nano-30b-spark-vllm-nvfp4",
+      "kind": "access-path",
+      "name": "Nemotron-3-Nano-30B-A3B · vLLM NVFP4 @ 1× DGX Spark (eugr recipe)",
+      "summary": "NVIDIA NVFP4; SINGLE NODE ONLY (cluster fails); CUTLASS MoE; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-nano-30b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 1,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/nemotron-nano"
+          ],
+          "command": "vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 \\\n   --moe-backend cutlass \\\n   --max-model-len 262144 \\\n   --port 8000 --host 0.0.0.0 \\\n   --trust-remote-code \\\n   --enable-auto-tool-choice \\\n   --tool-call-parser qwen3_coder \\\n   --reasoning-parser-plugin nano_v3_reasoning_parser.py \\\n   --reasoning-parser nano_v3 \\\n   --kv-cache-dtype fp8 \\\n   --enable-prefix-caching \\\n   --load-format fastsafetensors \\\n   --gpu-memory-utilization 0.7\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 1,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "nano_v3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-nemotron-super-120b-spark-vllm-nvfp4",
+      "kind": "access-path",
+      "name": "Nemotron-3-Super-120B-A12B · vLLM NVFP4 @ 2× DGX Spark (eugr recipe)",
+      "summary": "NVIDIA NVFP4; CUTLASS MoE + TRITON attention; TP=2 Ray; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-super-120b-a12b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_FLASHINFER_ALLREDUCE_BACKEND": "trtllm",
+            "VLLM_ALLOW_LONG_MAX_MODEL_LEN": "1"
+          },
+          "command": "vllm serve nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4 \\\n  --kv-cache-dtype fp8 \\\n  --moe-backend cutlass \\\n  --trust-remote-code \\\n  --gpu-memory-utilization 0.8 \\\n  --max-model-len 262144 \\\n  --max-num-seqs 10 \\\n  --enable-prefix-caching \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --enable-auto-tool-choice \\\n  --load-format fastsafetensors \\\n  --tool-call-parser qwen3_coder \\\n  --reasoning-parser nemotron_v3 \\\n  --mamba_ssm_cache_dtype float32 \\\n  --tensor-parallel-size 2 \\\n  --attention-backend TRITON_ATTN \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumSeqs": 10,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "nemotron_v3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-nemotron-ultra-550b-spark-vllm-nvfp4-4x",
+      "kind": "access-path",
+      "name": "Nemotron-3-Ultra-550B-A55B · vLLM NVFP4 @ 4× DGX Spark (eugr 4x-cluster recipe)",
+      "summary": "NVFP4 on a 4-node mesh (TP=4, Ray); Marlin MoE + MTP-4; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-nemotron-ultra-550b-a55b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-mtp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 4,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_FLOAT32_MATMUL_PRECISION": "high"
+          },
+          "command": "vllm serve nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 \\\n  --tensor-parallel-size 4 \\\n  --distributed-executor-backend ray \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --dtype auto \\\n  --max-model-len 262144 \\\n  --gpu-memory-utilization 0.85 \\\n  --max-num-seqs 2 \\\n  --load-format instanttensor \\\n  --attention-backend TRITON_ATTN \\\n  --max-num-batched-tokens 16384 \\\n  --kv-cache-dtype fp8 \\\n  --moe-backend marlin \\\n  --mamba-cache-mode align \\\n  --mamba_ssm_cache_dtype float32 \\\n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":4,\"moe_backend\":\"triton\",\"attention_backend\":\"TRITON_ATTN\"}' \\\n  --enable-prefix-caching \\\n  --enable-flashinfer-autotune \\\n  --reasoning-parser nemotron_v3 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 4,
+            "maxNumSeqs": 2,
+            "maxNumBatchedTokens": 16384,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "nemotron_v3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen3-coder-next-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Qwen3-Coder-Next · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "Qwen native FP8; TP=2 Ray; FlashInfer; prefix caching; 128K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen3-coder-next"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 131072
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3-Coder-Next-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "command": "vllm serve Qwen/Qwen3-Coder-Next-FP8 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --gpu-memory-utilization 0.8 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --kv-cache-dtype fp8 \\\n  --load-format fastsafetensors \\\n  --attention-backend flashinfer \\\n  --enable-prefix-caching \\\n  --max-model-len 131072 \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 131072,
+            "tensorParallel": 2,
+            "toolCallParser": "qwen3_coder"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen3-coder-next-spark-vllm-int4-autoround",
+      "kind": "access-path",
+      "name": "Qwen3-Coder-Next · vLLM INT4-AutoRound @ 1× DGX Spark (eugr recipe)",
+      "summary": "Intel INT4-AutoRound; solo-only; prefix caching; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen3-coder-next"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Intel/Qwen3-Coder-Next-int4-AutoRound",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "int4-autoround",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 1,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3-next-autoround"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Intel/Qwen3-Coder-Next-int4-AutoRound \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --gpu-memory-utilization 0.8 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --load-format fastsafetensors \\\n  --enable-prefix-caching \\\n  --max-model-len 262144\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "toolCallParser": "qwen3_coder"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-int4-autoround.yaml"
         }
       }
     },
@@ -656,6 +1659,10 @@
         {
           "rel": "uses-technique",
           "target": "technique-fp8"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
         }
       ],
       "claims": [
@@ -708,7 +1715,8 @@
         "recipe": {
           "build": {
             "runtime": "vLLM",
-            "version": "0.19"
+            "version": "0.19",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
           },
           "artifact": {
             "quant": "hybrid INT4 (AutoRound) + FP8 (Qwen official, 144 shared-expert dense layers)",
@@ -754,6 +1762,10 @@
         {
           "rel": "uses-technique",
           "target": "technique-ray-serve"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
         }
       ],
       "claims": [
@@ -782,7 +1794,8 @@
         "recipe": {
           "build": {
             "runtime": "vLLM",
-            "version": "0.19.1rc1.dev15"
+            "version": "0.19.1rc1.dev15",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
           },
           "artifact": {
             "quant": "INT4 (Intel/Qwen3.5-122B-A10B-int4-AutoRound)",
@@ -792,6 +1805,189 @@
             "config": "Ray cluster (multi-node, not single Spark)"
           },
           "technique": "MTP (85-100% accept)"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-122b-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Qwen3.5-122B-A10B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "Qwen native FP8; cluster-only (TP=2 Ray); prefix caching; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-122b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3.5-122B-A10B-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.5-chat-template"
+          ],
+          "command": "vllm serve Qwen/Qwen3.5-122B-A10B-FP8 \\\n  --max-model-len 262144 \\\n  --gpu-memory-utilization 0.8 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --load-format fastsafetensors \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --reasoning-parser qwen3 \\\n  --chat-template unsloth.jinja \\\n  -tp 2 --distributed-executor-backend ray \\\n  --max-num-batched-tokens 8192\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-122b-spark-vllm-int4-autoround",
+      "kind": "access-path",
+      "name": "Qwen3.5-122B-A10B · vLLM INT4-AutoRound @ 2× DGX Spark (eugr recipe)",
+      "summary": "Intel INT4-AutoRound; TP=2 Ray; qwen3_xml parser; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-122b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "replicates",
+          "target": "ap-qwen35-122b-spark-vllm"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure (cf. forum 365639's 38.4 t/s hybrid config)"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Intel/Qwen3.5-122B-A10B-int4-AutoRound",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "int4-autoround",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.5-chat-template"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Intel/Qwen3.5-122B-A10B-int4-AutoRound \\\n  --max-model-len 262144 \\\n  --gpu-memory-utilization 0.8 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --load-format fastsafetensors \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\n  --max-num-batched-tokens 8192 \\\n  --trust-remote-code \\\n  --chat-template unsloth.jinja \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-int4-autoround.yaml"
         }
       }
     },
@@ -830,14 +2026,1052 @@
       }
     },
     {
+      "id": "ap-qwen35-35b-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Qwen3.5-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "Qwen native FP8; TP=2 Ray; FlashInfer; prefix caching; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-35b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-35b-a3b-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3.5-35B-A3B-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3-coder-next",
+            "mods/fix-qwen3.5-chat-template"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Qwen/Qwen3.5-35B-A3B-FP8 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --max-model-len 262144 \\\n  --max-num-batched-tokens 16384 \\\n  --gpu-memory-utilization 0.8 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --kv-cache-dtype fp8 \\\n  --load-format fastsafetensors \\\n  --attention-backend flashinfer \\\n  --enable-prefix-caching \\\n  --chat-template unsloth.jinja \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 16384,
+            "toolCallParser": "qwen3_coder"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-35b-a3b-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-397b-spark-vllm-fp8-4x",
+      "kind": "access-path",
+      "name": "Qwen3.5-397B-A17B · vLLM FP8 @ 4× DGX Spark (TP=4, eugr 4x-cluster)",
+      "summary": "Qwen native FP8; TP=4 across 4 nodes; multimodal input; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-397b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-a17B-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3.5-397B-A17B-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 4,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.5-autoround"
+          ],
+          "env": {
+            "VLLM_USE_DEEP_GEMM": "0",
+            "VLLM_USE_FLASHINFER_MOE_FP16": "1",
+            "VLLM_USE_FLASHINFER_SAMPLER": "0",
+            "OMP_NUM_THREADS": "4"
+          },
+          "command": "vllm serve Qwen/Qwen3.5-397B-A17B-FP8 \\\n  --max-model-len 262144 \\\n  --gpu-memory-utilization 0.85 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --load-format fastsafetensors \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --reasoning-parser qwen3 \\\n  --max-num-batched-tokens 8192 \\\n  --trust-remote-code \\\n  -tp 4 \\\n  --distributed-executor-backend ray \\\n  --mm-encoder-tp-mode data \\\n  --kv-cache-dtype fp8 \\\n  --compilation-config.cudagraph_mode none \\\n  --max-num-seqs 32 \\\n  --attention-backend flashinfer\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 4,
+            "maxNumSeqs": 32,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-a17B-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-397b-spark-vllm-int4-autoround-2x",
+      "kind": "access-path",
+      "name": "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 2× DGX Spark (eugr EXPERIMENTAL recipe)",
+      "summary": "Intel INT4-AutoRound; TP=2, gpu-mem in GB, --no-ray; EXPERIMENTAL; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-397b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "EXPERIMENTAL. Set memory utilization in GB (mod gpu-mem-util-gb), not percentage; requires --no-ray to fit full context on two Sparks. On node shutdown, limit GPU clocks (`sudo nvidia-smi -lgc 200,2150`).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-397b-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published EXPERIMENTAL recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-397b-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Intel/Qwen3.5-397B-A17B-int4-AutoRound",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.5-chat-template",
+            "mods/gpu-mem-util-gb",
+            "mods/kv-cache-prealloc-cleanup",
+            "mods/drop-caches"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1",
+            "VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS": "0"
+          },
+          "command": "vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \\\n  --max-model-len 262144 \\\n  --max-num-seqs 2 \\\n  --kv-cache-dtype fp8 \\\n  --gpu-memory-utilization-gb 108 \\\n  --kv-cache-memory-bytes 2415919104 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\n  --max-num-batched-tokens 4176 \\\n  --trust-remote-code \\\n  --chat-template unsloth.jinja \\\n  --load-format instanttensor \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumSeqs": 2,
+            "maxNumBatchedTokens": 4176,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-397b-int4-autoround.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-397b-spark-vllm-int4-autoround-4x",
+      "kind": "access-path",
+      "name": "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 4× DGX Spark (TP=4, eugr 4x-cluster)",
+      "summary": "Intel INT4-AutoRound; TP=4 across 4 nodes; 37 t/s single / 103 t/s @c4; 32K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-397b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "genTokS": 37,
+            "aggregateTokS": 103,
+            "note": "from recipe comment (\"37 tok/s single-user, 103 tok/s aggregate (4 concurrent) on 4× DGX Spark\"), not an independent benchmark. Requires NVIDIA driver 580.x (590.x has a CUDAGraph deadlock bug on GB10)."
+          },
+          "context": {
+            "tokens": 32768
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Intel/Qwen3.5-397B-A17B-int4-AutoRound",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 4,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3-coder-next",
+            "mods/fix-qwen35-tp4-marlin"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1",
+            "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+          },
+          "command": "vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \\\n  --tool-call-parser qwen3_coder \\\n  --reasoning-parser qwen3 \\\n  --enable-auto-tool-choice \\\n  --tensor-parallel-size 4 \\\n  --distributed-executor-backend ray \\\n  --kv-cache-dtype fp8 \\\n  --gpu-memory-utilization 0.78 \\\n  --max-model-len 32768 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-prefix-caching \\\n  --trust-remote-code \\\n  --host 0.0.0.0 \\\n  --port 8000\n",
+          "serving": {
+            "maxModelLen": 32768,
+            "tensorParallel": 4,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen35-397b-spark-vllm-int4-autoround-pp3",
+      "kind": "access-path",
+      "name": "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 3× DGX Spark (PP=3, eugr 3x-cluster)",
+      "summary": "Intel INT4-AutoRound; pipeline-parallel across 3 nodes (PP=3); 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen35-397b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-autoround"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-pipeline-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/3x-spark-cluster/qwen3.5-397b-int4-autoround.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Intel/Qwen3.5-397B-A17B-int4-AutoRound",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)"
+          },
+          "artifact": {
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 3,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.5-chat-template"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \\\n  --max-model-len 262144 \\\n  --max-num-seqs 10 \\\n  --kv-cache-dtype fp8 \\\n  --gpu-memory-utilization 0.7 \\\n  --port 8000 \\\n  --host 0.0.0.0 \\\n  --enable-prefix-caching \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_coder \\\n  --reasoning-parser qwen3 \\\n  --max-num-batched-tokens 16384 \\\n  --trust-remote-code \\\n  --chat-template unsloth.jinja \\\n  -tp 1 \\\n  -pp 3 \\\n  --load-format instanttensor \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "pipelineParallel": 3,
+            "maxNumSeqs": 10,
+            "maxNumBatchedTokens": 16384,
+            "toolCallParser": "qwen3_coder",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/3x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen36-35b-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Qwen3.6-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "Qwen native FP8; TP=2 Ray; FlashInfer; prefix caching; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen36-35b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3.6-35B-A3B-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.6-chat-template"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Qwen/Qwen3.6-35B-A3B-FP8 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --max-model-len 262144 \\\n  --max-num-batched-tokens 16384 \\\n  --gpu-memory-utilization 0.8 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --kv-cache-dtype fp8 \\\n  --load-format fastsafetensors \\\n  --attention-backend flashinfer \\\n  --enable-prefix-caching \\\n  --chat-template fixed_chat_template.jinja \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 16384,
+            "toolCallParser": "qwen3_xml"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen36-35b-spark-vllm-fp8-dflash",
+      "kind": "access-path",
+      "name": "Qwen3.6-35B-A3B · vLLM FP8 + DFlash @ 2× DGX Spark (eugr recipe)",
+      "summary": "Qwen native FP8 + DFlash speculative decoding (15 tokens); TP=2 Ray; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen36-35b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-dflash"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe (DFlash spec-decode for throughput); tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "Qwen/Qwen3.6-35B-A3B-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/fix-qwen3.6-chat-template"
+          ],
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve Qwen/Qwen3.6-35B-A3B-FP8 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --max-model-len 262144 \\\n  --max-num-batched-tokens 16384 \\\n  --gpu-memory-utilization 0.8 \\\n  --enable-auto-tool-choice \\\n  --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\n  --load-format fastsafetensors \\\n  --attention-backend flash_attn \\\n  --chat-template fixed_chat_template.jinja \\\n  --speculative-config '{\"method\": \"dflash\", \"model\": \"z-lab/Qwen3.6-35B-A3B-DFlash\", \"num_speculative_tokens\": 15}' \\\n  -tp 2 \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumBatchedTokens": 16384,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "qwen3",
+            "speculative": "dflash (z-lab/Qwen3.6-35B-A3B-DFlash, 15 tokens)"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen36-35b-spark-vllm-nvfp4",
+      "kind": "access-path",
+      "name": "Qwen3.6-35B-A3B · vLLM NVFP4 + MTP @ 2× DGX Spark (eugr recipe)",
+      "summary": "NVIDIA NVFP4 (Marlin MoE) + MTP-3 speculative decoding; TP=2 Ray; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen36-35b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-mtp"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe (NVFP4 + MTP-3); tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve nvidia/Qwen3.6-35B-A3B-NVFP4 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --tensor-parallel-size 2 \\\n  --trust-remote-code \\\n  --kv-cache-dtype auto \\\n  --attention-backend flashinfer \\\n  --moe-backend marlin \\\n  --gpu-memory-utilization 0.4 \\\n  --max-model-len 262144 \\\n  --max-num-seqs 4 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-chunked-prefill \\\n  --async-scheduling \\\n  --enable-prefix-caching \\\n  --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":3,\"moe_backend\":\"triton\"}' \\\n  --load-format fastsafetensors \\\n  --reasoning-parser qwen3 \\\n  --tool-call-parser qwen3_xml \\\n  --enable-auto-tool-choice \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumSeqs": 4,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "qwen3",
+            "speculative": "mtp (3 tokens, triton moe)"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-qwen36-35b-spark-vllm-nvfp4-no-mtp",
+      "kind": "access-path",
+      "name": "Qwen3.6-35B-A3B · vLLM NVFP4 (no MTP) @ 2× DGX Spark (eugr recipe)",
+      "summary": "NVIDIA NVFP4 (Marlin MoE); MTP disabled; TP=2 Ray; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-qwen36-35b-a3b"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-prefix-caching"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-flashattention"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe (NVFP4, MTP disabled — compare vs the MTP variant); tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "env": {
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1"
+          },
+          "command": "vllm serve nvidia/Qwen3.6-35B-A3B-NVFP4 \\\n  --host 0.0.0.0 \\\n  --port 8000 \\\n  --tensor-parallel-size 2 \\\n  --trust-remote-code \\\n  --kv-cache-dtype auto \\\n  --attention-backend flashinfer \\\n  --moe-backend marlin \\\n  --gpu-memory-utilization 0.4 \\\n  --max-model-len 262144 \\\n  --max-num-seqs 4 \\\n  --max-num-batched-tokens 8192 \\\n  --enable-chunked-prefill \\\n  --async-scheduling \\\n  --enable-prefix-caching \\\n  --load-format fastsafetensors \\\n  --reasoning-parser qwen3 \\\n  --tool-call-parser qwen3_xml \\\n  --enable-auto-tool-choice \\\n  --distributed-executor-backend ray\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumSeqs": 4,
+            "maxNumBatchedTokens": 8192,
+            "toolCallParser": "qwen3_xml",
+            "reasoningParser": "qwen3"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-step-37-flash-spark-vllm-fp8",
+      "kind": "access-path",
+      "name": "Step-3.7-Flash · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
+      "summary": "StepFun FP8; cluster-only (TP=2, Ray; use --no-ray); gpu-mem in GB; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-step-37-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-fp8"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/step-3.7-flash-fp8.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "stepfun-ai/Step-3.7-Flash-FP8",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "fp8",
+            "format": "safetensors",
+            "kvCacheDtype": "fp8"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/step-3.7-flash",
+            "mods/gpu-mem-util-gb"
+          ],
+          "command": "vllm serve stepfun-ai/Step-3.7-Flash-FP8 \\\n    --trust-remote-code \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization-gb 108 \\\n    -tp 2 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 262144 \\\n    --enable-auto-tool-choice \\\n    --reasoning-parser step3p5 \\\n    --tool-call-parser step3p5 \\\n    --load-format safetensors \\\n    --kv-cache-dtype fp8 \\\n    --max-num-seqs 2\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "maxNumSeqs": 2,
+            "toolCallParser": "step3p5",
+            "reasoningParser": "step3p5"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/step-3.7-flash-fp8.yaml"
+        }
+      }
+    },
+    {
+      "id": "ap-step-37-flash-spark-vllm-nvfp4",
+      "kind": "access-path",
+      "name": "Step-3.7-Flash · vLLM NVFP4 @ 2× DGX Spark (eugr recipe)",
+      "summary": "StepFun NVFP4 4-bit; cluster-only (TP=2, Ray); InstantTensor load; 256K context",
+      "visibility": "public",
+      "labels": [],
+      "relations": [
+        {
+          "rel": "of-model",
+          "target": "model-step-37-flash"
+        },
+        {
+          "rel": "served-by",
+          "target": "runtime-vllm"
+        },
+        {
+          "rel": "built-with",
+          "target": "runtime-spark-vllm-docker"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-nvfp4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-tensor-parallel"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-ray-serve"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "outcome": {
+          "speed": {
+            "note": "published recipe; tok/s not benchmarked in repo — measure"
+          },
+          "context": {
+            "tokens": 262144
+          },
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/step-3.7-flash-nvfp4.yaml",
+            "verification": "cited"
+          }
+        },
+        "recipe": {
+          "download": {
+            "hfRepo": "stepfun-ai/Step-3.7-Flash-NVFP4",
+            "format": "safetensors"
+          },
+          "build": {
+            "runtime": "vLLM",
+            "image": "eugr/spark-vllm-docker (local build, tag vllm-node)"
+          },
+          "artifact": {
+            "quant": "nvfp4",
+            "format": "safetensors"
+          },
+          "hardware": {
+            "units": 2,
+            "accel": "GB10"
+          },
+          "mods": [
+            "mods/step-3.7-flash"
+          ],
+          "command": "vllm serve stepfun-ai/Step-3.7-Flash-NVFP4 \\\n    --trust-remote-code \\\n    --port 8000 \\\n    --host 0.0.0.0 \\\n    --gpu-memory-utilization 0.8 \\\n    -tp 2 \\\n    --distributed-executor-backend ray \\\n    --max-model-len 262144 \\\n    --enable-auto-tool-choice \\\n    --reasoning-parser step3p5 \\\n    --tool-call-parser step3p5 \\\n    --load-format instanttensor\n",
+          "serving": {
+            "maxModelLen": 262144,
+            "tensorParallel": 2,
+            "toolCallParser": "step3p5",
+            "reasoningParser": "step3p5"
+          },
+          "procedure": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/step-3.7-flash-nvfp4.yaml"
+        }
+      }
+    },
+    {
       "id": "hardware-apple-silicon",
       "kind": "hardware",
       "name": "Apple Silicon (unified memory)",
-      "summary": "M-series Mac with large unified memory (96/128GB+); Metal backend",
+      "summary": "M-series Mac with large unified memory (96/128GB+); MLX/Metal frameworks",
       "visibility": "public",
       "labels": [
         "apple-silicon",
-        "metal",
         "mac",
         "unified-memory"
       ],
@@ -855,7 +3089,7 @@
       ],
       "facets": {
         "hardware": {
-          "compute": "metal",
+          "compute": "apple-silicon",
           "unifiedMemGB": 128,
           "clusterable": true
         }
@@ -968,6 +3202,32 @@
             "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card",
             "verification": "authoritative"
           }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "q2",
+              "memGB": 99,
+              "note": "ds4 q2-imatrix — published to run on a 96/128GB box; consistent"
+            },
+            {
+              "quant": "q4",
+              "memGB": 160,
+              "note": "needs a 512GB-class box"
+            },
+            {
+              "quant": "fp8",
+              "memGB": 284,
+              "note": "the 2x DGX Spark (256GB) cluster recipe — relies on expert offload"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b fp8~8b); cross-checked vs ds4 fit claims",
+            "verification": "estimated",
+            "confidence": "low"
+          }
         }
       }
     },
@@ -1014,6 +3274,27 @@
             "asOf": "2026-06-20",
             "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card",
             "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "q2",
+              "memGB": 520,
+              "note": "PRO q2 runs on a 512GB-class Mac Studio (measured 9.56 t/s)"
+            },
+            {
+              "quant": "q4",
+              "memGB": 900,
+              "note": "multi-node only"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b); cross-checked vs ds4 512GB fit",
+            "verification": "estimated",
+            "confidence": "low"
           }
         }
       }
@@ -1664,6 +3945,145 @@
       }
     },
     {
+      "id": "model-minimax-m2",
+      "kind": "model",
+      "name": "MiniMax-M2 (family)",
+      "summary": "MiniMax open-weights MoE (minimax_m2); 256-expert/8-active; MTP; 192K context",
+      "visibility": "public",
+      "labels": [
+        "minimax",
+        "moe",
+        "open-weights",
+        "mtp"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "VERIFIED against HF config.json (2026-06-20): model_type minimax_m2, 62 layers, 256 routed experts, 8 experts/token, hidden 3072, attn_type_list all full attention, partial RoPE (rotary_dim 64, rope_theta 5e6), MTP (num_mtp_modules 3), 196608 native context, vocab 200064. Total/active params (~230B/~10B) estimated from the BF16 safetensors index — re-verify against a primary published count.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json + model.safetensors.index.json",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "full-attention",
+          "params": "~230B",
+          "activeParams": "~10B",
+          "nativeContext": 196608,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "MiniMaxAI/MiniMax-M2",
+          "modelType": "minimax_m2",
+          "layers": 62,
+          "hidden": 3072,
+          "experts": "8/token of 256 routed",
+          "vocab": 200064,
+          "mtp": true,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json",
+            "verification": "authoritative"
+          }
+        },
+        "license": {
+          "name": "MiniMax Model License (HF license tag 'other')",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/api/models/MiniMaxAI/MiniMax-M2 (cardData.license=other)",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-minimax-m25",
+      "kind": "model",
+      "name": "MiniMax-M2.5",
+      "summary": "Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights",
+      "visibility": "public",
+      "labels": [
+        "minimax",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-minimax-m2"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "full-attention",
+          "params": "~230B",
+          "activeParams": "~10B",
+          "nativeContext": 196608,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "MiniMaxAI/MiniMax-M2.5",
+          "modelType": "minimax_m2",
+          "layers": 62,
+          "hidden": 3072,
+          "experts": "8/token of 256 routed",
+          "vocab": 200064,
+          "mtp": true,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2.5/resolve/main/config.json",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-minimax-m27",
+      "kind": "model",
+      "name": "MiniMax-M2.7",
+      "summary": "Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights",
+      "visibility": "public",
+      "labels": [
+        "minimax",
+        "moe"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-minimax-m2"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "full-attention",
+          "params": "~230B",
+          "activeParams": "~10B",
+          "nativeContext": 196608,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "MiniMaxAI/MiniMax-M2.7",
+          "modelType": "minimax_m2",
+          "layers": 62,
+          "hidden": 3072,
+          "experts": "8/token of 256 routed",
+          "vocab": 200064,
+          "mtp": true,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/cyankiwi/MiniMax-M2.7-AWQ-4bit/resolve/main/config.json (minimax_m2 arch)",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-nemotron",
       "kind": "model",
       "name": "Nemotron (family)",
@@ -1965,6 +4385,55 @@
             "asOf": "2026-06-19",
             "source": "MODEL nemotron card (estimated)",
             "verification": "cited"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nemotron-ultra-550b-a55b",
+      "kind": "model",
+      "name": "Nemotron 3 Ultra 550B-A55B (MoE)",
+      "summary": "Flagship Nemotron-3; sparse MoE; 55B active at 550B total; nemotron_h hybrid",
+      "visibility": "public",
+      "labels": [
+        "nemotron",
+        "ultra",
+        "moe",
+        "flagship"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-nemotron"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Params (550B total / 55B active) and 256K context taken from the repo name + the nemotron_h family config (Mamba2-Transformer hybrid); the Ultra config.json was not independently fetched, so treat layer/expert counts as unverified for this variant (architecture inherited from the family).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "550B",
+          "activeParams": "55B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4",
+          "vocab": 131072,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 (repo/recipe name) + family nemotron_h config",
+            "verification": "cited",
+            "confidence": "medium"
           }
         }
       }
@@ -2629,6 +5098,63 @@
       }
     },
     {
+      "id": "model-step-37-flash",
+      "kind": "model",
+      "name": "Step-3.7-Flash",
+      "summary": "StepFun multimodal MoE (step3p7); 288-expert/8-active text MoE + vision encoder; 256K context",
+      "visibility": "public",
+      "labels": [
+        "stepfun",
+        "step",
+        "moe",
+        "multimodal",
+        "vision"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "VERIFIED against HF config.json (2026-06-20): model_type step3p7 (text backbone step3p5 + perception_encoder vision tower), 45 text layers, 288 routed experts, top-8/token, 1 shared expert (share_expert_dim 1280), hidden 4096, GQA 64 heads / 8 groups, vocab 128896, native context 262144 (llama3 RoPE scaling factor 2.0 over 131072 original, YaRN on full-attention layers), apache-2.0. Total params (~200B) estimated from the BF16 index; active-param count not published — re-verify against a primary source.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/config.json + model.safetensors.index.json",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "full-attention",
+          "params": "~200B",
+          "activeParams": "unknown",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "stepfun-ai/Step-3.7-Flash",
+          "modelType": "step3p7",
+          "layers": 45,
+          "hidden": 4096,
+          "experts": "8/token of 288 routed + 1 shared (share_expert_dim 1280)",
+          "vocab": 128896,
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/config.json",
+            "verification": "authoritative"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://huggingface.co/api/models/stepfun-ai/Step-3.7-Flash (cardData.license=apache-2.0)",
+            "verification": "authoritative"
+          }
+        }
+      }
+    },
+    {
       "id": "provider-anthropic",
       "kind": "provider",
       "name": "Anthropic API",
@@ -2842,7 +5368,7 @@
           "gguf"
         ],
         "platform": [
-          "metal",
+          "apple-silicon",
           "cuda",
           "rocm"
         ],
@@ -2885,21 +5411,22 @@
       }
     },
     {
-      "id": "runtime-mlx",
+      "id": "runtime-mlx-lm",
       "kind": "runtime",
-      "name": "MLX (mlx-lm)",
-      "summary": "Apple-Silicon inference framework; loads MLX-format weights only",
+      "name": "mlx-lm",
+      "summary": "Apple-Silicon inference engine built on the MLX framework; loads MLX-format weights",
       "visibility": "public",
       "labels": [
         "self-host",
         "apple-silicon",
-        "mlx"
+        "mlx",
+        "engine"
       ],
       "relations": [],
       "claims": [
         {
           "kind": "note",
-          "body": "Weight container = a third ecosystem alongside GGUF (llama.cpp/ollama) and safetensors (vLLM/transformers): MLX format runs only via mlx-lm / LM Studio on Apple Silicon. Choosing a format therefore constrains both the runtime AND the hardware.",
+          "body": "mlx-lm is the ENGINE (the `pip install mlx-lm` package, with an OpenAI-compatible `mlx_lm.server`); \"MLX\" itself is Apple's acceleration FRAMEWORK (peer of CUDA/ROCm), and `mlx` is the weight FORMAT. The format is a third ecosystem alongside GGUF (llama.cpp/ollama) and safetensors (vLLM/SGLang): it runs only via mlx-lm / LM Studio on Apple Silicon, so choosing it constrains both the engine AND the hardware. NOT \"metal\" — Metal is the generic GPU API beneath everything Apple.",
           "provenance": {
             "asOf": "2026-06-19",
             "source": "mlx-lm / Apple MLX",
@@ -2939,6 +5466,59 @@
         "formats": [
           "gguf"
         ]
+      }
+    },
+    {
+      "id": "runtime-spark-vllm-docker",
+      "kind": "runtime",
+      "name": "spark-vllm-docker (eugr)",
+      "summary": "Containerised vLLM build + cluster orchestration for DGX Spark (GB10)",
+      "visibility": "public",
+      "labels": [
+        "distribution",
+        "docker",
+        "vllm",
+        "gb10",
+        "spark",
+        "cluster"
+      ],
+      "relations": [
+        {
+          "rel": "distribution-of",
+          "target": "runtime-vllm"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Reproducible vLLM-on-GB10 distribution: base nvidia/cuda 13.0.2-devel-ubuntu24.04 (arch 12.1a), FlashInfer + fastsafetensors + InstantTensor loading, a \"mods\" system for model-specific patches without rebuild, non-privileged container w/ RDMA, prebuilt vLLM/FlashInfer wheels. `./launch-cluster.sh [--solo] exec vllm serve <model> …`; multi-node auto-discovery over IB/RDMA (NCCL). Ships recipes for Qwen3.5/ 3.6, GLM-4.7, Gemma4, Nemotron, MiniMax-M2, gpt-oss, Step. No registry image — built locally via build-and-copy.sh (tag `vllm-node`). An alternative to the forum's aidendle94/sparkrun-vllm image. The engine is vLLM (served-by); this entry is the packaged build (built-with).",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker (README)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "formats": [
+          "safetensors"
+        ],
+        "platform": [
+          "cuda"
+        ],
+        "build": {
+          "repo": "https://github.com/eugr/spark-vllm-docker",
+          "baseImage": "nvidia/cuda:13.0.2-devel-ubuntu24.04",
+          "arch": "12.1a",
+          "registryImage": null,
+          "orchestrator": "launch-cluster.sh (Ray + PyTorch-distributed; --solo for single node)",
+          "supports": [
+            "fp8",
+            "int4-autoround",
+            "awq",
+            "nvfp4"
+          ]
+        }
       }
     },
     {
@@ -3046,6 +5626,33 @@
       ],
       "facets": {
         "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-dflash",
+      "kind": "technique",
+      "name": "DFlash speculative decoding",
+      "summary": "Separate DFlash draft model for speculative decoding (Qwen3.6); LOSSLESS",
+      "visibility": "public",
+      "labels": [
+        "speculative-decoding",
+        "dflash",
+        "throughput"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "DFlash uses a separate small draft model (z-lab/Qwen3.6-35B-A3B-DFlash) to speculate tokens that the base model verifies — lossless, a throughput win. vLLM `--speculative-config '{\"method\":\"dflash\",\"model\":...,\"num_speculative_tokens\":15}'`. Used by the Qwen3.6-35B-A3B-FP8 dflash recipe.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
       }
     },
     {
@@ -3250,6 +5857,90 @@
           "provenance": {
             "asOf": "2026-06-20",
             "source": "https://github.com/antirez/ds4 (README)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-mtp",
+      "kind": "technique",
+      "name": "Multi-Token Prediction (MTP) speculative decoding",
+      "summary": "Model-native MTP draft head for speculative decoding; LOSSLESS (verified accepts)",
+      "visibility": "public",
+      "labels": [
+        "speculative-decoding",
+        "mtp",
+        "throughput"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "MTP uses the model's own multi-token-prediction head(s) to draft several tokens per step, verified by the base model — accepted tokens are identical to standard decoding, so it is lossless (pure throughput win). vLLM `--speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":N}'`. Used by the Qwen3.6-NVFP4, Nemotron-3-Ultra and DeepSeek-V4 recipes.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (mtp recipes)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-mxfp4",
+      "kind": "technique",
+      "name": "MXFP4 (microscaling 4-bit float)",
+      "summary": "OCP microscaling 4-bit float weight quant; native on Blackwell; safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "fp4",
+        "mxfp4",
+        "safetensors"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "MXFP4 is the OCP microscaling 4-bit float format (shared block scale). gpt-oss ships MXFP4 MoE weights; vLLM serves them via FlashInfer/CUTLASS MXFP4 backends. 4-bit → lossy, but the gpt-oss card reports attention layers stay higher precision while MoE routing is compressed, so accuracy loss is minimal. Native on Blackwell; emulated (slower) on older GPUs.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
+      "id": "technique-nvfp4",
+      "kind": "technique",
+      "name": "NVFP4 (NVIDIA 4-bit float)",
+      "summary": "NVIDIA 4-bit float (FP4) weight quant; Blackwell-native; safetensors",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "fp4",
+        "nvfp4",
+        "safetensors",
+        "nvidia"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "NVFP4 is NVIDIA's 4-bit floating-point weight format (block-scaled FP4), designed to run on Blackwell-class hardware (GB10/GB200). 4-bit → lossy vs BF16/FP8, smaller footprint for good throughput. Ships in safetensors; loaded by vLLM (Marlin / CUTLASS MoE backends on GB10). The eugr spark-vllm-docker recipes serve Nemotron-3 / Qwen3.6 / Step-3.7 NVFP4 checkpoints.",
+          "provenance": {
+            "asOf": "2026-06-20",
+            "source": "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (nvfp4 recipes)",
             "verification": "cited"
           }
         }

@@ -159,6 +159,74 @@
         vLLM. Used by the DeepSeek-v4-Flash recipe (official FP8 weights + FP8 KV).
       provenance: { asOf: "2026-06-19", source: "FP8 / vLLM quantization docs + NVIDIA forum 372268", verification: cited }
 
+- id: technique-nvfp4
+  kind: technique
+  name: NVFP4 (NVIDIA 4-bit float)
+  summary: NVIDIA 4-bit float (FP4) weight quant; Blackwell-native; safetensors
+  visibility: public
+  labels: [quantization, fp4, nvfp4, safetensors, nvidia]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        NVFP4 is NVIDIA's 4-bit floating-point weight format (block-scaled FP4),
+        designed to run on Blackwell-class hardware (GB10/GB200). 4-bit → lossy vs
+        BF16/FP8, smaller footprint for good throughput. Ships in safetensors;
+        loaded by vLLM (Marlin / CUTLASS MoE backends on GB10). The eugr
+        spark-vllm-docker recipes serve Nemotron-3 / Qwen3.6 / Step-3.7 NVFP4
+        checkpoints.
+      provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (nvfp4 recipes)", verification: cited }
+
+- id: technique-mxfp4
+  kind: technique
+  name: MXFP4 (microscaling 4-bit float)
+  summary: OCP microscaling 4-bit float weight quant; native on Blackwell; safetensors
+  visibility: public
+  labels: [quantization, fp4, mxfp4, safetensors]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        MXFP4 is the OCP microscaling 4-bit float format (shared block scale).
+        gpt-oss ships MXFP4 MoE weights; vLLM serves them via FlashInfer/CUTLASS
+        MXFP4 backends. 4-bit → lossy, but the gpt-oss card reports attention
+        layers stay higher precision while MoE routing is compressed, so accuracy
+        loss is minimal. Native on Blackwell; emulated (slower) on older GPUs.
+      provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml", verification: cited }
+
+- id: technique-mtp
+  kind: technique
+  name: Multi-Token Prediction (MTP) speculative decoding
+  summary: Model-native MTP draft head for speculative decoding; LOSSLESS (verified accepts)
+  visibility: public
+  labels: [speculative-decoding, mtp, throughput]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        MTP uses the model's own multi-token-prediction head(s) to draft several
+        tokens per step, verified by the base model — accepted tokens are
+        identical to standard decoding, so it is lossless (pure throughput win).
+        vLLM `--speculative-config '{"method":"mtp","num_speculative_tokens":N}'`.
+        Used by the Qwen3.6-NVFP4, Nemotron-3-Ultra and DeepSeek-V4 recipes.
+      provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/tree/main/recipes (mtp recipes)", verification: cited }
+
+- id: technique-dflash
+  kind: technique
+  name: DFlash speculative decoding
+  summary: Separate DFlash draft model for speculative decoding (Qwen3.6); LOSSLESS
+  visibility: public
+  labels: [speculative-decoding, dflash, throughput]
+  facets: { qualityImpact: neutral }
+  claims:
+    - kind: note
+      body: >-
+        DFlash uses a separate small draft model (z-lab/Qwen3.6-35B-A3B-DFlash)
+        to speculate tokens that the base model verifies — lossless, a throughput
+        win. vLLM `--speculative-config '{"method":"dflash","model":...,"num_speculative_tokens":15}'`.
+        Used by the Qwen3.6-35B-A3B-FP8 dflash recipe.
+      provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml", verification: cited }
+
 # KV-cache / attention OPTIMISATIONS. The decisive axis is qualityImpact:
 #   neutral = mathematically exact (pure speed/memory win — never changes output)
 #   lossy   = trades context fidelity for memory (a config-QUALITY factor, §14)

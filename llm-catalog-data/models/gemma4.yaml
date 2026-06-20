@@ -214,3 +214,54 @@
         asOf: "2026-06-19"
         source: "https://ai.google.dev/gemma/docs/core/model_card_4"
         verification: authoritative
+
+# ── access-path: Gemma4-26B-A4B online FP8 via vLLM on DGX Spark (eugr recipe) ─
+- id: ap-gemma4-26b-spark-vllm-fp8
+  kind: access-path
+  name: Gemma 4 26B-A4B · vLLM FP8 @ 2× DGX Spark (eugr recipe)
+  summary: Online FP8 quant; TP=2 Ray; gemma4 tool/reasoning parsers; 256K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-gemma4-26b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-fp8 }
+    - { rel: uses-technique, target: technique-prefix-caching }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: google/gemma-4-26B-A4B-it, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
+      artifact: { quant: fp8, format: safetensors, kvCacheDtype: fp8 } # online FP8 (--quantization fp8)
+      hardware: { units: 2, accel: GB10 } # tensor_parallel 2; solo allowed (cluster_only false) but TP=2 default
+      command: |
+        vllm serve google/gemma-4-26B-A4B-it \
+          --max-model-len 262144 \
+          --gpu-memory-utilization 0.8 \
+          --port 8000 \
+          --host 0.0.0.0 \
+          --load-format safetensors \
+          --enable-prefix-caching \
+          --enable-auto-tool-choice \
+          --tool-call-parser gemma4 \
+          --reasoning-parser gemma4 \
+          --quantization fp8 \
+          --kv-cache-dtype fp8 \
+          --max-num-batched-tokens 8192 \
+          -tp 2 --distributed-executor-backend ray
+      serving:
+        maxModelLen: 262144
+        tensorParallel: 2
+        maxNumBatchedTokens: 8192
+        toolCallParser: gemma4
+        reasoningParser: gemma4
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml"
+    outcome:
+      context: { tokens: 262144 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/gemma4-26b-a4b.yaml"
+        verification: cited

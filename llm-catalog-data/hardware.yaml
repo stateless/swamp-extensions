@@ -35,12 +35,12 @@
 - id: hardware-apple-silicon
   kind: hardware
   name: Apple Silicon (unified memory)
-  summary: M-series Mac with large unified memory (96/128GB+); Metal backend
+  summary: M-series Mac with large unified memory (96/128GB+); MLX/Metal frameworks
   visibility: public
-  labels: [apple-silicon, metal, mac, unified-memory]
+  labels: [apple-silicon, mac, unified-memory]
   facets:
     hardware:
-      compute: metal
+      compute: apple-silicon # the vendor stack (peer of cuda/rocm); NOT "metal" (the generic Apple GPU API)
       unifiedMemGB: 128 # class spans 96–128GB+; the ds4 q2-imatrix path targets 96/128GB
       clusterable: true # ds4 supports distributed inference across machines
   claims:

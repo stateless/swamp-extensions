@@ -1,0 +1,303 @@
+# MiniMax-M2 family (MiniMax AI). Public + generic. Architecture VERIFIED against
+# the canonical MiniMaxAI/* HF config.json (2026-06-20) → authoritative. M2 / M2.5
+# / M2.7 share one architecture (model_type minimax_m2: 62 layers, 256 routed
+# experts, 8/token, hidden 3072, 196608 native context, vocab 200064, MTP) and
+# differ by training generation + published default precision — so one family file
+# with per-variant entries. The eugr spark-vllm-docker recipes serve community AWQ
+# quants (cyankiwi/QuantTrio) + the MiniMaxAI FP8 base on 2–4× DGX Spark clusters.
+#
+# NOTE on params: the HF safetensors index reports ~480GB (BF16 base for M2) /
+# ~466GB (M2.5 FP8) — total params estimated ~230B / ~10B active (MiniMax-M2 is
+# publicly an A10B MoE); exact published counts not stated on the card, so total
+# carries verification: cited (architecture shape is authoritative from config).
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-minimax-m2
+  kind: model
+  name: MiniMax-M2 (family)
+  summary: MiniMax open-weights MoE (minimax_m2); 256-expert/8-active; MTP; 192K context
+  visibility: public
+  labels: [minimax, moe, open-weights, mtp]
+  facets:
+    architecture:
+      hfRepo: MiniMaxAI/MiniMax-M2
+      modelType: minimax_m2
+      attention: full-attention # attn_type_list all 1 (full attention, no linear/SWA mix); partial RoPE (rotary_dim 64)
+      params: "~230B" # est. from ~480GB BF16 index; MiniMax-M2 publicly ~A10B MoE
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed" # shared_intermediate_size 0 → no shared expert
+      nativeContext: 196608 # max_position_embeddings
+      vocab: 200064
+      mtp: true # use_mtp true; num_mtp_modules 3
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json"
+        verification: authoritative
+    license:
+      name: MiniMax Model License (HF license tag 'other')
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/api/models/MiniMaxAI/MiniMax-M2 (cardData.license=other)"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF config.json (2026-06-20): model_type minimax_m2, 62
+        layers, 256 routed experts, 8 experts/token, hidden 3072, attn_type_list
+        all full attention, partial RoPE (rotary_dim 64, rope_theta 5e6), MTP
+        (num_mtp_modules 3), 196608 native context, vocab 200064. Total/active
+        params (~230B/~10B) estimated from the BF16 safetensors index — re-verify
+        against a primary published count.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json + model.safetensors.index.json"
+        verification: cited
+
+# ── variants ────────────────────────────────────────────────────────────────
+# M2.5 / M2.7 are later training generations on the SAME architecture (distinct HF
+# repos + distinct weights) → own model entries, variant-of the family.
+- id: model-minimax-m25
+  kind: model
+  name: MiniMax-M2.5
+  summary: Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights
+  visibility: public
+  labels: [minimax, moe]
+  relations:
+    - { rel: variant-of, target: model-minimax-m2 }
+  facets:
+    architecture:
+      hfRepo: MiniMaxAI/MiniMax-M2.5
+      modelType: minimax_m2
+      attention: full-attention
+      params: "~230B"
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed"
+      nativeContext: 196608
+      vocab: 200064
+      mtp: true
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2.5/resolve/main/config.json"
+        verification: authoritative
+
+- id: model-minimax-m27
+  kind: model
+  name: MiniMax-M2.7
+  summary: Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights
+  visibility: public
+  labels: [minimax, moe]
+  relations:
+    - { rel: variant-of, target: model-minimax-m2 }
+  facets:
+    architecture:
+      # No MiniMaxAI/MiniMax-M2.7 base repo confirmed; arch verified via the
+      # cyankiwi AWQ quant repo's config.json (identical minimax_m2 shape).
+      hfRepo: MiniMaxAI/MiniMax-M2.7
+      modelType: minimax_m2
+      attention: full-attention
+      params: "~230B"
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed"
+      nativeContext: 196608
+      vocab: 200064
+      mtp: true
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/cyankiwi/MiniMax-M2.7-AWQ-4bit/resolve/main/config.json (minimax_m2 arch)"
+        verification: cited
+        confidence: medium
+
+# ── access-paths: eugr spark-vllm-docker recipes (DGX Spark / GB10) ───────────
+- id: ap-minimax-m2-spark-vllm-awq
+  kind: access-path
+  name: MiniMax-M2 · vLLM AWQ @ 2× DGX Spark (eugr recipe)
+  summary: QuantTrio AWQ 4-bit; cluster-only (TP=2, Ray); 128K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-minimax-m2 }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-awq }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: QuantTrio/MiniMax-M2-AWQ, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: awq, format: safetensors }
+      hardware: { units: 2, accel: GB10 } # cluster_only: true
+      command: |
+        vllm serve QuantTrio/MiniMax-M2-AWQ \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --gpu-memory-utilization 0.8 \
+            -tp 2 \
+            --distributed-executor-backend ray \
+            --max-model-len 128000 \
+            --load-format fastsafetensors \
+            --enable-auto-tool-choice \
+            --tool-call-parser minimax_m2 \
+            --reasoning-parser minimax_m2
+      serving:
+        maxModelLen: 128000
+        tensorParallel: 2
+        toolCallParser: minimax_m2
+        reasoningParser: minimax_m2
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+    outcome:
+      context: { tokens: 128000 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+        verification: cited
+
+- id: ap-minimax-m25-spark-vllm-awq
+  kind: access-path
+  name: MiniMax-M2.5 · vLLM AWQ @ 2× DGX Spark (eugr recipe)
+  summary: cyankiwi AWQ 4-bit; cluster-only (TP=2, Ray); 128K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-minimax-m25 }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-awq }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: cyankiwi/MiniMax-M2.5-AWQ-4bit, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: awq, format: safetensors }
+      hardware: { units: 2, accel: GB10 } # cluster_only: true
+      command: |
+        vllm serve cyankiwi/MiniMax-M2.5-AWQ-4bit \
+            --trust-remote-code \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --gpu-memory-utilization 0.8 \
+            -tp 2 \
+            --distributed-executor-backend ray \
+            --max-model-len 128000 \
+            --load-format fastsafetensors \
+            --enable-auto-tool-choice \
+            --tool-call-parser minimax_m2 \
+            --reasoning-parser minimax_m2
+      serving:
+        maxModelLen: 128000
+        tensorParallel: 2
+        toolCallParser: minimax_m2
+        reasoningParser: minimax_m2
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml"
+    outcome:
+      context: { tokens: 128000 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml"
+        verification: cited
+
+# 4-node FP8 base (NOT a quant) — distinct artifact/scale from the 2× AWQ path.
+- id: ap-minimax-m25-spark-vllm-fp8-4x
+  kind: access-path
+  name: MiniMax-M2.5 · vLLM FP8 @ 4× DGX Spark (eugr 4x-cluster recipe)
+  summary: MiniMaxAI FP8 base on a 4-node mesh (TP=4, Ray, SPREAD); 128K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-minimax-m25 }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-fp8 }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: MiniMaxAI/MiniMax-M2.5, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: fp8, format: safetensors } # official FP8 weights
+      hardware: { units: 4, accel: GB10 } # 4x-spark-cluster, cluster_only
+      env: { VLLM_DISTRIBUTED_EXECUTOR_CONFIG: '{"placement_group_options":{"strategy":"SPREAD"}}' }
+      command: |
+        vllm serve MiniMaxAI/MiniMax-M2.5 \
+            --trust-remote-code \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --gpu-memory-utilization 0.90 \
+            -tp 4 \
+            --distributed-executor-backend ray \
+            --max-model-len 128000 \
+            --load-format fastsafetensors \
+            --enable-auto-tool-choice \
+            --tool-call-parser minimax_m2 \
+            --reasoning-parser minimax_m2_append_think
+      serving:
+        maxModelLen: 128000
+        tensorParallel: 4
+        toolCallParser: minimax_m2
+        reasoningParser: minimax_m2_append_think
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml"
+    outcome:
+      context: { tokens: 128000 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml"
+        verification: cited
+
+- id: ap-minimax-m27-spark-vllm-awq
+  kind: access-path
+  name: MiniMax-M2.7 · vLLM AWQ @ 2× DGX Spark (eugr recipe)
+  summary: cyankiwi AWQ 4-bit; cluster-only (TP=2, Ray); 192K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-minimax-m27 }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-awq }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: cyankiwi/MiniMax-M2.7-AWQ-4bit, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: awq, format: safetensors }
+      hardware: { units: 2, accel: GB10 } # cluster_only: true
+      command: |
+        vllm serve cyankiwi/MiniMax-M2.7-AWQ-4bit \
+            --trust-remote-code \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --gpu-memory-utilization 0.8 \
+            -tp 2 \
+            --distributed-executor-backend ray \
+            --max-model-len 196608 \
+            --load-format fastsafetensors \
+            --enable-auto-tool-choice \
+            --tool-call-parser minimax_m2 \
+            --reasoning-parser minimax_m2
+      serving:
+        maxModelLen: 196608
+        tensorParallel: 2
+        toolCallParser: minimax_m2
+        reasoningParser: minimax_m2
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+    outcome:
+      context: { tokens: 196608 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+        verification: cited

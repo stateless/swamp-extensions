@@ -205,3 +205,205 @@
         asOf: "2026-06-19"
         source: "MODEL nemotron card (estimated)"
         verification: cited
+
+# ── new variant: Nemotron-3-Ultra (550B-A55B) — served only by the 4× recipe ──
+- id: model-nemotron-ultra-550b-a55b
+  kind: model
+  name: Nemotron 3 Ultra 550B-A55B (MoE)
+  summary: Flagship Nemotron-3; sparse MoE; 55B active at 550B total; nemotron_h hybrid
+  visibility: public
+  labels: [nemotron, ultra, moe, flagship]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4
+      params: "550B" # from the repo/recipe name (A55B); config.json not separately fetched
+      activeParams: "55B"
+      nativeContext: 262144 # family nemotron_h cap; recipe runs 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 (repo/recipe name) + family nemotron_h config"
+        verification: cited
+        confidence: medium
+  claims:
+    - kind: note
+      body: >-
+        Params (550B total / 55B active) and 256K context taken from the repo name
+        + the nemotron_h family config (Mamba2-Transformer hybrid); the Ultra
+        config.json was not independently fetched, so treat layer/expert counts as
+        unverified for this variant (architecture inherited from the family).
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+        verification: cited
+        confidence: low
+
+# NVFP4 access-path: Nemotron-3-Nano-30B-A3B (solo-only — cluster mode fails).
+- id: ap-nemotron-nano-30b-spark-vllm-nvfp4
+  kind: access-path
+  name: Nemotron-3-Nano-30B-A3B · vLLM NVFP4 @ 1× DGX Spark (eugr recipe)
+  summary: NVIDIA NVFP4; SINGLE NODE ONLY (cluster fails); CUTLASS MoE; 256K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-nano-30b-a3b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-nvfp4 }
+    - { rel: uses-technique, target: technique-prefix-caching }
+  facets:
+    recipe:
+      download: { hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: nvfp4, format: safetensors, kvCacheDtype: fp8 }
+      hardware: { units: 1, accel: GB10 } # solo_only: true — cluster mode errors
+      mods: [mods/nemotron-nano]
+      command: |
+        vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 \
+           --moe-backend cutlass \
+           --max-model-len 262144 \
+           --port 8000 --host 0.0.0.0 \
+           --trust-remote-code \
+           --enable-auto-tool-choice \
+           --tool-call-parser qwen3_coder \
+           --reasoning-parser-plugin nano_v3_reasoning_parser.py \
+           --reasoning-parser nano_v3 \
+           --kv-cache-dtype fp8 \
+           --enable-prefix-caching \
+           --load-format fastsafetensors \
+           --gpu-memory-utilization 0.7
+      serving:
+        maxModelLen: 262144
+        tensorParallel: 1
+        toolCallParser: qwen3_coder
+        reasoningParser: nano_v3
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+    outcome:
+      context: { tokens: 262144 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+        verification: cited
+
+# NVFP4 access-path: Nemotron-3-Super-120B-A12B (CUTLASS; TP=2 Ray; 256K).
+- id: ap-nemotron-super-120b-spark-vllm-nvfp4
+  kind: access-path
+  name: Nemotron-3-Super-120B-A12B · vLLM NVFP4 @ 2× DGX Spark (eugr recipe)
+  summary: NVIDIA NVFP4; CUTLASS MoE + TRITON attention; TP=2 Ray; 256K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-super-120b-a12b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-nvfp4 }
+    - { rel: uses-technique, target: technique-prefix-caching }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: nvfp4, format: safetensors, kvCacheDtype: fp8 }
+      hardware: { units: 2, accel: GB10 }
+      env: { VLLM_FLASHINFER_ALLREDUCE_BACKEND: trtllm, VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1" }
+      command: |
+        vllm serve nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4 \
+          --kv-cache-dtype fp8 \
+          --moe-backend cutlass \
+          --trust-remote-code \
+          --gpu-memory-utilization 0.8 \
+          --max-model-len 262144 \
+          --max-num-seqs 10 \
+          --enable-prefix-caching \
+          --host 0.0.0.0 \
+          --port 8000 \
+          --enable-auto-tool-choice \
+          --load-format fastsafetensors \
+          --tool-call-parser qwen3_coder \
+          --reasoning-parser nemotron_v3 \
+          --mamba_ssm_cache_dtype float32 \
+          --tensor-parallel-size 2 \
+          --attention-backend TRITON_ATTN \
+          --distributed-executor-backend ray
+      serving:
+        maxModelLen: 262144
+        tensorParallel: 2
+        maxNumSeqs: 10
+        toolCallParser: qwen3_coder
+        reasoningParser: nemotron_v3
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml"
+    outcome:
+      context: { tokens: 262144 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml"
+        verification: cited
+
+# NVFP4 access-path: Nemotron-3-Ultra-550B-A55B (4× DGX Spark, TP=4, MTP).
+- id: ap-nemotron-ultra-550b-spark-vllm-nvfp4-4x
+  kind: access-path
+  name: Nemotron-3-Ultra-550B-A55B · vLLM NVFP4 @ 4× DGX Spark (eugr 4x-cluster recipe)
+  summary: NVFP4 on a 4-node mesh (TP=4, Ray); Marlin MoE + MTP-4; 256K context
+  visibility: public
+  relations:
+    - { rel: of-model, target: model-nemotron-ultra-550b-a55b }
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+    - { rel: uses-technique, target: technique-nvfp4 }
+    - { rel: uses-technique, target: technique-mtp }
+    - { rel: uses-technique, target: technique-prefix-caching }
+    - { rel: uses-technique, target: technique-flashattention }
+    - { rel: uses-technique, target: technique-tensor-parallel }
+    - { rel: uses-technique, target: technique-ray-serve }
+  facets:
+    recipe:
+      download: { hfRepo: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4, format: safetensors }
+      build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+      artifact: { quant: nvfp4, format: safetensors, kvCacheDtype: fp8 }
+      hardware: { units: 4, accel: GB10 } # 4x-spark-cluster, cluster_only
+      env: { VLLM_FLOAT32_MATMUL_PRECISION: high }
+      command: |
+        vllm serve nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4 \
+          --tensor-parallel-size 4 \
+          --distributed-executor-backend ray \
+          --host 0.0.0.0 \
+          --port 8000 \
+          --dtype auto \
+          --max-model-len 262144 \
+          --gpu-memory-utilization 0.85 \
+          --max-num-seqs 2 \
+          --load-format instanttensor \
+          --attention-backend TRITON_ATTN \
+          --max-num-batched-tokens 16384 \
+          --kv-cache-dtype fp8 \
+          --moe-backend marlin \
+          --mamba-cache-mode align \
+          --mamba_ssm_cache_dtype float32 \
+          --speculative-config '{"method":"mtp","num_speculative_tokens":4,"moe_backend":"triton","attention_backend":"TRITON_ATTN"}' \
+          --enable-prefix-caching \
+          --enable-flashinfer-autotune \
+          --reasoning-parser nemotron_v3 \
+          --enable-auto-tool-choice \
+          --tool-call-parser qwen3_xml
+      serving:
+        maxModelLen: 262144
+        tensorParallel: 4
+        maxNumSeqs: 2
+        maxNumBatchedTokens: 16384
+        toolCallParser: qwen3_xml
+        reasoningParser: nemotron_v3
+      procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+    outcome:
+      context: { tokens: 262144 }
+      speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/nemotron-3-ultra-nvfp4.yaml"
+        verification: cited
