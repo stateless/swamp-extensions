@@ -29,9 +29,9 @@ silently. Store dated, sourced observations; the consumer _derives_ "best" as th
 latest un-superseded claim. Re-`apply` records a new version, so the trend reads
 back for free.
 
-## The model — one uniform `entry`, six kinds
+## The model — one uniform `entry`, seven kinds
 
-Six **subjects**, all the same shape (`kind` is open; variation lives in
+Seven **subjects**, all the same shape (`kind` is open; variation lives in
 `facets` / `claims` / `relations`):
 
 | `kind`      | what it is                                          | key facets                                                         |
@@ -42,6 +42,7 @@ Six **subjects**, all the same shape (`kind` is open; variation lives in
 | `hardware`  | accelerator/box **class** (DGX Spark/GB10, …)       | `hardware` (compute, unified-mem, driverReserved, memBandwidth, power) |
 | `technique` | KV-compression, quant scheme, speculative decoding  | sourced tradeoff `claims`                                          |
 | `endpoint`  | an **HTTP inference interface** (vllm-dgx-spark, digitalocean) | `endpoint` (transport, kind), `pricing` (basis), `serves` (rule) |
+| `measured-point` | a measurement/config **attached** to a model whose file you don't own (a fleet result, an in-dev config) — overlays without shadowing | `of-model`, `via-endpoint`, `outcome`, `visibility` |
 
 ### Endpoint + `runsOn` (the model-centric core)
 
@@ -71,6 +72,15 @@ The **`outcome`** is a Pareto vector you optimise over:
 **evaluation** plugs in — task-eval, **not** perplexity. `apply` also explodes
 every `runsOn[]` into a flat **`operating-point`** resource (one row per config)
 — the read-optimised surface to pivot configs by throughput, quant, or eval.
+
+The index reads **both** owner-curated `runsOn[]` and standalone
+`measured-point`s, tagging each row with **`origin`** (`runsOn` vs
+`measured-point`), **`visibility`** (`public`/`private` — "ours vs the
+community's"), and **`benchAsOf`** (the model-benchmark date, so stale numbers are
+filterable — e.g. `date_diff(...) > 120`). This is the **private/public
+overlay**: keep fleet results private (`visibility: private`), filter
+`visibility == 'public'` for community data, and `contribute` promotes a private
+`measured-point` to the public set.
 
 ### The anti-sprawl rule
 

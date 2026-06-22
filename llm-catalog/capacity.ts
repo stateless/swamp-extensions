@@ -349,6 +349,8 @@ export interface RunCandidate {
   measuredTokS?: number;
   concurrent: boolean; // false for a swap proxy — can't be co-resident with another
   placement: "local" | "cloud"; // self-host + swap-proxy = local; gateway = cloud
+  source: "runsOn" | "measured-point"; // owner-curated config vs an attached measurement
+  visibility?: string; // public | private — who measured it (overlay filter)
 }
 
 /**
@@ -364,48 +366,105 @@ export function enumerateRunOptions(entries: Entry[]): RunCandidate[] {
   const endpoints = new Map<string, any>(
     entries.filter((e) => e.kind === "endpoint").map((e) => [e.id, e]),
   );
+  // deno-lint-ignore no-explicit-any
+  const models = new Map<string, any>(
+    entries.filter((e) => e.kind === "model").map((e) => [e.id, e]),
+  );
   const out: RunCandidate[] = [];
+
+  // Shared projection — used for both an embedded runsOn entry and a standalone
+  // measured-point. `ro` is the run-option object (a runsOn entry, or a measured-
+  // point's facets) carrying quant/units/outcome/cost/providerModelId.
+  const build = (
+    // deno-lint-ignore no-explicit-any
+    model: any,
+    modelId: string,
+    // deno-lint-ignore no-explicit-any
+    ro: any,
+    endpointId: string,
+    id: string,
+    visibility: string | undefined,
+    source: "runsOn" | "measured-point",
+  ) => {
+    const ep = endpoints.get(endpointId);
+    if (!ep) return;
+    const kind = endpointKindOf(ep);
+    // deno-lint-ignore no-explicit-any
+    const epf: any = ep?.facets?.endpoint ?? {};
+    // router/rental are not direct run targets (transparent / substrate).
+    if (kind === "rental-substrate" || epf.role === "router") return;
+    // deno-lint-ignore no-explicit-any
+    const ma: any = model?.facets?.architecture ?? {};
+    const ctx: number | undefined = ro.outcome?.context?.tokens ??
+      ma.extendedContext ?? ma.nativeContext;
+    out.push({
+      model,
+      modelId,
+      endpoint: ep,
+      endpointId,
+      kind,
+      hardwareId: rel(ep, "runs-on"),
+      ro,
+      id,
+      quant: ro.quant,
+      units: typeof ro.units === "number" ? ro.units : 1,
+      ctx,
+      measuredTokS: decodeFromOutcome(ro.outcome),
+      concurrent: epf.concurrent !== false, // swap proxy → false
+      placement: kind === "gateway" ? "cloud" : "local",
+      source,
+      visibility,
+    });
+  };
+
+  // owner-curated configs embedded on the model
   for (const m of entries.filter((e) => e.kind === "model")) {
     // deno-lint-ignore no-explicit-any
     const runs: any[] = (m as any).facets?.runsOn ?? [];
     runs.forEach((ro, i) => {
-      const ep = endpoints.get(ro?.endpoint);
-      if (!ep) return;
-      const kind = endpointKindOf(ep);
-      // deno-lint-ignore no-explicit-any
-      const epf: any = ep?.facets?.endpoint ?? {};
-      if (kind === "rental-substrate" || epf.role === "router") return;
-      // deno-lint-ignore no-explicit-any
-      const ma: any = (m as any).facets?.architecture ?? {};
-      const ctx: number | undefined = ro.outcome?.context?.tokens ??
-        ma.extendedContext ?? ma.nativeContext;
       const quantSlug = ro.quant
         ? String(ro.quant).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(
           0,
           24,
         )
         : `r${i}`;
-      out.push({
-        model: m,
-        modelId: m.id,
-        endpoint: ep,
-        endpointId: ro.endpoint,
-        kind,
-        hardwareId: rel(ep, "runs-on"),
+      // index suffix guarantees uniqueness — two configs can share a quant on
+      // one endpoint (e.g. int4 at units 2/3/4), and these ids key resources.
+      build(
+        m,
+        m.id,
         ro,
-        // index suffix guarantees uniqueness — two configs can share a quant on
-        // one endpoint (e.g. int4 at units 2/3/4), and these ids key resources.
-        id: `${m.id}::${ro.endpoint}::${quantSlug}#${i}`,
-        quant: ro.quant,
-        units: typeof ro.units === "number" ? ro.units : 1,
-        ctx,
-        measuredTokS: decodeFromOutcome(ro.outcome),
-        concurrent: epf.concurrent !== false, // swap proxy → false
-        // a swap proxy runs on owned hardware → local, like self-host
-        placement: kind === "gateway" ? "cloud" : "local",
-      });
+        ro?.endpoint,
+        `${m.id}::${ro?.endpoint}::${quantSlug}#${i}`,
+        m.visibility,
+        "runsOn",
+      );
     });
   }
+
+  // standalone measured-points: a measurement/config ATTACHED to a model whose
+  // file you don't own (a private fleet result, an in-dev config, a contribution-
+  // in-flight). Overlays the public model without shadowing it. The referenced
+  // model may be absent locally (e.g. a private instance that hasn't pulled the
+  // public catalog) → a stub, so the row still carries the measured outcome.
+  for (const mp of entries.filter((e) => e.kind === "measured-point")) {
+    const ofModel = rel(mp, "of-model");
+    const epId = rel(mp, "via-endpoint");
+    if (!ofModel || !epId) continue;
+    const model = models.get(ofModel) ?? { id: ofModel, facets: {} };
+    // id must differ from the measured-point's OWN entry id (they're separate
+    // resources in one apply). Entry ids can't contain "::", so this is distinct.
+    build(
+      model,
+      ofModel,
+      mp.facets ?? {},
+      epId,
+      `${mp.id}::${epId}`,
+      mp.visibility,
+      "measured-point",
+    );
+  }
+
   return out;
 }
 
@@ -968,10 +1027,13 @@ export interface OperatingPointRow {
   perMTokOutUsd?: number;
   // deno-lint-ignore no-explicit-any
   benchmarks?: any; // model-level (vendor) eval — evalScope "model"
+  benchAsOf?: string; // provenance date of the model-level benchmarks (freshness — they decay)
   // deno-lint-ignore no-explicit-any
   configEval?: any; // recipe-specific measured eval — evalScope "config"
-  asOf?: string;
-  source?: string;
+  asOf?: string; // provenance date of the speed/cost measurement (the operating point itself)
+  source?: string; // provenance source (URL / our-fleet-test / feed)
+  visibility?: string; // public | private — the overlay filter ("ours vs theirs")
+  origin?: string; // runsOn (owner-curated) | measured-point (attached measurement)
 }
 
 /** Explode every model.runsOn[] into flat, CEL-pivotable rows. Pure. */
@@ -1005,9 +1067,12 @@ export function buildOperatingPointIndex(
       perMTokInUsd: ro.cost?.perMTokInUsd,
       perMTokOutUsd: ro.cost?.perMTokOutUsd,
       benchmarks: c.model.facets?.benchmarks,
+      benchAsOf: c.model.facets?.benchmarks?.provenance?.asOf,
       configEval: ro.outcome?.quality ?? ro.benchmarks,
       asOf: ro.outcome?.provenance?.asOf ?? ro.cost?.provenance?.asOf,
       source: ro.outcome?.provenance?.source ?? ro.cost?.provenance?.source,
+      visibility: c.visibility,
+      origin: c.source,
     });
   }
   return rows;
