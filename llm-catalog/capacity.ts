@@ -347,10 +347,18 @@ export interface RunCandidate {
   units: number;
   ctx?: number;
   measuredTokS?: number;
+  concurrent: boolean; // false for a swap proxy — can't be co-resident with another
+  placement: "local" | "cloud"; // self-host + swap-proxy = local; gateway = cloud
 }
 
-/** Flatten every model.facets.runsOn[] into resolved candidates (skips rentals — a
- * substrate, not a direct run option). Pure. */
+/**
+ * Flatten every model.facets.runsOn[] into resolved candidates. Skips endpoints
+ * that aren't a direct run TARGET: a `rental-substrate` (Vast — prices GPU-hours,
+ * you instantiate a real endpoint on it) and a `router` proxy (LiteLLM —
+ * transparent indirection; the placement is the routed backend's, already
+ * enumerated, so counting the router too would double-count). A `swap` proxy IS a
+ * real target (it serves the model) but carries `concurrent:false`. Pure.
+ */
 export function enumerateRunOptions(entries: Entry[]): RunCandidate[] {
   // deno-lint-ignore no-explicit-any
   const endpoints = new Map<string, any>(
@@ -364,7 +372,9 @@ export function enumerateRunOptions(entries: Entry[]): RunCandidate[] {
       const ep = endpoints.get(ro?.endpoint);
       if (!ep) return;
       const kind = endpointKindOf(ep);
-      if (kind === "rental-substrate") return;
+      // deno-lint-ignore no-explicit-any
+      const epf: any = ep?.facets?.endpoint ?? {};
+      if (kind === "rental-substrate" || epf.role === "router") return;
       // deno-lint-ignore no-explicit-any
       const ma: any = (m as any).facets?.architecture ?? {};
       const ctx: number | undefined = ro.outcome?.context?.tokens ??
@@ -390,6 +400,9 @@ export function enumerateRunOptions(entries: Entry[]): RunCandidate[] {
         units: typeof ro.units === "number" ? ro.units : 1,
         ctx,
         measuredTokS: decodeFromOutcome(ro.outcome),
+        concurrent: epf.concurrent !== false, // swap proxy → false
+        // a swap proxy runs on owned hardware → local, like self-host
+        placement: kind === "gateway" ? "cloud" : "local",
       });
     });
   }
@@ -431,8 +444,8 @@ export function buildCapacityPlan(
 
   for (const cand of enumerateRunOptions(entries)) {
     const model = cand.model;
-    const isCloud = cand.kind === "gateway";
-    const isLocal = cand.kind === "self-host";
+    const isCloud = cand.placement === "cloud";
+    const isLocal = cand.placement === "local";
     if (!isCloud && !isLocal) continue;
 
     // hard gate: privacy
@@ -653,10 +666,12 @@ export function buildDeploymentPlans(
     ctx?: number;
     tokS?: number;
     tokSEstimated: boolean;
+    endpointId: string;
+    concurrent: boolean; // false → swap proxy: can't co-reside with another model on it
   }
   const cands: Cand[] = [];
   for (const c of enumerateRunOptions(entries)) {
-    if (c.kind !== "self-host") continue;
+    if (c.placement !== "local") continue; // self-host + swap-proxy; not gateways
     if (c.hardwareId && c.hardwareId !== args.host) continue;
     if (c.units > hostUnits) continue;
     const tokS = c.measuredTokS ?? decodeTokSEstimate(c.model, c.quant, hw);
@@ -669,6 +684,8 @@ export function buildDeploymentPlans(
       ctx: c.ctx,
       tokS,
       tokSEstimated: c.measuredTokS === undefined && tokS !== undefined,
+      endpointId: c.endpointId,
+      concurrent: c.concurrent,
     });
   }
 
@@ -789,9 +806,19 @@ export function buildDeploymentPlans(
     let chosen: typeof capped[number] | null = null;
     let bestKey = [-1, -1, Infinity]; // [effMin, effAvg, total] — maximise, then minimise total
     let anyFit = false;
+    let swapBlocked = false;
     for (const combo of combos) {
       const pick = combo.map((j, i) => capped[i][j]);
       if (new Set(pick.map((s) => s.c.modelId)).size < wls.length) continue;
+      // swap-proxy conflict: a concurrent:false endpoint (llama-swap) serializes —
+      // two members can't co-reside on it. Reject combos placing ≥2 members on one.
+      const swapEps = pick.filter((s) => s.c.concurrent === false).map((s) =>
+        s.c.endpointId
+      );
+      if (new Set(swapEps).size < swapEps.length) {
+        swapBlocked = true;
+        continue;
+      }
       const t = pick.reduce((s, p) => s + (p.need ?? 0), 0) +
         iso * (wls.length - 1);
       if (budget !== undefined && t > budget) continue;
@@ -843,6 +870,10 @@ export function buildDeploymentPlans(
         workloads: perWl,
         verdict: "",
       });
+    } else if (swapBlocked) {
+      unmet.push(
+        "split: members would share a swap endpoint (serialized, not concurrent) — use distinct endpoints or run them sequentially",
+      );
     } else {
       unmet.push(
         anyFit

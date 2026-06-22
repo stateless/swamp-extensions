@@ -219,7 +219,17 @@ export const EndpointFacetSchema = z.object({
   ),
   kind: z.string().optional().describe(
     "self-host (a runtime on owned/rented hardware) | gateway (a per-token " +
-      "provider) | rental-substrate (prices GPU-hours, not tokens — e.g. Vast).",
+      "provider) | rental-substrate (prices GPU-hours, not tokens — e.g. Vast) | " +
+      "proxy (fronts other endpoints — see `role`).",
+  ),
+  role: z.string().optional().describe(
+    "For a proxy: router (transparent indirection over many backends — LiteLLM; " +
+      "placement is the backend's, so it adds no run target) | swap (hot-swaps " +
+      "models on one box — llama-swap; serves many models but one at a time).",
+  ),
+  concurrent: z.boolean().optional().describe(
+    "Can this endpoint serve multiple models AT ONCE? false for a swap proxy " +
+      "(it serializes — two models can't be co-resident through it).",
   ),
   url: z.string().optional().describe("Base URL (may be a placeholder)."),
 }).catchall(z.unknown());

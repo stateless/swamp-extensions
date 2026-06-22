@@ -117,6 +117,90 @@
       }
     },
     {
+      "id": "endpoint-litellm",
+      "kind": "endpoint",
+      "name": "LiteLLM (router proxy)",
+      "summary": "One OpenAI API fronting many backends (cloud + local) with fallback, load-balance, cost-tracking, virtual keys; transparent — placement is the backend's",
+      "visibility": "public",
+      "labels": [
+        "proxy",
+        "router",
+        "litellm",
+        "openai-compat"
+      ],
+      "relations": [
+        {
+          "rel": "routes-to",
+          "target": "endpoint-openrouter"
+        },
+        {
+          "rel": "routes-to",
+          "target": "endpoint-digitalocean"
+        },
+        {
+          "rel": "routes-to",
+          "target": "endpoint-vllm-dgx-spark"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "proxy",
+          "role": "router",
+          "concurrent": true
+        },
+        "pricing": {
+          "basis": "pass-through",
+          "note": "cost is the routed backend's (per-token for cloud legs, owned for local)"
+        },
+        "serves": {
+          "rule": "routed",
+          "note": "union of routes-to backends; a unifying access layer, not a placement — capacity resolves to the backend"
+        }
+      }
+    },
+    {
+      "id": "endpoint-llama-swap-dgx-spark",
+      "kind": "endpoint",
+      "name": "llama-swap @ DGX Spark",
+      "summary": "Single OpenAI endpoint over one box that hot-swaps GGUF models on demand — serves a configured set but ONE AT A TIME (not concurrent)",
+      "visibility": "public",
+      "labels": [
+        "proxy",
+        "swap",
+        "llama-swap",
+        "dgx-spark"
+      ],
+      "relations": [
+        {
+          "rel": "routes-to",
+          "target": "endpoint-llamacpp"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "proxy",
+          "role": "swap",
+          "concurrent": false
+        },
+        "pricing": {
+          "basis": "owned-amortized",
+          "note": "local; add model-swap latency on a cold switch"
+        },
+        "serves": {
+          "rule": "swap",
+          "note": "many models configured, but loads A OR B — NOT a co-residency solution; plan treats it as serialized"
+        }
+      }
+    },
+    {
       "id": "endpoint-llamacpp",
       "kind": "endpoint",
       "name": "llama.cpp (local GGUF)",

@@ -25,6 +25,7 @@ import {
   buildDeploymentPlans,
   buildOperatingPointIndex,
   decodeTokSEstimate,
+  enumerateRunOptions,
   footprintGB,
   qualityScore,
   resolveWeights,
@@ -672,6 +673,54 @@ Deno.test("operating-point index: flat rows pivot perf + eval across configs", (
   const fastest = [...rows].sort((a, b) => (b.genTokS ?? 0) - (a.genTokS ?? 0))[0];
   assertEquals(fastest.model, "model-agent");
   assertEquals(fastest.genTokSEstimated, false);
+});
+
+Deno.test("endpoint proxies: router is transparent (skipped), swap can't host a concurrent split", () => {
+  const entries = [
+    EntrySchema.parse({ id: "hardware-h", kind: "hardware", name: "H", summary: "h", visibility: "public", facets: { hardware: { unifiedMemGB: 128, memBandwidthGBs: 273 } } }),
+    EntrySchema.parse({ id: "endpoint-router", kind: "endpoint", name: "R", summary: "e", visibility: "public", facets: { endpoint: { kind: "proxy", role: "router" } } }),
+    EntrySchema.parse({ id: "endpoint-swap", kind: "endpoint", name: "S", summary: "e", visibility: "public", relations: [{ rel: "runs-on", target: "hardware-h" }], facets: { endpoint: { kind: "proxy", role: "swap", concurrent: false } } }),
+    EntrySchema.parse({
+      id: "model-p", kind: "model", name: "P", summary: "m", visibility: "public",
+      facets: {
+        architecture: { params: "20B", activeParams: "2B", nativeContext: 131072 },
+        footprint: { quants: [{ quant: "int4", memGB: 12 }] },
+        benchmarks: { ifEval: 90, mmluPro: 80, mmmlu: 80 },
+        runsOn: [
+          { endpoint: "endpoint-router", quant: "int4" }, // transparent → skipped
+          { endpoint: "endpoint-swap", quant: "int4", units: 1, outcome: { context: { tokens: 131072 } } },
+        ],
+      },
+    }),
+    EntrySchema.parse({
+      id: "model-q", kind: "model", name: "Q", summary: "m", visibility: "public",
+      facets: {
+        architecture: { params: "15B", activeParams: "2B", nativeContext: 131072 },
+        footprint: { quants: [{ quant: "int4", memGB: 9 }] },
+        benchmarks: { tau2Agentic: 80, bfcl: 70, ifEval: 88, ifBench: 70 },
+        runsOn: [{ endpoint: "endpoint-swap", quant: "int4", units: 1, outcome: { context: { tokens: 131072 } } }],
+      },
+    }),
+  ];
+  // router run-option is transparent → never a candidate; swap option carries concurrent:false
+  const opts = enumerateRunOptions(entries);
+  assert(!opts.some((o) => o.endpointId === "endpoint-router"));
+  assertEquals(opts.find((o) => o.modelId === "model-p" && o.endpointId === "endpoint-swap")!.concurrent, false);
+  // the flat index also excludes the router leg
+  assert(!buildOperatingPointIndex(entries).some((r) => r.endpoint === "endpoint-router"));
+
+  // plan: both models live only on the swap endpoint → no CONCURRENT split (it serializes)
+  const plan = buildDeploymentPlans(
+    PlanArgsSchema.parse({
+      host: "hardware-h",
+      workloads: [{ label: "writing", profile: "writing", minContext: 8192 }, { label: "agents", profile: "agents", minContext: 8192 }],
+    }),
+    entries,
+  );
+  assert(!plan.plans.some((p) => p.kind === "split"));
+  assert(plan.unmet.some((u) => u.includes("swap")));
+  // a single shared model on the swap endpoint is still fine (one model, no swapping)
+  assert(plan.plans.some((p) => p.kind === "shared"));
 });
 
 Deno.test("plan: a very tight budget rules out the split, a small shared survives", () => {
