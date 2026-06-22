@@ -1,0 +1,119 @@
+# Nemotron 3 Super 120B-A12B (MoE) — largest dense-ish variant; 12B active at 120B
+# total. Two measured operating points embedded as facets.runsOn[]: NVFP4 vLLM @
+# 2× Spark (TP=2 Ray) and the Unsloth GGUF via llama.cpp. variant-of → model-nemotron.
+
+- id: model-nemotron-super-120b-a12b
+  kind: model
+  name: Nemotron 3 Super 120B-A12B (MoE)
+  summary: Largest variant; sparse MoE; 12B active at 120B total; 256K context
+  visibility: public
+  labels: [nemotron, super, moe]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
+      params: "120B"
+      activeParams: "12B"
+      layers: 88
+      experts: "22/token of 512 routed"
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json"
+        verification: authoritative
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 68, note: "64–72GB range; UD-Q4_K_XL recommended (UD-Q2_K_XL minimum)" }
+        - { quant: "8-bit", memGB: 128 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
+        verification: cited
+    benchmarks: # NVIDIA BF16 model card, reasoning-on (enable_thinking=True), no-tools column
+      mmluPro: 83.73
+      gpqaDiamond: 79.23 # no-tools (with Python tools 82.70)
+      aime2025: 90.21 # no-tools
+      liveCodeBenchV5: 81.19 # card reports v5 only — NO v6 number exists
+      ifBench: 72.56 # prompt
+      hle: 18.26 # no-tools (with-tools 22.82)
+      tau2Agentic: 64.36 # Tau2 telecom (retail 62.83, airline 56.25)
+      sweBenchVerified: 60.47 # OpenHands harness (OpenCode 59.20, Codex 53.73)
+      provenance:
+        asOf: "2026-03-11"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          LiveCodeBench is v5 (81.19), NOT v6. Card also has MMLU-ProX (multilingual)
+          79.36 — not standard MMMLU. Extras: Arena-Hard-v2 73.88, RULER@1M 91.75.
+          BFCL v4 configured in NeMo Evaluator repro but no score published.
+    runsOn:
+      # self-host #1: NVIDIA NVFP4 vLLM @ 2× DGX Spark (CUTLASS MoE + TRITON attention; TP=2 Ray)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Nemotron-3-Super-120B-A12B · vLLM NVFP4 @ 2× DGX Spark (eugr recipe)"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-prefix-caching, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # recipe.hardware.units 2, accel GB10
+        download: { hfRepo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4, format: safetensors }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 2
+          maxNumSeqs: 10
+          toolCallParser: qwen3_coder
+          reasoningParser: nemotron_v3
+          attentionBackend: TRITON_ATTN
+          kvCacheDtype: fp8
+          env: { VLLM_FLASHINFER_ALLREDUCE_BACKEND: trtllm, VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1" }
+          build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4 \
+            --kv-cache-dtype fp8 \
+            --moe-backend cutlass \
+            --trust-remote-code \
+            --gpu-memory-utilization 0.8 \
+            --max-model-len 262144 \
+            --max-num-seqs 10 \
+            --enable-prefix-caching \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --enable-auto-tool-choice \
+            --load-format fastsafetensors \
+            --tool-call-parser qwen3_coder \
+            --reasoning-parser nemotron_v3 \
+            --mamba_ssm_cache_dtype float32 \
+            --tensor-parallel-size 2 \
+            --attention-backend TRITON_ATTN \
+            --distributed-executor-backend ray
+        note: "NVIDIA NVFP4; CUTLASS MoE + TRITON attention; TP=2 Ray; 256K context."
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-super-nvfp4.yaml"
+            verification: cited
+      # self-host #2: Unsloth UD-Q4_K_XL GGUF via llama.cpp (~64-72GB; host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "Nemotron-3-Super-120B-A12B · llama.cpp GGUF (Unsloth)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF:UD-Q4_K_XL \
+            --ctx-size 16384 --temp 1.0 --top-p 1.0
+        note: "Unsloth recommends UD-Q2_K_XL minimum. general chat: temp 1.0/top_p 1.0; tool-calling: temp 0.6/top_p 0.95. Thinking always-on. Unsloth GGUF (~64-72GB 4-bit / UD-Q2_K_XL minimum); single-Spark-class."
+        procedure: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
+            verification: cited

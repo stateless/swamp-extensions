@@ -1,0 +1,79 @@
+# MiniMax-M2 family (MiniMax AI). Architecture VERIFIED against the canonical
+# MiniMaxAI/* HF config.json (2026-06-20). M2 / M2.5 / M2.7 share one architecture
+# (minimax_m2: 62 layers, 256 routed experts, 8/token, hidden 3072, 196608 native
+# context, vocab 200064, MTP) and differ by training generation. ONE model per
+# file; run-options embedded in facets.runsOn[] keyed by endpoint.
+
+- id: model-minimax-m2
+  kind: model
+  name: MiniMax-M2 (family)
+  summary: MiniMax open-weights MoE (minimax_m2); 256-expert/8-active; MTP; 192K context
+  visibility: public
+  labels: [minimax, moe, open-weights, mtp]
+  facets:
+    architecture:
+      hfRepo: MiniMaxAI/MiniMax-M2
+      modelType: minimax_m2
+      attention: full-attention # attn_type_list all 1; partial RoPE (rotary_dim 64)
+      params: "~230B" # est. from ~480GB BF16 index; MiniMax-M2 publicly ~A10B MoE
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed" # shared_intermediate_size 0 → no shared expert
+      nativeContext: 196608 # max_position_embeddings
+      vocab: 200064
+      mtp: true # use_mtp true; num_mtp_modules 3
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json"
+        verification: authoritative
+    license:
+      name: MiniMax Model License (HF license tag 'other')
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/api/models/MiniMaxAI/MiniMax-M2 (cardData.license=other)"
+        verification: cited
+    runsOn:
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "QuantTrio AWQ @ 2× Spark"
+        quant: awq
+        format: safetensors
+        techniques: [technique-awq, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # cluster_only
+        download: { hfRepo: QuantTrio/MiniMax-M2-AWQ, format: safetensors }
+        config:
+          maxModelLen: 128000
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.8
+          toolCallParser: minimax_m2
+          reasoningParser: minimax_m2
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve QuantTrio/MiniMax-M2-AWQ \
+              --port 8000 --host 0.0.0.0 \
+              --gpu-memory-utilization 0.8 \
+              -tp 2 --distributed-executor-backend ray \
+              --max-model-len 128000 --load-format fastsafetensors \
+              --enable-auto-tool-choice \
+              --tool-call-parser minimax_m2 --reasoning-parser minimax_m2
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+        outcome:
+          context: { tokens: 128000 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2-awq.yaml"
+            verification: cited
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF config.json (2026-06-20): model_type minimax_m2, 62
+        layers, 256 routed experts, 8 experts/token, hidden 3072, full attention,
+        partial RoPE (rotary_dim 64, rope_theta 5e6), MTP (num_mtp_modules 3),
+        196608 native context, vocab 200064. Total/active params (~230B/~10B)
+        estimated from the BF16 safetensors index — re-verify against a primary count.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2/resolve/main/config.json + model.safetensors.index.json"
+        verification: cited

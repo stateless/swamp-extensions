@@ -13,8 +13,6 @@
  * @module
  */
 
-import type { Entry } from "./schemas.ts";
-
 export const OPENROUTER_FEED = "https://openrouter.ai/api/v1/models";
 
 interface Price {
@@ -47,8 +45,19 @@ export function parseOpenRouterFeed(payload: unknown): Map<string, Price> {
   return map;
 }
 
+/** A refreshed gateway price, one per (model × gateway runsOn entry). */
+export interface PricedPath {
+  id: string;
+  model: string;
+  endpoint: string;
+  providerModelId: string;
+  perMTokInUsd: number;
+  perMTokOutUsd: number;
+  provenance: { asOf: string; source: string; verification: string };
+}
+
 export interface RefreshResult {
-  entry: Entry | null;
+  priced: PricedPath | null;
   /** true if a price was found and applied. */
   found: boolean;
   /** the providerModelId we looked up (for reporting). */
@@ -56,40 +65,41 @@ export interface RefreshResult {
 }
 
 /**
- * Refresh one gateway access-path's `cost` facet from a price map.
- * Returns `{found:false}` when the entry isn't a priceable gateway path or its
- * providerModelId isn't in the feed (caller skips + reports).
+ * Refresh one model `runsOn[]` gateway entry's price from a feed. Gateway run-
+ * options carry a `providerModelId` (the feed key) and a `cost` facet; only the
+ * volatile PRICE is synced — `sync` never guesses model↔provider mappings, that
+ * binding is curated. Returns `{found:false}` when the entry has no
+ * providerModelId or it isn't in the feed (caller skips + reports).
  */
 export function refreshGatewayCost(
-  entry: Entry,
+  modelId: string,
+  // deno-lint-ignore no-explicit-any
+  ro: any,
   priceMap: Map<string, Price>,
   asOf: string,
   feedUrl: string,
 ): RefreshResult {
-  if (entry.kind !== "access-path") return { entry: null, found: false };
-  const hasProvider = (entry.relations ?? []).some((r) =>
-    r.rel === "via-provider"
-  );
-  // deno-lint-ignore no-explicit-any
-  const providerModelId: string | undefined = (entry.facets?.api as any)
-    ?.providerModelId;
-  if (!hasProvider || !providerModelId) return { entry: null, found: false };
+  const providerModelId: string | undefined = ro?.providerModelId;
+  if (!providerModelId) return { priced: null, found: false };
 
   const price = priceMap.get(providerModelId);
-  if (!price) return { entry: null, found: false, providerModelId };
+  if (!price) return { priced: null, found: false, providerModelId };
 
-  // deno-lint-ignore no-explicit-any
-  const refreshed: any = structuredClone(entry);
-  refreshed.facets = refreshed.facets ?? {};
-  refreshed.facets.cost = {
-    ...(refreshed.facets.cost ?? {}),
-    perMTokInUsd: price.inUsd,
-    perMTokOutUsd: price.outUsd,
-    provenance: {
-      asOf,
-      source: feedUrl,
-      verification: "authoritative", // authoritative AT asOf — price is volatile
+  return {
+    priced: {
+      id: `${modelId}::${ro.endpoint}`,
+      model: modelId,
+      endpoint: ro.endpoint,
+      providerModelId,
+      perMTokInUsd: price.inUsd,
+      perMTokOutUsd: price.outUsd,
+      provenance: {
+        asOf,
+        source: feedUrl,
+        verification: "authoritative", // authoritative AT asOf — price is volatile
+      },
     },
+    found: true,
+    providerModelId,
   };
-  return { entry: refreshed as Entry, found: true, providerModelId };
 }

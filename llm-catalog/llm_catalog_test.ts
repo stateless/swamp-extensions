@@ -23,6 +23,7 @@ import { buildReconciliation } from "./reconcile.ts";
 import {
   buildCapacityPlan,
   buildDeploymentPlans,
+  buildOperatingPointIndex,
   decodeTokSEstimate,
   footprintGB,
   qualityScore,
@@ -30,41 +31,41 @@ import {
 } from "./capacity.ts";
 import { CapacityArgsSchema, PlanArgsSchema } from "./schemas.ts";
 
-Deno.test("reconcile: gather + compare every config for a target", () => {
+Deno.test("reconcile: gather + compare every run-option for a target", () => {
   const entries = [
     EntrySchema.parse({
-      id: "ap-self", kind: "access-path", name: "self", summary: "s",
+      id: "endpoint-spark", kind: "endpoint", name: "vLLM @ Spark", summary: "e",
       visibility: "public",
-      relations: [
-        { rel: "of-model", target: "model-x" },
-        { rel: "served-by", target: "runtime-vllm" },
-        { rel: "runs-on", target: "hardware-spark" },
-      ],
-      facets: { recipe: { artifact: { quant: "FP8" } }, outcome: { speed: { genTokS: 38 }, provenance: { asOf: "x", source: "s", verification: "cited" } } },
+      relations: [{ rel: "served-by", target: "runtime-vllm" }, { rel: "runs-on", target: "hardware-spark" }],
+      facets: { endpoint: { kind: "self-host" } },
     }),
     EntrySchema.parse({
-      id: "ap-gw", kind: "access-path", name: "gw", summary: "s",
+      id: "endpoint-gw", kind: "endpoint", name: "GW", summary: "e",
       visibility: "public",
-      relations: [
-        { rel: "of-model", target: "model-x" },
-        { rel: "via-provider", target: "provider-openrouter" },
-      ],
-      facets: { cost: { perMTokInUsd: 0.2, perMTokOutUsd: 1.0, provenance: { asOf: "x", source: "feed", verification: "authoritative" } } },
+      relations: [{ rel: "via-provider", target: "provider-openrouter" }],
+      facets: { endpoint: { kind: "gateway" } },
+    }),
+    EntrySchema.parse({
+      id: "model-x", kind: "model", name: "X", summary: "m", visibility: "public",
+      facets: {
+        runsOn: [
+          { endpoint: "endpoint-spark", quant: "FP8", outcome: { speed: { genTokS: 38 }, provenance: { asOf: "x", source: "s", verification: "cited" } } },
+          { endpoint: "endpoint-gw", providerModelId: "x/x", cost: { perMTokInUsd: 0.2, perMTokOutUsd: 1.0, provenance: { asOf: "x", source: "feed", verification: "authoritative" } } },
+        ],
+      },
     }),
     EntrySchema.parse({ // different model — excluded
-      id: "ap-other", kind: "access-path", name: "o", summary: "s",
-      visibility: "public",
-      relations: [{ rel: "of-model", target: "model-y" }],
+      id: "model-y", kind: "model", name: "Y", summary: "m", visibility: "public",
+      facets: { runsOn: [{ endpoint: "endpoint-gw", providerModelId: "y/y" }] },
     }),
   ];
   const r = buildReconciliation("model-x", entries);
   assertEquals(r.count, 2); // model-y excluded
-  assertEquals(r.configs[0].id, "ap-self"); // fastest first (38 > gateway's undefined)
-  assertEquals(r.configs[0].access, "self-host");
+  assertEquals(r.configs[0].access, "self-host"); // fastest first (38 > gateway's undefined)
   assertEquals(r.configs[0].runtime, "runtime-vllm");
   assertEquals(r.configs[0].quant, "FP8");
-  const gw = r.configs.find((c) => c.id === "ap-gw")!;
-  assertEquals(gw.access, "gateway");
+  const gw = r.configs.find((c) => c.access === "gateway")!;
+  assertEquals(gw.provider, "provider-openrouter");
   assertEquals(gw.cost, "$0.2/$1 per MTok");
   // hardware filter scopes it:
   assertEquals(buildReconciliation("model-x", entries, "hardware-spark").count, 1);
@@ -83,44 +84,26 @@ Deno.test("sync: parse OpenRouter feed → per-MTok prices", () => {
   assertEquals(map.has("broken/no-pricing"), false);
 });
 
-Deno.test("sync: refresh a gateway access-path's cost from the price map", () => {
-  const ap = EntrySchema.parse({
-    id: "ap-glm-52-openrouter",
-    kind: "access-path",
-    name: "GLM-5.2 via OpenRouter",
-    summary: "gateway",
-    visibility: "public",
-    relations: [
-      { rel: "of-model", target: "model-glm-52" },
-      { rel: "via-provider", target: "provider-openrouter" },
-    ],
-    facets: { api: { providerModelId: "z-ai/glm-5.2-20260616" } },
-  });
+Deno.test("sync: refresh a gateway runsOn entry's cost from the price map", () => {
+  const ro = { endpoint: "endpoint-openrouter", providerModelId: "z-ai/glm-5.2-20260616" };
   const map = parseOpenRouterFeed({
     data: [{ id: "z-ai/glm-5.2-20260616", pricing: { prompt: "0.0000012", completion: "0.0000041" } }],
   });
-  const { entry, found } = refreshGatewayCost(ap, map, "2026-06-19", "feed");
+  const { priced, found } = refreshGatewayCost("model-glm-52", ro, map, "2026-06-19", "feed");
   assert(found);
-  const cost = entry!.facets!.cost as Record<string, unknown>;
-  assertEquals(cost.perMTokInUsd, 1.2);
-  assertEquals(cost.perMTokOutUsd, 4.1);
-  assertEquals(
-    (cost.provenance as { verification: string }).verification,
-    "authoritative",
-  );
-  EntrySchema.parse(entry); // refreshed entry still validates
+  assertEquals(priced!.id, "model-glm-52::endpoint-openrouter");
+  assertEquals(priced!.perMTokInUsd, 1.2);
+  assertEquals(priced!.perMTokOutUsd, 4.1);
+  assertEquals(priced!.provenance.verification, "authoritative");
 });
 
-Deno.test("sync: a non-gateway or unpriced path is left alone", () => {
-  const selfHost = EntrySchema.parse({
-    id: "ap-x",
-    kind: "access-path",
-    name: "x",
-    summary: "self-host",
-    visibility: "public",
-    relations: [{ rel: "served-by", target: "runtime-llamacpp" }],
-  });
-  assertEquals(refreshGatewayCost(selfHost, new Map(), "2026-06-19", "f").found, false);
+Deno.test("sync: a non-gateway (no providerModelId) or unpriced entry is skipped", () => {
+  // self-host run-option: no providerModelId → not a gateway price
+  const selfHost = { endpoint: "endpoint-llamacpp", quant: "Q4" };
+  assertEquals(refreshGatewayCost("model-x", selfHost, new Map(), "2026-06-19", "f").found, false);
+  // gateway entry but its providerModelId isn't in the feed → not found
+  const unpriced = { endpoint: "endpoint-openrouter", providerModelId: "x/missing" };
+  assertEquals(refreshGatewayCost("model-x", unpriced, new Map(), "2026-06-19", "f").found, false);
 });
 
 Deno.test("ingest maps a HF config.json → authoritative architecture facet", () => {
@@ -431,42 +414,37 @@ const CAP_ENTRIES = [
     id: "hardware-box", kind: "hardware", name: "Box", summary: "h",
     visibility: "public", facets: { hardware: { unifiedMemGB: 128 } },
   }),
-  EntrySchema.parse({ // stored footprint → 17GB at q4
+  EntrySchema.parse({ // self-host endpoint on the box
+    id: "endpoint-box", kind: "endpoint", name: "vLLM @ Box", summary: "e",
+    visibility: "public",
+    relations: [{ rel: "served-by", target: "runtime-vllm" }, { rel: "runs-on", target: "hardware-box" }],
+    facets: { endpoint: { kind: "self-host" }, serves: { rule: "fits-hardware" } },
+  }),
+  EntrySchema.parse({ // gateway endpoint
+    id: "endpoint-cloud", kind: "endpoint", name: "Cloud GW", summary: "e",
+    visibility: "public",
+    relations: [{ rel: "via-provider", target: "provider-openrouter" }],
+    facets: { endpoint: { kind: "gateway" }, serves: { rule: "listed" } },
+  }),
+  EntrySchema.parse({ // stored footprint → 17GB at q4; self-host + cloud run-options
     id: "model-a", kind: "model", name: "A", summary: "m", visibility: "public",
     facets: {
       architecture: { params: "30B", nativeContext: 262144 },
       footprint: { quants: [{ quant: "q4", memGB: 17 }] },
+      runsOn: [
+        { endpoint: "endpoint-box", quant: "q4", units: 1, outcome: { context: { tokens: 200000 }, speed: { genTokS: 30 } } },
+        { endpoint: "endpoint-cloud", cost: { perMTokOutUsd: 0.5, provenance: { asOf: "x", source: "feed" } } },
+      ],
     },
   }),
   EntrySchema.parse({ // no footprint → computed from params (~225GB at q4)
     id: "model-big", kind: "model", name: "Big", summary: "m", visibility: "public",
-    facets: { architecture: { params: "400B", nativeContext: 262144 } },
-  }),
-  EntrySchema.parse({
-    id: "ap-a-local", kind: "access-path", name: "a-local", summary: "a", visibility: "public",
-    relations: [
-      { rel: "of-model", target: "model-a" },
-      { rel: "served-by", target: "runtime-vllm" },
-      { rel: "runs-on", target: "hardware-box" },
-    ],
-    facets: { recipe: { artifact: { quant: "q4" } }, outcome: { context: { tokens: 200000 }, speed: { genTokS: 30 } } },
-  }),
-  EntrySchema.parse({
-    id: "ap-big-local", kind: "access-path", name: "big-local", summary: "b", visibility: "public",
-    relations: [
-      { rel: "of-model", target: "model-big" },
-      { rel: "served-by", target: "runtime-vllm" },
-      { rel: "runs-on", target: "hardware-box" },
-    ],
-    facets: { recipe: { artifact: { quant: "q4" } }, outcome: { context: { tokens: 200000 }, speed: { genTokS: 12 } } },
-  }),
-  EntrySchema.parse({
-    id: "ap-a-cloud", kind: "access-path", name: "a-cloud", summary: "c", visibility: "public",
-    relations: [
-      { rel: "of-model", target: "model-a" },
-      { rel: "via-provider", target: "provider-openrouter" },
-    ],
-    facets: { cost: { perMTokOutUsd: 0.5, provenance: { asOf: "x", source: "feed" } } },
+    facets: {
+      architecture: { params: "400B", nativeContext: 262144 },
+      runsOn: [
+        { endpoint: "endpoint-box", quant: "q4", units: 1, outcome: { context: { tokens: 200000 }, speed: { genTokS: 12 } } },
+      ],
+    },
   }),
 ];
 
@@ -484,12 +462,12 @@ Deno.test("capacity: bin-packs against host free memory, ranks local-first", () 
   );
   assertEquals(plan.hostGB, 128);
   assertEquals(plan.freeGB, 128);
-  // a-local fits (17GB ≤ 128) and ranks first (local-first); big-local is unmet (225 > 128)
-  assertEquals(plan.recommendations[0].accessPath, "ap-a-local");
+  // model-a fits (17GB ≤ 128) and ranks first (local-first); model-big is unmet (225 > 128)
+  assertEquals(plan.recommendations[0].model, "model-a");
   assertEquals(plan.recommendations[0].placement, "local:hardware-box");
-  assert(plan.unmet.some((u) => u.includes("ap-big-local")));
+  assert(plan.unmet.some((u) => u.includes("model-big")));
   // cloud still listed (prefer-local), after local
-  assert(plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+  assert(plan.recommendations.some((r) => r.placement === "cloud" && r.model === "model-a"));
 });
 
 Deno.test("capacity: co-resident reservation shrinks the fit budget", () => {
@@ -501,10 +479,10 @@ Deno.test("capacity: co-resident reservation shrinks the fit budget", () => {
     CAP_ENTRIES,
   );
   assertEquals(plan.freeGB, 8); // 128 - 120
-  // a-local (17GB) no longer fits → unmet; no local recs, cloud remains
-  assert(plan.unmet.some((u) => u.includes("ap-a-local")));
+  // model-a (17GB) no longer fits → unmet; no local recs, cloud remains
+  assert(plan.unmet.some((u) => u.includes("model-a") && u.includes("endpoint-box")));
   assert(!plan.recommendations.some((r) => r.placement.startsWith("local")));
-  assert(plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+  assert(plan.recommendations.some((r) => r.placement === "cloud" && r.model === "model-a"));
 });
 
 Deno.test("capacity: node-count gate rules out multi-unit recipes on a single host", () => {
@@ -514,37 +492,29 @@ Deno.test("capacity: node-count gate rules out multi-unit recipes on a single ho
       visibility: "public", facets: { hardware: { unifiedMemGB: 128 } },
     }),
     EntrySchema.parse({
+      id: "endpoint-box", kind: "endpoint", name: "vLLM @ Box", summary: "e",
+      visibility: "public",
+      relations: [{ rel: "runs-on", target: "hardware-box" }],
+      facets: { endpoint: { kind: "self-host" }, serves: { rule: "fits-hardware" } },
+    }),
+    EntrySchema.parse({ // a 2-unit cluster operating point (units explicit on runsOn)
       id: "model-c", kind: "model", name: "C", summary: "m", visibility: "public",
-      facets: { architecture: { params: "120B", nativeContext: 131072 } },
-    }),
-    EntrySchema.parse({ // 2-unit cluster recipe (units: 2)
-      id: "ap-c-2x", kind: "access-path", name: "c2x", summary: "a", visibility: "public",
-      relations: [
-        { rel: "of-model", target: "model-c" },
-        { rel: "served-by", target: "runtime-vllm" },
-        { rel: "runs-on", target: "hardware-box" },
-      ],
-      facets: { recipe: { artifact: { quant: "fp8" }, hardware: { units: 2 } }, outcome: { context: { tokens: 131072 } } },
-    }),
-    EntrySchema.parse({ // Ray cluster by config string (no units) → inferred ≥2
-      id: "ap-c-ray", kind: "access-path", name: "cray", summary: "a", visibility: "public",
-      relations: [
-        { rel: "of-model", target: "model-c" },
-        { rel: "served-by", target: "runtime-vllm" },
-        { rel: "runs-on", target: "hardware-box" },
-      ],
-      facets: { recipe: { artifact: { quant: "int4" }, hardware: { config: "Ray cluster (multi-node)" } }, outcome: { context: { tokens: 131072 } } },
+      facets: {
+        architecture: { params: "120B", nativeContext: 131072 },
+        runsOn: [
+          { endpoint: "endpoint-box", quant: "fp8", units: 2, outcome: { context: { tokens: 131072 } } },
+        ],
+      },
     }),
   ];
-  // single host (hostUnits defaults to 1): both multi-unit recipes ruled out
+  // single host (hostUnits defaults to 1): the 2-unit recipe is ruled out
   const solo = buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-box" }), entries);
   assertEquals(solo.recommendations.length, 0);
-  assert(solo.unmet.some((u) => u.includes("ap-c-2x") && u.includes("2 units")));
-  assert(solo.unmet.some((u) => u.includes("ap-c-ray")));
+  assert(solo.unmet.some((u) => u.includes("model-c") && u.includes("2 units")));
   // give it 2 units: the 2× recipe now fits (total budget 256GB)
   const cluster = buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-box", hostUnits: 2 }), entries);
   assertEquals(cluster.hostGB, 256);
-  assert(cluster.recommendations.some((r) => r.accessPath === "ap-c-2x" && r.units === 2));
+  assert(cluster.recommendations.some((r) => r.model === "model-c" && r.units === 2));
 });
 
 Deno.test("capacity: driver-reserved memory shrinks the usable budget", () => {
@@ -564,7 +534,7 @@ Deno.test("capacity: privacy local-only drops every cloud path", () => {
     CAP_ENTRIES,
   );
   assert(plan.recommendations.every((r) => r.placement.startsWith("local")));
-  assert(!plan.recommendations.some((r) => r.accessPath === "ap-a-cloud"));
+  assert(!plan.recommendations.some((r) => r.placement === "cloud"));
 });
 
 // ── capacity-v2: profiles, throughput estimate, deployment planner ──────────
@@ -575,12 +545,19 @@ const V2_ENTRIES = [
     visibility: "public",
     facets: { hardware: { unifiedMemGB: 128, driverReservedGB: 22, memBandwidthGBs: 273 } },
   }),
+  EntrySchema.parse({ // self-host endpoint on the Spark
+    id: "endpoint-spark2", kind: "endpoint", name: "vLLM @ Spark2", summary: "e",
+    visibility: "public",
+    relations: [{ rel: "served-by", target: "runtime-vllm" }, { rel: "runs-on", target: "hardware-spark2" }],
+    facets: { endpoint: { kind: "self-host" }, serves: { rule: "fits-hardware" } },
+  }),
   EntrySchema.parse({ // small agent specialist (MoE, 3B active, fast)
     id: "model-agent", kind: "model", name: "Agent", summary: "m", visibility: "public",
     facets: {
       architecture: { params: "35B", activeParams: "3B", nativeContext: 262144, attention: "gqa" },
       footprint: { kvGbPer1k: 0.02, quants: [{ quant: "int4", memGB: 19 }] },
       benchmarks: { tau2Agentic: 84, bfcl: 75, ifEval: 94, ifBench: 78 },
+      runsOn: [{ endpoint: "endpoint-spark2", quant: "int4", units: 1, outcome: { context: { tokens: 262144 }, speed: { genTokS: 90 } } }],
     },
   }),
   EntrySchema.parse({ // big all-rounder (MoE, 10B active)
@@ -589,6 +566,7 @@ const V2_ENTRIES = [
       architecture: { params: "122B", activeParams: "10B", nativeContext: 262144 },
       footprint: { kvGbPer1k: 0.10, quants: [{ quant: "int4", memGB: 71 }] },
       benchmarks: { tau2Agentic: 79, bfcl: 72, ifEval: 93, ifBench: 76, mmluPro: 87, gpqaDiamond: 87 },
+      runsOn: [{ endpoint: "endpoint-spark2", quant: "int4", units: 1, outcome: { context: { tokens: 262144 }, speed: { genTokS: 52 } } }],
     },
   }),
   EntrySchema.parse({ // dense writing specialist — strong IF, but slow (dense → no activeParams)
@@ -597,22 +575,9 @@ const V2_ENTRIES = [
       architecture: { params: "27B", nativeContext: 200000, attention: "dense" },
       footprint: { kvGbPer1k: 0.02, quants: [{ quant: "int4", memGB: 15 }] },
       benchmarks: { ifEval: 95, mmluPro: 85, mmmlu: 85 },
+      // NO measured genTokS → throughput must be estimated
+      runsOn: [{ endpoint: "endpoint-spark2", quant: "int4", units: 1, outcome: { context: { tokens: 200000 } } }],
     },
-  }),
-  EntrySchema.parse({
-    id: "ap-agent", kind: "access-path", name: "agent", summary: "a", visibility: "public",
-    relations: [{ rel: "of-model", target: "model-agent" }, { rel: "runs-on", target: "hardware-spark2" }],
-    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 262144 }, speed: { genTokS: 90 } } },
-  }),
-  EntrySchema.parse({
-    id: "ap-allrounder", kind: "access-path", name: "all", summary: "a", visibility: "public",
-    relations: [{ rel: "of-model", target: "model-allrounder" }, { rel: "runs-on", target: "hardware-spark2" }],
-    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 262144 }, speed: { genTokS: 52 } } },
-  }),
-  EntrySchema.parse({ // NO measured genTokS → throughput must be estimated
-    id: "ap-writer", kind: "access-path", name: "writer", summary: "a", visibility: "public",
-    relations: [{ rel: "of-model", target: "model-writer" }, { rel: "runs-on", target: "hardware-spark2" }],
-    facets: { recipe: { artifact: { quant: "int4" }, hardware: { units: 1 } }, outcome: { context: { tokens: 200000 } } },
   }),
 ];
 
@@ -657,7 +622,7 @@ Deno.test("capacity: a profile ranks local recs by quality, fills estimated tok/
   assertEquals(plan.recommendations[0].model, "model-agent");
   assert((plan.recommendations[0].qualityScore ?? 0) > 80);
   // the writer path had no measured genTokS → estimate filled in + flagged
-  const wr = plan.recommendations.find((r) => r.accessPath === "ap-writer")!;
+  const wr = plan.recommendations.find((r) => r.model === "model-writer")!;
   assert(wr.decodeTokS && wr.decodeTokS > 17 && wr.decodeTokS < 21);
   assertEquals(wr.decodeTokSEstimated, true);
 });
@@ -691,6 +656,22 @@ Deno.test("plan: enumerates shared vs split on a Pareto front", () => {
   assert(result.plans.every((p) => (p.freeAfterGB ?? 0) >= 0));
   // at least one plan is on the Pareto front
   assert(result.plans.some((p) => p.pareto));
+});
+
+Deno.test("operating-point index: flat rows pivot perf + eval across configs", () => {
+  const rows = buildOperatingPointIndex(V2_ENTRIES);
+  assertEquals(rows.length, 3); // one row per runsOn (3 models × 1 each)
+  const writer = rows.find((r) => r.model === "model-writer")!;
+  // writer had no measured genTokS → estimate filled in + flagged (perf pivot)
+  assertEquals(writer.genTokSEstimated, true);
+  assert(writer.genTokS! > 17 && writer.genTokS! < 21);
+  assert((writer.needGB ?? 0) > 0);
+  // model-level (vendor) benchmarks denormalised onto the row (eval pivot)
+  assertEquals((writer.benchmarks as { ifEval: number }).ifEval, 95);
+  // perf pivot: the measured agent path (90 tok/s) sorts to the top
+  const fastest = [...rows].sort((a, b) => (b.genTokS ?? 0) - (a.genTokS ?? 0))[0];
+  assertEquals(fastest.model, "model-agent");
+  assertEquals(fastest.genTokSEstimated, false);
 });
 
 Deno.test("plan: a very tight budget rules out the split, a small shared survives", () => {

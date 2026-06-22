@@ -1,0 +1,165 @@
+# MiniMax-M2.5 — later-generation MiniMax-M2 (same minimax_m2 arch, distinct weights).
+
+- id: model-minimax-m25
+  kind: model
+  name: MiniMax-M2.5
+  summary: Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights
+  visibility: public
+  labels: [minimax, moe]
+  relations:
+    - { rel: variant-of, target: model-minimax-m2 }
+  facets:
+    architecture:
+      hfRepo: MiniMaxAI/MiniMax-M2.5
+      modelType: minimax_m2
+      attention: full-attention
+      params: "~230B"
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed"
+      nativeContext: 196608
+      vocab: 200064
+      mtp: true
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/MiniMaxAI/MiniMax-M2.5/resolve/main/config.json"
+        verification: authoritative
+    footprint: # Unsloth-published per-quant memory (weights-only); LARGE — multi-Spark
+      basis: weights-only
+      quants:
+        - { quant: "UD-Q3_K_XL", memGB: 101, note: "Unsloth-recommended balance (3-bit dynamic)" }
+        - { quant: Q8, memGB: 243 }
+        - { quant: BF16, memGB: 457, note: "original unquantized" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+        verification: cited
+    benchmarks: # model-level (vendor); the "standard answer"
+      sweBenchVerified: 80.2
+      sweBenchMultilingual: 51.3
+      sweBenchPro: 55.4
+      browseComp: 76.3
+      aime2025: 86.3
+      gpqaDiamond: 85.2
+      bfcl: 76.8 # THIRD-PARTY, multi-turn SUBSET, BFCL version unconfirmed — see note
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25 (Unsloth aggregating MiniMax vendor figures)"
+        verification: cited
+        note: >-
+          bfcl 76.8 is the lone third-party figure: huggingface.co/blog/mlabonne/minimax-m25
+          (community), multi-turn function-calling subset, BFCL version unconfirmed; NOT on
+          the official MiniMax card. Treat as third-party vs the vendor figures above.
+    defaults: # model-level defaults (the "standard answer"); recipes may override
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 40, min_p: 0.01 } # Unsloth recommendation
+      maxContext: 196608
+      recommendedQuant: "UD-Q3_K_XL"
+      toolCallParser: minimax_m2
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+        verification: cited
+    runsOn:
+      # self-host #1: cyankiwi AWQ @ 2× Spark
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "cyankiwi AWQ @ 2× Spark"
+        quant: awq
+        format: safetensors
+        techniques: [technique-awq, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # cluster_only
+        download: { hfRepo: cyankiwi/MiniMax-M2.5-AWQ-4bit, format: safetensors }
+        config:
+          maxModelLen: 128000
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.8
+          toolCallParser: minimax_m2
+          reasoningParser: minimax_m2
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve cyankiwi/MiniMax-M2.5-AWQ-4bit \
+              --trust-remote-code --port 8000 --host 0.0.0.0 \
+              --gpu-memory-utilization 0.8 \
+              -tp 2 --distributed-executor-backend ray \
+              --max-model-len 128000 --load-format fastsafetensors \
+              --enable-auto-tool-choice \
+              --tool-call-parser minimax_m2 --reasoning-parser minimax_m2
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml"
+        outcome:
+          context: { tokens: 128000 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.5-awq.yaml"
+            verification: cited
+      # self-host #2: official FP8 base @ 4× Spark (NOT a quant — distinct scale)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "FP8 base @ 4× Spark (SPREAD)"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-tensor-parallel, technique-ray-serve]
+        units: 4 # 4x-spark-cluster, cluster_only
+        download: { hfRepo: MiniMaxAI/MiniMax-M2.5, format: safetensors }
+        config:
+          maxModelLen: 128000
+          tensorParallel: 4
+          gpuMemoryUtilization: 0.90
+          toolCallParser: minimax_m2
+          reasoningParser: minimax_m2_append_think
+          env: { VLLM_DISTRIBUTED_EXECUTOR_CONFIG: '{"placement_group_options":{"strategy":"SPREAD"}}' }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve MiniMaxAI/MiniMax-M2.5 \
+              --trust-remote-code --port 8000 --host 0.0.0.0 \
+              --gpu-memory-utilization 0.90 \
+              -tp 4 --distributed-executor-backend ray \
+              --max-model-len 128000 --load-format fastsafetensors \
+              --enable-auto-tool-choice \
+              --tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml"
+        outcome:
+          context: { tokens: 128000 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/minimax-m2.5.yaml"
+            verification: cited
+      # self-host #3: Unsloth GGUF via llama.cpp (host-agnostic; ~101GB)
+      - endpoint: endpoint-llamacpp
+        name: "Unsloth UD-Q3_K_XL GGUF"
+        quant: "UD-Q3_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic, technique-flashattention]
+        download: { hfRepo: "unsloth/MiniMax-M2.5-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 196608
+          toolCallParser: minimax_m2
+          reasoningParser: minimax_m2
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/MiniMax-M2.5-GGUF:UD-Q3_K_XL \
+            --ctx-size 16384 --flash-attn on \
+            --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40
+        note: "UD-Q3_K_XL is the recommended size/accuracy balance for this large MoE; ~101GB weights."
+        procedure: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+        outcome:
+          context: { tokens: 196608 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/tutorials/minimax-m25"
+            verification: cited
+      # gateway: DigitalOcean serverless inference (off-peak discount) — carries PRICE
+      - endpoint: endpoint-digitalocean
+        providerModelId: "minimax-m2.5" # confirm exact slug in DO model list
+        cost:
+          perMTokInUsd: 0.30
+          perMTokOutUsd: 1.20
+          offPeak: # 30% discount 05:00-11:00 UTC
+            perMTokInUsd: 0.21
+            perMTokOutUsd: 0.84
+            window: "05:00-11:00 UTC"
+            discountPct: 30
+          provenance:
+            asOf: "2026-06-18"
+            source: "https://docs.digitalocean.com/products/inference/details/pricing/"
+            verification: authoritative # AT asOf — re-check (volatile)

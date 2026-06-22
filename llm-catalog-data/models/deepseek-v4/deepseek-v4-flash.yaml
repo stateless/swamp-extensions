@@ -1,0 +1,305 @@
+# DeepSeek-v4-Flash. Public + generic. Demonstrates a CLUSTER runsOn entry
+# (units = 2) and a long-context recipe; competing access-paths embedded as
+# facets.runsOn[] keyed by endpoint.
+
+- id: model-deepseek-v4-flash
+  kind: model
+  name: DeepSeek-v4-Flash
+  summary: 284B/13B-active MoE; 1M context (YaRN); MLA + CSA/HCA hybrid attention; MIT
+  visibility: public
+  labels: [deepseek, long-context, moe, sparse-attention]
+  facets:
+    architecture:
+      hfRepo: deepseek-ai/DeepSeek-V4-Flash
+      modelType: deepseek_v4
+      params: "284B"
+      activeParams: "13B"
+      layers: 43
+      hidden: 4096
+      experts: "6/token of 256 routed + 1 shared"
+      nativeContext: 65536 # extends to 1048576 (1M) via YaRN factor 16
+      extendedContext: 1048576
+      attention: "MLA (64 heads, 1 KV head, head_dim 512) + CSA/HCA hybrid; sliding_window 128"
+      vocab: 129280
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card"
+        verification: authoritative
+    footprint: # weights resident (MoE = ALL experts loaded); KV cache + activations extra
+      basis: weights-only
+      quants:
+        - { quant: q2,  memGB: 99,  note: "ds4 q2-imatrix — published to run on a 96/128GB box; consistent" }
+        - { quant: q4,  memGB: 160, note: "needs a 512GB-class box" }
+        - { quant: fp8, memGB: 284, note: "the 2x DGX Spark (256GB) cluster recipe — relies on expert offload" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b fp8~8b); cross-checked vs ds4 fit claims"
+        verification: estimated
+        confidence: low
+    runsOn:
+      # ── vLLM @ 2× DGX Spark (1M ctx) — aidendle94 recipe ──────────────────
+      # was ap-deepseek-v4-flash-2spark-vllm
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM @ 2× DGX Spark (1M ctx) — aidendle94 recipe"
+        quant: "FP8 (official)"
+        format: safetensors
+        techniques: [technique-fp8, technique-prefix-caching, technique-flashattention, technique-tensor-parallel, technique-context-extension]
+        units: 2
+        download:
+          hfRepo: deepseek-ai/DeepSeek-V4-Flash
+          revision: null # TODO pin commit/tag for byte-exact re-download
+          format: safetensors
+          downloadCmd: "hf download deepseek-ai/DeepSeek-V4-Flash --revision <rev>"
+        config:
+          maxModelLen: 1000000
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.82
+          kvCacheDtype: fp8
+          toolCallParser: deepseek_v4
+          reasoningParser: deepseek_v4
+          tokenizerMode: deepseek_v4
+          maxNumSeqs: 6 # max concurrent sequences
+          maxNumBatchedTokens: 8192
+          blockSize: 256
+          env:
+            VLLM_USE_B12X_MOE: "1"
+            VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
+            TORCH_CUDA_ARCH_LIST: "12.1a"
+            NCCL_NET: "IB"
+          build:
+            image: "aidendle94/sparkrun-vllm-ds4-gb10:production-ready"
+            version: "0.21.1"
+            cuda: "12.1"
+        command: >-
+          dsv4-vllm-entrypoint serve deepseek-ai/DeepSeek-V4-Flash
+          --tensor-parallel-size 2 --pipeline-parallel-size 1 --kv-cache-dtype fp8
+          --block-size 256 --max-model-len 1000000 --max-num-seqs 6
+          --max-num-batched-tokens 8192 --gpu-memory-utilization 0.82
+          --enable-prefix-caching
+          --speculative-config '{"method":"mtp","num_speculative_tokens":2}'
+          --distributed-executor-backend mp --enable-flashinfer-autotune
+          --nnodes 2 --node-rank ${NODE_RANK} --master-addr ${MASTER_ADDR}
+        procedure: "https://forums.developer.nvidia.com/t/372268"
+        outcome:
+          context: { tokens: 1000000 }
+          speed:
+            genTokS: 39.4
+            note: "@240K ctx, single request — see measurements for the conditions"
+          # A tok/s is only comparable WITH its concurrency + context depth. The
+          # spread below is all one config; concurrency ~doubles throughput.
+          measurements:
+            - { concurrency: 1, contextDepth: 0, decodeTokS: 45.7, ttft: "1s" }
+            - { concurrency: 1, contextDepth: 240000, decodeTokS: 39.4 }
+            - { concurrency: 1, contextDepth: 512000, decodeTokS: 36.1 }
+            - { concurrency: 1, contextDepth: 980000, decodeTokS: 30.4, ttft: "16.6m" }
+            - { concurrency: 2, contextDepth: 0, decodeTokS: 54.4 }
+            - { concurrency: 4, contextDepth: 0, decodeTokS: 47.8 }
+          quality:
+            toolEvalBench: "89/100" # depends on the correct deepseek_v4 tool-call parser above
+            ifEvalInstruction: 88.2
+            ifEvalPrompt: 84.8
+          provenance:
+            asOf: "2026-06-19"
+            source: "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)"
+            verification: cited
+            versionPins:
+              runtime: vLLM
+              version: "0.21.1"
+              cuda: "12.1"
+              image: "aidendle94/sparkrun-vllm-ds4-gb10:production-ready"
+        claims:
+          - kind: caveat
+            body: >-
+              Dead ends (per 0rand): FP4-Marlin backend incompatible with FP8 weights;
+              manual PR-40082 build hits a FlashInfer/cutlass mismatch; standard
+              spark-vllm-docker lacks b12x MoE (2× slower prefill). Requires
+              `shm_size: 64gb` + `ulimits memlock=-1` or NCCL "unhandled system error".
+              Launch worker node before head (~10s delay).
+            provenance:
+              asOf: "2026-06-19"
+              source: "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)"
+              verification: cited
+          - kind: note
+            body: >-
+              RECONCILIATION: num_speculative_tokens=2 — 0rand says "2 is optimal" vs a
+              query about MTP=3 (no comparative metrics given). Replicated by stu.miller
+              (35.6 t/s single / 63.9 t/s @c4) and MiaAI_Lab (40-45 t/s) on the same
+              image — results agree within the concurrency-dependent band.
+            provenance:
+              asOf: "2026-06-19"
+              source: "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)"
+              verification: cited
+      # ── DwarfStar (ds4) @ Mac (96/128GB, Metal) ──────────────────────────
+      # was ap-deepseek-v4-flash-ds4-mac
+      - endpoint: endpoint-ds4-mac
+        name: "DwarfStar (ds4) @ Mac (96/128GB, Metal)"
+        quant: "q2-imatrix (routed experts only: up/gate IQ2_XXS, down Q2_K)"
+        format: gguf
+        techniques: [technique-moe-expert-2bit, technique-ssd-expert-streaming]
+        units: 1
+        download:
+          hfRepo: antirez/deepseek-v4-gguf
+          revision: null # TODO pin commit/tag for byte-exact re-download
+          format: gguf
+          downloadCmd: "./download_model.sh q2-imatrix" # 96/128GB machines, imatrix-tuned q2
+          packager: antirez
+        config:
+          apiSpec: openai-compat
+          anthropicCompat: true
+        # On RAM-tight boxes, add: --ssd-streaming --ssd-streaming-cache-experts 32GB
+        command: "ds4  # interactive chat; sets ./ds4flash.gguf as default model pointer"
+        procedure: "https://github.com/antirez/ds4"
+        outcome:
+          context: { tokens: 32768 }
+          # antirez/ds4 published "Speed" table. Conditions (ALL rows): --ctx 32768,
+          # --nothink, greedy decoding, -n 256. "short" = a standard Italian narrative;
+          # long prompts exercise chunked prefill + long-context decode. prefill =
+          # prompt-processing t/s, decode = generation t/s.
+          measurements:
+            - { machine: "MacBook Pro M3 Max 128GB", quant: q2, prompt: short,        prefillTokS: 58.52,  decodeTokS: 26.68 }
+            - { machine: "MacBook Pro M3 Max 128GB", quant: q2, promptTokens: 11709,   prefillTokS: 250.11, decodeTokS: 21.47 }
+            - { machine: "MacBook Pro M5 Max 128GB", quant: q2, prompt: short,        prefillTokS: 87.25,  decodeTokS: 34.27 }
+            - { machine: "MacBook Pro M5 Max 128GB", quant: q2, promptTokens: 11707,   prefillTokS: 463.44, decodeTokS: 25.90 }
+            - { machine: "Mac Studio M3 Ultra 512GB", quant: q2, prompt: short,       prefillTokS: 84.43,  decodeTokS: 36.86 }
+            - { machine: "Mac Studio M3 Ultra 512GB", quant: q2, promptTokens: 11709,  prefillTokS: 468.03, decodeTokS: 27.39 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/antirez/ds4 (README, Speed table)"
+            verification: cited
+            confidence: low
+            versionPins:
+              runtime: DwarfStar (ds4)
+              version: "beta (2026-06, days-old)"
+        claims:
+          - kind: caveat
+            body: >-
+              Beta and model-coupled — runs only antirez-packaged V4 GGUFs. Quality
+              impact of routed-experts-only 2-bit is unmeasured here vs the FP8 cluster
+              recipe; the cluster path (ap-deepseek-v4-flash-2spark-vllm) has cited
+              tool/IFEval numbers, this single-box path does not yet. Compare before
+              choosing single-box convenience over cluster fidelity.
+            provenance:
+              asOf: "2026-06-20"
+              source: "https://github.com/antirez/ds4 (README, Speed table)"
+              verification: cited
+              confidence: low
+      # ── DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q4) ────────────────
+      # was ap-deepseek-v4-flash-ds4-mac-q4
+      - endpoint: endpoint-ds4-mac
+        name: "DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q4)"
+        quant: q4
+        format: gguf
+        techniques: []
+        units: 1
+        download:
+          hfRepo: antirez/deepseek-v4-gguf
+          revision: null
+          format: gguf
+          downloadCmd: null # README documents the q2-imatrix arg; q4 arg unconfirmed — see repo
+          packager: antirez
+        procedure: "https://github.com/antirez/ds4"
+        outcome:
+          context: { tokens: 32768 } # --ctx 32768 --nothink greedy -n 256 (same as q2 rows)
+          measurements:
+            - { machine: "Mac Studio M3 Ultra 512GB", quant: q4, prompt: short,       prefillTokS: 78.95,  decodeTokS: 35.50 }
+            - { machine: "Mac Studio M3 Ultra 512GB", quant: q4, promptTokens: 12018,   prefillTokS: 448.82, decodeTokS: 26.62 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/antirez/ds4 (README, Speed table)"
+            verification: cited
+            confidence: low
+            versionPins:
+              runtime: DwarfStar (ds4)
+              version: "beta (2026-06)"
+        claims:
+          - kind: note
+            body: >-
+              q4 vs q2 on the SAME M3 Ultra 512GB: near-identical speed (35.50 vs 36.86
+              t/s decode short) at higher fidelity and ~2x memory — a 512GB box can
+              afford it. This is the catalog's quant tradeoff: a comparison across
+              access-paths of one model, not duplicated model entries.
+            provenance:
+              asOf: "2026-06-20"
+              source: "https://github.com/antirez/ds4 (README, Speed table)"
+              verification: cited
+              confidence: low
+      # ── DwarfStar (ds4) @ 1× DGX Spark (GB10, CUDA) ──────────────────────
+      # was ap-deepseek-v4-flash-ds4-1spark
+      - endpoint: endpoint-ds4-dgx-spark
+        name: "DwarfStar (ds4) @ 1× DGX Spark (GB10, CUDA)"
+        quant: "q2-imatrix (routed experts only)"
+        format: gguf
+        techniques: [technique-moe-expert-2bit, technique-ssd-expert-streaming]
+        units: 1
+        download:
+          hfRepo: antirez/deepseek-v4-gguf
+          revision: null
+          format: gguf
+          downloadCmd: "./download_model.sh q2-imatrix"
+          packager: antirez
+        procedure: "https://github.com/antirez/ds4"
+        outcome:
+          # ds4 runs on a SINGLE DGX Spark via its CUDA backend; the repo's Speed table
+          # is Mac-only, so no single-Spark tok/s is published — recorded as a gap.
+          speed: { note: "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/antirez/ds4 (README, Speed table)"
+            verification: cited
+            confidence: low
+            versionPins:
+              runtime: DwarfStar (ds4)
+              version: "beta (2026-06)"
+        claims:
+          - kind: note
+            body: >-
+              A single DGX Spark runs V4-Flash via ds4's CUDA backend — a cheaper
+              single-box alternative to the 2-unit vLLM cluster recipe
+              (ap-deepseek-v4-flash-2spark-vllm) on the same hardware class. SSD expert
+              streaming lets one unit hold the model when unified memory is tight.
+            provenance:
+              asOf: "2026-06-20"
+              source: "https://github.com/antirez/ds4 (README, Speed table)"
+              verification: cited
+              confidence: low
+      # ── OpenRouter (gateway) ─────────────────────────────────────────────
+      # was ap-deepseek-v4-flash-openrouter
+      - endpoint: endpoint-openrouter
+        name: "OpenRouter (gateway)"
+        providerModelId: "deepseek/deepseek-v4-flash"
+        config:
+          apiSpec: openai-compat
+        cost:
+          perMTokInUsd: 0.09
+          perMTokOutUsd: 0.18
+          provenance:
+            asOf: "2026-06-19"
+            source: "https://openrouter.ai/api/v1/models"
+            verification: authoritative # authoritative AT asOf — re-sync for current price
+      # ── DigitalOcean Inference (gateway) ─────────────────────────────────
+      # was ap-deepseek-v4-flash-digitalocean
+      - endpoint: endpoint-digitalocean
+        name: "DigitalOcean Inference (gateway)"
+        providerModelId: "deepseek-v4-flash" # confirm exact slug in DO model list
+        config:
+          apiSpec: openai-compat
+        cost:
+          perMTokInUsd: 0.14
+          perMTokOutUsd: 0.28
+          provenance:
+            asOf: "2026-06-18"
+            source: "https://docs.digitalocean.com/products/inference/details/pricing/"
+            verification: authoritative # authoritative AT asOf — re-check (volatile)
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active,
+        43 layers, 256 routed experts + 1 shared, 6/token, MLA attention, native
+        65536 extended to 1M via YaRN (factor 16), MIT. Published weights are FP4
+        (MoE experts) + FP8 mixed. Replaces the earlier UNVERIFIED placeholder.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card"
+        verification: authoritative

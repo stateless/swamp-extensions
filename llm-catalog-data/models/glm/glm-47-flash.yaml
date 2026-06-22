@@ -1,0 +1,143 @@
+# GLM-4.7-Flash (Zhipu / z.ai). Public + generic.
+# ONE model per file; run-options embedded in facets.runsOn[] keyed by endpoint.
+
+- id: model-glm-47-flash
+  kind: model
+  name: GLM-4.7-Flash
+  summary: Fast MoE (glm4moelite arch); fast TTFT; cheap via gateways
+  visibility: public
+  labels: [glm, moe]
+  facets:
+    architecture:
+      hfRepo: zai-org/glm-4.7-flash
+      modelType: glm4_moe_lite
+      params: "31B"
+      activeParams: "3B" # 30B-A3B per model card
+      layers: 47
+      hidden: 2048
+      experts: "4/token of 64 routed + 1 shared"
+      nativeContext: 202752 # no rope_scaling — native, not extended
+      vocab: 154880
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card"
+        verification: authoritative
+    footprint: # weights-only; Unsloth run guide (fits a single DGX Spark)
+      basis: weights-only
+      quants:
+        - { quant: "UD-Q4_K_XL", memGB: 18, note: "Unsloth-recommended 4-bit dynamic; ~18GB RAM/unified" }
+        - { quant: F16, memGB: 32, note: "full precision" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
+        verification: cited
+    benchmarks: # z.ai/GLM authoritative model card (these 7 are ALL it publishes for Flash)
+      aime2025: 91.6
+      gpqaDiamond: 75.2 # card labels "GPQA"
+      liveCodeBenchV6: 64.0 # card labels "LCB v6"
+      hle: 14.4
+      sweBenchVerified: 59.2
+      tau2Agentic: 79.5 # card labels "τ²-Bench"
+      browseComp: 42.8
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/zai-org/GLM-4.7-Flash/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          Vendor card publishes ONLY these 7 metrics. ifEval, mmluPro, ifBench,
+          aime2026, bfcl, mmmlu are NOT reported by z.ai for Flash (a circulating
+          85.6 MMLU-Pro / 67.9 IFBench snippet traces to no fetchable source — omitted).
+          MMLU-Pro 84.3 / GPQA-D 85.7 belong to full GLM-4.7, not Flash. Same 7 figures
+          previously sourced via Unsloth — provenance upgraded to the z.ai card.
+    defaults: # model-level defaults (the "standard answer"); recipes may override
+      sampling: # Unsloth recommendation
+        general: { temp: 1.0, top_p: 0.95, min_p: 0.01 }
+        toolCalling: { temp: 0.7, top_p: 1.0 }
+        repeat_penalty: "disabled or 1.0"
+      maxContext: 202752
+      recommendedQuant: "UD-Q4_K_XL"
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
+        verification: cited
+    runsOn:
+      # self-host #1: cyankiwi AWQ via vLLM on DGX Spark (eugr recipe) — solo or cluster
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "GLM-4.7-Flash · vLLM AWQ @ 1× DGX Spark (eugr recipe)"
+        quant: awq
+        format: safetensors
+        techniques: [technique-awq]
+        units: 1 # tensor_parallel 1; solo allowed (cluster_only false)
+        download: { hfRepo: cyankiwi/GLM-4.7-Flash-AWQ-4bit, format: safetensors }
+        config:
+          maxModelLen: 202752
+          tensorParallel: 1
+          maxNumBatchedTokens: 4096
+          maxNumSeqs: 64
+          gpuMemoryUtilization: 0.8
+          toolCallParser: glm47
+          reasoningParser: glm45
+          build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --pre-tf
+        command: |
+          vllm serve cyankiwi/GLM-4.7-Flash-AWQ-4bit \
+              --tool-call-parser glm47 \
+              --reasoning-parser glm45 \
+              --enable-auto-tool-choice \
+              --served-model-name glm-4.7-flash \
+              --max-model-len 202752 \
+              --max-num-batched-tokens 4096 \
+              --max-num-seqs 64 \
+              --gpu-memory-utilization 0.8 \
+              -tp 1 \
+              --host 0.0.0.0 \
+              --port 8000
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml"
+        outcome:
+          context: { tokens: 202752 }
+          speed:
+            genTokS: 40
+            note: >-
+              from recipe comment ("~40 t/s generation in both single node and
+              cluster"), not a benchmark. Recipe warns vLLM is suboptimal for this
+              model even with the speed-optimization patch — slower than expected for
+              the active-param count; cluster helps prompt processing, not generation.
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/glm-4.7-flash-awq.yaml"
+            verification: cited
+      # self-host #2: Unsloth GGUF via llama.cpp (host-agnostic; ~18GB)
+      - endpoint: endpoint-llamacpp
+        name: "GLM-4.7-Flash · llama.cpp GGUF (Unsloth)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/GLM-4.7-Flash-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 202752
+          toolCallParser: glm47
+          reasoningParser: glm45
+        command: |
+          ./llama.cpp/llama-cli \
+            --model unsloth/GLM-4.7-Flash-GGUF/GLM-4.7-Flash-UD-Q4_K_XL.gguf \
+            --ctx-size 16384 --seed 3407 --temp 1.0 --top-p 0.95 --min-p 0.01
+        note: "general: temp 1.0/top_p 0.95; tool-calling: temp 0.7/top_p 1.0; repeat-penalty disabled or 1.0."
+        procedure: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
+        outcome:
+          context: { tokens: 202752 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
+            verification: cited
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF (2026-06-20): glm4_moe_lite MoE, 31B total / 3B active
+        (30B-A3B), 47 layers, 64 routed experts + 1 shared, 4 experts/token,
+        202752 native context (rope_scaling null), MIT. Corrects the earlier
+        unverified "~14B" estimate.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/zai-org/glm-4.7-flash config.json + model card"
+        verification: authoritative

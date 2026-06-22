@@ -1,0 +1,92 @@
+# GLM-5.2 (Zhipu / z.ai). Public + generic.
+# Built 2026-06-19 from authoritative sources as a pipeline test:
+#   config.json (architecture) + model card (specs/benchmarks/license) +
+#   blog/arXiv (DSA/IndexShare narrative). Honest gaps marked; one benchmark
+#   carries a flagged source-variance.
+# ONE model per file; run-options embedded in facets.runsOn[] keyed by endpoint.
+
+- id: model-glm-52
+  kind: model
+  name: GLM-5.2
+  summary: 753B MoE (glm_moe_dsa); MLA + DSA sparse attention; 1M context; MIT
+  visibility: public
+  labels: [glm, moe, sparse-attention, long-context, agentic]
+  facets:
+    architecture:
+      modelType: glm_moe_dsa # MLA + DSA sparse-attention indexer (DeepSeek-V3.2 style)
+      params: "753B"
+      layers: 78
+      hidden: 6144
+      attentionHeads: 64
+      experts: "8/token of 256 routed + 1 shared"
+      nativeContext: 1048576 # 1M
+      vocab: 154880
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/zai-org/GLM-5.2 config.json"
+        verification: authoritative
+    license:
+      spdx: MIT
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/zai-org/GLM-5.2"
+        verification: authoritative
+    serving:
+      tensorTypes: [BF16, F32]
+      frameworks: [SGLang, vLLM, Transformers, KTransformers, "Ascend NPU"]
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/zai-org/GLM-5.2"
+        verification: authoritative
+    benchmarks:
+      hle: 40.5
+      aime2026: 99.2
+      sweBenchPro: 62.1
+      gpqaDiamond: 91.2
+      terminalBench21: 82.7
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/zai-org/GLM-5.2"
+        verification: authoritative
+        note: >-
+          Terminal-Bench 2.1 is 81.0 in the z.ai blog comparison vs 82.7 on the
+          model card — source variance flagged, model-card value used.
+    runsOn:
+      # gateway: OpenRouter (model × provider × cost — real OpenRouter price)
+      - endpoint: endpoint-openrouter
+        name: "GLM-5.2 · OpenRouter (gateway)"
+        providerModelId: "z-ai/glm-5.2"
+        cost:
+          perMTokInUsd: 1.2
+          perMTokOutUsd: 4.1
+          provenance:
+            asOf: "2026-06-19"
+            source: "https://openrouter.ai/api/v1/models"
+            verification: authoritative # authoritative AT asOf — price is volatile, re-sync
+  claims:
+    - kind: note
+      body: >-
+        IndexShare: the DSA sparse-attention indexer is reused across every four
+        sparse-attention layers (index_topk 2048), cutting per-token FLOPs ~2.9×
+        at 1M context.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/blog/zai-org/glm-52-blog + arXiv 2602.15763"
+        verification: cited
+    - kind: note
+      body: >-
+        Active-parameter count is NOT stated for 5.2. The GLM-5 base scales to
+        744B total / 40B active — indicative only, not confirmed for 5.2.
+      provenance:
+        asOf: "2026-06-19"
+        source: "arXiv 2602.15763 (GLM-5, not the 5.2 card)"
+        verification: cited
+    - kind: note
+      body: >-
+        Release ~2026-02-17 (inferred from arXiv id 2602.15763); not explicitly
+        dated on the model card.
+      provenance:
+        asOf: "2026-06-19"
+        source: "arXiv 2602.15763"
+        verification: cited

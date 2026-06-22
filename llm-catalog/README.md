@@ -31,39 +31,54 @@ back for free.
 
 ## The model — one uniform `entry`, six kinds
 
-Five **subjects** + one **join**, all the same shape (`kind` is open; variation
-lives in `facets` / `claims` / `relations`):
+Six **subjects**, all the same shape (`kind` is open; variation lives in
+`facets` / `claims` / `relations`):
 
-| `kind`        | what it is                                          | key facets                                                       |
-| ------------- | --------------------------------------------------- | ---------------------------------------------------------------- |
-| `model`       | the LLM (and ASR/diarization/embed — open modality) | `architecture` (attention, MoE active/total, native ctx, modality) |
-| `runtime`     | self-host engine (llama.cpp, vllm, ollama)          | `serving` (flags, sampling)                                      |
-| `provider`    | hosted gateway (OpenRouter, Bedrock Mantle, …)      | `api` (apiSpec, endpoint, compatCaveats)                         |
-| `hardware`    | accelerator/box **class** (DGX Spark/GB10, …)       | `hardware` (compute, vram/unified-mem, power, clusterable)       |
-| `technique`   | KV-compression, quant scheme, speculative decoding  | sourced tradeoff `claims`                                        |
-| `access-path` | the **join** answering the operational questions    | `outcome`, `cost`, `serving` (+ `relations` to the subjects)     |
+| `kind`      | what it is                                          | key facets                                                         |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------------------ |
+| `model`     | the LLM (and ASR/diarization/embed — open modality) | `architecture`, `footprint`, `benchmarks`, **`runsOn[]`** (run-options) |
+| `runtime`   | self-host engine (llama.cpp, vllm, ollama)          | `formats` (loadable artifact formats)                              |
+| `provider`  | the org behind a gateway/marketplace (OpenRouter, DigitalOcean, Vast) | `api`                              |
+| `hardware`  | accelerator/box **class** (DGX Spark/GB10, …)       | `hardware` (compute, unified-mem, driverReserved, memBandwidth, power) |
+| `technique` | KV-compression, quant scheme, speculative decoding  | sourced tradeoff `claims`                                          |
+| `endpoint`  | an **HTTP inference interface** (vllm-dgx-spark, digitalocean) | `endpoint` (transport, kind), `pricing` (basis), `serves` (rule) |
 
-### The `access-path` join (the crown jewel)
+### Endpoint + `runsOn` (the model-centric core)
 
-One record answers both operational questions, differing only by which subjects
-its `relations` point at:
+The **endpoint** is the reusable interface — a runtime on hardware (`served-by` +
+`runs-on`) or a gateway (`via-provider`). It owns what every run shares: the
+transport, the **cost basis** (`owned-amortized` · `free` · `per-token` ·
+`per-gpu-hour`), and the model **filter** (`serves.rule`: self-host = *fits-hardware*,
+computed; gateway = *listed*).
 
-- **Self-host:** `model × runtime × hardware × settings → outcome`
-- **Gateway:** `model × provider × apiSpec → outcome`
+A model's run-options live **on the model**, in **`facets.runsOn[]`**, keyed by
+endpoint — so "given this model, how/where do I run it" is answerable in one file.
+Each entry is a self-contained operating point:
 
-The **`outcome`** facet is a Pareto vector you optimise over:
-`quality · speed · footprint · cost · context · reasoning-overhead`. The
-**`quality`** coordinate is where **evaluation** plugs in — task-eval results,
-**not** perplexity (PPL is not a quality proxy). **`cost`** is dual-mode: gateway
-paths cost per-token; self-host paths cost capex + opex(power).
+- **Self-host:** `{ endpoint, quant, units, techniques, config, outcome }` — the
+  measured recipe. Performance-determining fields (`quant`, `units`, build
+  `versionPins`) are **never** defaulted (two recipes on the same endpoint can
+  differ in quant, node-count, and vLLM commit — that's what makes one 52 and
+  another 56 tok/s).
+- **Gateway:** `{ endpoint, cost }` — the per-model price.
+
+Two tiers: **generic** facts (vendor `benchmarks`, stable `defaults{}` like max
+context / tool format) sit on the model; **specific** facts (a recipe's measured
+`outcome`, its config eval) sit on the `runsOn` entry.
+
+The **`outcome`** is a Pareto vector you optimise over:
+`quality · speed · footprint · cost · context`. **`quality`** is where
+**evaluation** plugs in — task-eval, **not** perplexity. `apply` also explodes
+every `runsOn[]` into a flat **`operating-point`** resource (one row per config)
+— the read-optimised surface to pivot configs by throughput, quant, or eval.
 
 ### The anti-sprawl rule
 
-Every new axis lands in exactly one of three slots — **subject / facet / claim**
-— so the subject list stays small (6) while the knowledge stays infinitely
-extensible. When a new dimension appears you don't redesign; you ask "subject,
-facet, or claim?" and it slots in (the `.catchall` facet map + open vocab make
-it a no-op).
+The reusable interface is the `endpoint`; the model only lists what *varies* per
+run (or, for self-host, nothing — the fit is *computed* from footprint vs the
+endpoint's hardware). So coverage scales with endpoints + measured points, not
+models × places. Every new axis still lands in **subject / facet / claim** — ask
+which, and the `.catchall` facet map + open vocab slot it in with no redesign.
 
 ## Usage
 
@@ -88,6 +103,17 @@ globalArguments:
       facets:
         hardware: { compute: cuda, unifiedMemGB: 128, powerW: 70, clusterable: true }
 
+    - id: endpoint-llamacpp
+      kind: endpoint
+      name: llama.cpp (local GGUF)
+      summary: host-agnostic OpenAI-compatible endpoint
+      relations:
+        - { rel: served-by, target: runtime-llamacpp }
+      facets:
+        endpoint: { transport: openai-compat, kind: self-host }
+        pricing: { basis: owned-amortized }
+        serves: { rule: fits-hardware }
+
     - id: model-qwen35-35b
       kind: model
       name: Qwen3.5-35B-A3B
@@ -99,58 +125,54 @@ globalArguments:
           activeParams: "3B"
           nativeContext: 262144
           modality: [text, image, video]
-
-    - id: ap-qwen35-35b-q8-llamacpp-gb10
-      kind: access-path
-      name: Qwen3.5-35B-A3B Q8 · llama.cpp @ GB10
-      summary: Self-host path; T9 nothink 10/10
-      relations:
-        - { rel: of-model, target: model-qwen35-35b }
-        - { rel: served-by, target: runtime-llamacpp }
-        - { rel: runs-on, target: hardware-node1-gb10 }
-      facets:
-        serving: { flags: { reasoningBudget: 0 }, sampling: { temp: 0.8 } }
-        outcome:
-          speed: { genTokS: 27 }
-          footprint: { vramGB: 48, quant: Q8_0 }
-          context: { tokens: 210000 }
-          quality: { score: "10/10", eval: "T9 stage2 nothink" }
-          provenance:
-            asOf: "2026-04-17"
-            source: "MODEL corpus REGISTRY.md (historical — re-verify)"
-            versionPins: { quant: Q8_0, runtime: "llama.cpp@2026-04-13" }
+        benchmarks: { tau2Agentic: 81.2, ifEval: 91.9 } # vendor (generic)
+        runsOn: # run-options, keyed by endpoint (the join, embedded)
+          - endpoint: endpoint-llamacpp
+            quant: Q8_0
+            techniques: [technique-gguf-kquant]
+            config: { flags: { reasoningBudget: 0 }, sampling: { temp: 0.8 } }
+            outcome:
+              speed: { genTokS: 27 }
+              context: { tokens: 210000 }
+              quality: { score: "10/10", eval: "T9 stage2 nothink" } # config-specific
+              provenance:
+                asOf: "2026-04-17"
+                source: "our-fleet-test (re-verify)"
+                versionPins: { quant: Q8_0, runtime: "llama.cpp@2026-04-13" }
 ```
 
 ### Querying (CEL)
 
-Materialised `entry` resources are queryable server-side (null-safe via `has()`):
+`apply` materialises one `entry` per declared entry **and** one flat
+`operating-point` per run-option — the latter is the pivot surface (denormalised,
+so no nested-array filtering):
 
 ```bash
-# all access-paths and their measured throughput
-swamp data query 'modelName == "llm-kb" && specName == "entry"' \
-  --select '{"id": attributes.id,
-             "kind": attributes.kind,
-             "tokS": has(attributes.facets) && has(attributes.facets.outcome)
-                     && has(attributes.facets.outcome.speed)
-                     ? attributes.facets.outcome.speed.genTokS : 0}'
+# pivot run-options by measured/estimated throughput (perf across configs)
+swamp data query 'modelName == "llm-kb" && specName == "operating-point"' \
+  --select '{"model": attributes.model, "endpoint": attributes.endpoint,
+             "quant": attributes.quant, "tokS": attributes.genTokS}'
 
-# every model that runs on a given hardware node (via access-path relations)
-swamp data query 'modelName == "llm-kb" && specName == "entry"' \
-  --select '{"id": attributes.id,
-             "onGb10": attributes.relations.exists(r, r.rel == "runs-on" && r.target == "hardware-node1-gb10")}'
+# compare a model's quants vs its eval (eval across configs)
+swamp data query 'modelName == "llm-kb" && specName == "operating-point"
+                  && attributes.model == "model-qwen35-122b"' \
+  --select '{"quant": attributes.quant, "tokS": attributes.genTokS,
+             "tau2": attributes.benchmarks.tau2Agentic}'
 ```
 
 ## Methods
 
 | Method       | Description                                                                                                  |
 | ------------ | ----------------------------------------------------------------------------------------------------------- |
-| `apply`      | Materialise each declared entry as an `entry` resource (one per id); re-run = versioned trend.              |
-| `prune`      | Soft-retire stored entries no longer declared (status change, no hard delete; idempotent).                  |
+| `apply`      | Materialise each declared entry as an `entry` resource + explode `runsOn[]` into flat `operating-point` rows; re-run = versioned trend. |
+| `capacity`   | Resolve a single intent (task + host + profile + policy) into a ranked Pareto set across all models — fit + quality + throughput. |
+| `plan`       | Deployment planner over a SET of concurrent workloads — one-shared-model vs split-of-specialists on a Pareto front. |
+| `reconcile`  | Gather every run-option for a model — public + private — into one comparison to reason over.                |
 | `update`     | Pull the public catalog (`catalogUrl`) into a separate `catalog-entry` resource — additive, never clobbers private `entry` data. |
-| `sync`       | Refresh gateway prices from a live feed (default OpenRouter) by matching `api.providerModelId` -> `priced-path`. |
+| `sync`       | Refresh gateway prices from a live feed (default OpenRouter) by matching `providerModelId`.                 |
 | `ingest`     | Draft a model entry from a HuggingFace `config.json` — authoritative architecture, gaps flagged.            |
 | `contribute` | Sanitise a private fleet entry into a generic, public-shaped `contribution` (refuses un-attributed leaks).  |
-| `reconcile`  | Gather every config (access-path) for a model — public + private — into one comparison to reason over.      |
+| `prune`      | Soft-retire stored entries no longer declared (status change, no hard delete; idempotent).                  |
 
 ## Public dataset & contributing
 
@@ -166,7 +188,8 @@ swamp model method run <instance> update \
 ```
 
 **Contributions welcome** — open a PR to `llm-catalog-data/` (one file per model
-family; every claim needs `asOf` + `source`; CI runs `assemble.ts` to validate
+under `models/<family>/`, with run-options embedded in `runsOn[]` keyed by an
+`endpoint`; every claim needs `asOf` + `source`; CI runs `assemble.ts` to validate
 schema, ids, references, and contradiction classes). See that directory's README
 for the full guide; the `contribute` method turns a private fleet measurement
 into a PR-ready, sanitised entry.

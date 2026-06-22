@@ -1,0 +1,121 @@
+# GPT-OSS 120B (OpenAI). Variant-of model-gpt-oss; access-paths embedded as
+# facets.runsOn[] keyed by endpoint.
+
+- id: model-gpt-oss-120b
+  kind: model
+  name: GPT-OSS 120B
+  summary: Larger MoE variant; rivals o4-mini; locally runnable (~66GB 1-bit)
+  visibility: public
+  labels: [gpt-oss, openai, moe, reasoning, local]
+  relations:
+    - { rel: variant-of, target: model-gpt-oss }
+  facets:
+    architecture:
+      attention: alternating-swa-full
+      params: "117B"
+      activeParams: "5.1B" # MoE: 128 experts, 4 active per token
+      experts: "4/token of 128"
+      nativeContext: 131072
+      modality: [text]
+      notes: >-
+        Comparative positioning: rivals o4-mini; strong function calling and CoT
+        reasoning. Approx. on-disk size ~66GB at 1-bit / ~74GB at Q4. The card warns
+        the `hf-gpt-oss:120b-q3` hub build is broken — use Q4 or above.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/openai/gpt-oss-120b (+ /raw/main/config.json)"
+        verification: authoritative
+    footprint: # weights-only; Unsloth run guide (fits a single DGX Spark)
+      basis: weights-only
+      quants:
+        - { quant: "1-bit", memGB: 66, note: "Unsloth recommends ~66GB unified memory for 6+ tok/s; q3 hub build broken — use Q4+" }
+        - { quant: Q4, memGB: 74 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    benchmarks: # OpenAI official model card, Table 3 (Full Evaluations), high reasoning
+      mmlu: 90.0
+      mmluPro: 80.8 # HF card metadata only (cited), NOT the OpenAI PDF — see note
+      gpqaDiamond: 80.9 # with tools (80.1 no-tools)
+      aime2025: 97.9 # with tools (92.5 no-tools)
+      aime2024: 96.6 # with tools (95.8 no-tools)
+      hle: 19.0 # Humanity's Last Exam, with tools (14.9 no-tools)
+      sweBenchVerified: 62.4
+      tauBenchRetail: 67.8 # tau-bench v1 retail (airline 49.2); NOT tau2-bench
+      mmmlu: 81.3 # 14-language average
+      codeforcesElo: 2622 # with tools (2463 no-tools)
+      provenance:
+        asOf: "2025-08-05"
+        source: "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
+        verification: authoritative
+        note: >-
+          High reasoning column. With-tools figures for AIME/HLE/Codeforces; GPQA-D
+          no-tools = 80.1. Card reports tau-bench v1 (NOT tau2). mmluPro=80.8 is the
+          one exception: sourced from huggingface.co/openai/gpt-oss-120b structured
+          eval metadata (verification: cited), not the OpenAI PDF; reasoning level
+          unspecified there. No BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 on the card.
+    runsOn:
+      # from ap-gpt-oss-120b-spark-vllm-mxfp4: OpenAI MXFP4 via vLLM @ 1× DGX Spark (eugr recipe)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "GPT-OSS 120B · vLLM MXFP4 @ 1× DGX Spark (eugr recipe)"
+        quant: mxfp4
+        format: safetensors
+        techniques: [technique-mxfp4, technique-prefix-caching, technique-flashattention]
+        units: 1 # solo_only
+        download: { hfRepo: openai/gpt-oss-120b, format: safetensors }
+        config:
+          # recipe sets no --max-model-len → vLLM uses the model's native 131072
+          gpuMemoryUtilization: 0.8
+          toolCallParser: openai
+          reasoningParser: openai_gptoss
+          attentionBackend: FLASHINFER
+          kvCacheDtype: fp8
+          maxNumBatchedTokens: 8192
+          env: { VLLM_USE_FLASHINFER_MOE_MXFP4_MXFP8: "1" }
+          build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node-mxfp4)" } # build_args: --exp-mxfp4
+        command: |
+          vllm serve openai/gpt-oss-120b \
+              --tool-call-parser openai \
+              --reasoning-parser openai_gptoss \
+              --enable-auto-tool-choice \
+              --gpu-memory-utilization 0.8 \
+              --enable-prefix-caching \
+              --load-format fastsafetensors \
+              --quantization mxfp4 \
+              --mxfp4-backend CUTLASS \
+              --mxfp4-layers moe,qkv,o,lm_head \
+              --attention-backend FLASHINFER \
+              --kv-cache-dtype fp8 \
+              --max-num-batched-tokens 8192 \
+              --host 0.0.0.0 \
+              --port 8000
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+        outcome:
+          context: { tokens: 131072 } # native (recipe sets no max-model-len)
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/openai-gpt-oss-120b.yaml"
+            verification: cited
+      # from ap-gpt-oss-120b-gguf-llamacpp: Unsloth GGUF via llama.cpp (host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "GPT-OSS 120B · llama.cpp GGUF (Unsloth)"
+        quant: Q4
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        units: 1
+        download: { hfRepo: "unsloth/gpt-oss-120b-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 131072
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/gpt-oss-120b-GGUF:UD-Q4_K_XL --jinja -ngl 99 \
+            --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0
+        note: "temp fixed 1.0; q3 hub build broken — use Q4+; reasoning effort via Harmony chat template."
+        procedure: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        outcome:
+          context: { tokens: 131072 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+            verification: cited

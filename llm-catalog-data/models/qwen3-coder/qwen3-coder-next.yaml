@@ -1,0 +1,225 @@
+# Qwen3-Coder-Next (Alibaba / Qwen team). Public + generic — mined from the
+# MODEL qwen3coder card, which cites public primary sources (HuggingFace model
+# card, Unsloth guide). Our-fleet measurements (smoke quality scores, our tok/s,
+# Ollama-version-specific eval observations) are NOT here — they stay private.
+#
+# Single model (not a multi-variant family in the card). ONE model per file;
+# run-options embedded in facets.runsOn[] keyed by endpoint. Shared entities
+# (endpoints, techniques) are referenced by id only, not defined here.
+
+- id: model-qwen3-coder-next
+  kind: model
+  name: Qwen3-Coder-Next
+  summary: Alibaba/Qwen coding-optimised MoE; ~3B active of ~80B; non-reasoning instruct; 256K context
+  visibility: public
+  labels: [qwen, alibaba, coder, moe, open-weights]
+  facets:
+    architecture:
+      attention: MoE # mixture-of-experts; ~3B active of ~80B total
+      params: "~80B"
+      activeParams: "~3B"
+      nativeContext: 262144 # 256K native
+      modality: [text]
+      notes: >-
+        Non-reasoning instruct — no thinking mode. Designed for long-horizon
+        agentic coding, complex tool use, and recovery from execution failures.
+        Qwen claims comparable performance to models with 10–20x more active
+        parameters.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        verification: cited
+    license:
+      spdx: apache-2.0
+      released: "2026-02"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-Next"
+        verification: cited
+    footprint: # Unsloth-published per-quant memory requirements (generic, not our-fleet)
+      basis: weights-only
+      quants:
+        - { quant: Q4, memGB: 46, note: "Q4_K_M advised; runs on 46GB RAM/VRAM/unified" }
+        - { quant: Q8, memGB: 85 }
+        - { quant: "Q2/Q3", memGB: 29, note: "3-bit a sensible minimum; some quality loss" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    benchmarks: # model-level (vendor); the "standard answer". Unsloth-published (attributed to Qwen vendor figures)
+      sweBenchVerified: 70.6
+      sweBenchMultilingual: 62.8
+      sweBenchPro: 44.3
+      terminalBench2: 36.2
+      aider: 66.2
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next (Unsloth aggregating Qwen vendor figures)"
+        verification: cited
+    defaults: # model-level defaults (the "standard answer"); recipes may override
+      thinking:
+        supported: false # non-reasoning instruct
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 40, min_p: 0.01, repeat_penalty: 1.0 } # Qwen recommendation; repeat_penalty disabled
+      maxContext: 262144
+      recommendedQuant: Q4 # Q4_K_M advised
+      toolCallParser: qwen3_coder
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    runsOn:
+      # self-host #1: Qwen native FP8 @ 2× Spark (eugr spark-vllm-docker recipe)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM FP8 @ 2× DGX Spark (eugr recipe)"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-prefix-caching, technique-flashattention, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # Ray cluster
+        download: { hfRepo: Qwen/Qwen3-Coder-Next-FP8, format: safetensors }
+        config:
+          maxModelLen: 131072
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.8
+          toolCallParser: qwen3_coder
+          attentionBackend: flashinfer
+          kvCacheDtype: fp8
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve Qwen/Qwen3-Coder-Next-FP8 \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --gpu-memory-utilization 0.8 \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --kv-cache-dtype fp8 \
+            --load-format fastsafetensors \
+            --attention-backend flashinfer \
+            --enable-prefix-caching \
+            --max-model-len 131072 \
+            -tp 2 \
+            --distributed-executor-backend ray
+        note: "Qwen native FP8; TP=2 Ray; FlashInfer; prefix caching; 128K context."
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-fp8.yaml"
+        outcome:
+          context: { tokens: 131072 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-fp8.yaml"
+            verification: cited
+      # self-host #2: Intel INT4-AutoRound @ 1× Spark (eugr recipe; solo_only)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM INT4-AutoRound @ 1× DGX Spark (eugr recipe)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-prefix-caching]
+        units: 1 # solo_only
+        download: { hfRepo: Intel/Qwen3-Coder-Next-int4-AutoRound, format: safetensors }
+        config:
+          maxModelLen: 262144
+          gpuMemoryUtilization: 0.8
+          toolCallParser: qwen3_coder
+          attentionBackend: marlin # VLLM_MARLIN_USE_ATOMIC_ADD=1 (see env)
+          env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)", mods: [mods/fix-qwen3-next-autoround] }
+        command: |
+          vllm serve Intel/Qwen3-Coder-Next-int4-AutoRound \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --gpu-memory-utilization 0.8 \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --load-format fastsafetensors \
+            --enable-prefix-caching \
+            --max-model-len 262144
+        note: "Intel INT4-AutoRound; solo-only; prefix caching; 256K context. Requires the fix-qwen3-next-autoround build mod."
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-int4-autoround.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3-coder-next-int4-autoround.yaml"
+            verification: cited
+            versionPins: { mods: [mods/fix-qwen3-next-autoround] }
+      # self-host #3: Unsloth GGUF via llama.cpp (host-agnostic; ~46GB)
+      - endpoint: endpoint-llamacpp
+        name: "Unsloth UD-Q4_K_XL GGUF"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/Qwen3-Coder-Next-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli \
+            --model unsloth/Qwen3-Coder-Next-GGUF/Qwen3-Coder-Next-UD-Q4_K_XL.gguf \
+            --seed 3407 --temp 1.0 --top-p 0.95 --min-p 0.01 --top-k 40
+        note: "--min-p 0.01 required (llama.cpp default 0.05 diverges); set 32768 ctx for less memory. Non-reasoning instruct. ~46GB; single-Spark-class."
+        procedure: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+            verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        `--min-p 0.01` is required — llama.cpp defaults to 0.05, which diverges
+        from the Qwen-recommended sampling.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: issue
+      body: >-
+        Historical llama.cpp `vectorized key_gdiff` bug (fixed 2026-02-04) caused
+        looping and bad outputs. Re-download GGUFs and update llama.cpp if they
+        were downloaded before this date.
+      provenance:
+        asOf: "2026-02-04"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+    - kind: note
+      body: >-
+        Tool-calling parsing improved in llama.cpp on 2026-02-19; update
+        llama.cpp for best agentic/tool-use results.
+      provenance:
+        asOf: "2026-02-19"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        The HuggingFace `hf-qwen3-coder-next` build pulls a thinking variant —
+        `think:false` is ignored in some versions. Use the Unsloth GGUF for
+        reliable no-think behaviour.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: issue
+      body: >-
+        Q8 multi-shard registration is broken in Ollama 0.20.4 (bad
+        registration). Use Q4_K_M or serve via llama.cpp directly.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL qwen3coder card (re-verify against primary source)"
+        verification: cited
+        versionPins: { runtime: "ollama-0.20.4" }
+    - kind: note
+      body: >-
+        Fine-tuning fits on a single B200 GPU for BF16 LoRA via Unsloth.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited
+    - kind: note
+      body: >-
+        UPDATE (2026-06-20): SWE-bench/Terminal-Bench/Aider figures NOW filled
+        from the Unsloth guide (benchmarks facet), superseding the earlier "no
+        vendor numbers" gap. MMLU/LiveCodeBench still absent from the sources.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3-coder-next"
+        verification: cited

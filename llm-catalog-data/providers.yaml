@@ -90,3 +90,49 @@
         asOf: "2026-06-19"
         source: "https://openrouter.ai/api/v1/models"
         verification: authoritative
+
+# ── GPU rental marketplace (prices hardware by the hour, NOT tokens) ─────────
+- id: provider-vast-ai
+  kind: provider
+  name: Vast.ai
+  summary: GPU rental marketplace (per-second billing) — sells GPU-hours, not tokens; substrate for self-host endpoints
+  visibility: public
+  labels: [rental, marketplace, gpu, substrate]
+  facets:
+    api: { type: gpu-marketplace }
+
+# ── cloud serverless-inference gateway (per-token, fronts open + closed) ──────
+- id: provider-digitalocean
+  kind: provider
+  name: DigitalOcean Inference
+  summary: Serverless pay-per-token inference fronting many upstreams (Anthropic, OpenAI, DeepSeek, MiniMax, Qwen, Llama, Mistral, Moonshot, Arcee, fal)
+  visibility: public
+  labels: [gateway, cloud, serverless, openai-compat]
+  facets:
+    api:
+      apiSpec: openai-compat
+      type: gateway
+      anthropicCompat: true # Claude models also reachable anthropic-native
+  claims:
+    - kind: note
+      body: >-
+        Per-token prices are AT 2026-06-18 — re-check the pricing page (volatile).
+        Billing extras: Batch Inference up to 50% off OpenAI/Anthropic models;
+        Web Search $10/1k requests + Web Fetch $3/1k (both FREE with Anthropic
+        models); some hosted models carry a 30% off-peak discount 05:00-11:00 UTC.
+      provenance: &do-pricing
+        asOf: "2026-06-18"
+        source: "https://docs.digitalocean.com/products/inference/details/pricing/"
+        verification: authoritative
+    - kind: note
+      body: >-
+        Only DO-hosted models that already exist as catalog entries get priced
+        access-paths (DeepSeek-V4-Flash, MiniMax-M2.5). DO ALSO fronts (not
+        modelled — no catalog entry): Anthropic Claude (Opus 4.8 $5/$25, Sonnet
+        4.6 $3/$15 ≤200K tiered, Haiku 4.5 $1/$5), OpenAI (GPT-5.5 $5/$30, GPT-5.4
+        $2.5/$15, GPT-5.4-mini $0.75/$4.5, GPT-4o $2.5/$10, o1 $15/$60), Arcee
+        Trinity-Large $0.25/$0.90, Alibaba Qwen3-32B $0.25/$0.55, Meta Llama-3.3-70B
+        $0.65/$0.65, Mistral Ministral-3-14B $0.20/$0.20, Moonshot Kimi-K2.5
+        $0.50/$2.70 (off-peak $0.35/$1.89), and fal media models (per-second/
+        per-megapixel/per-1k-chars).
+      provenance: *do-pricing

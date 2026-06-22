@@ -1,0 +1,86 @@
+# DeepSeek-V4-PRO — larger V4 sibling; ds4 also serves it (512GB-class box).
+# ONE model per file; access-paths embedded as facets.runsOn[] keyed by endpoint.
+
+- id: model-deepseek-v4-pro
+  kind: model
+  name: DeepSeek-v4-PRO
+  summary: 1.6T/49B-active MoE; larger V4 sibling; 1M context (YaRN); MIT
+  visibility: public
+  labels: [deepseek, long-context, moe, sparse-attention]
+  facets:
+    architecture:
+      hfRepo: deepseek-ai/DeepSeek-V4-PRO
+      modelType: deepseek_v4
+      params: "1.6T"
+      activeParams: "49B"
+      layers: 61
+      hidden: 7168
+      experts: "6/token of 384 routed + 1 shared"
+      nativeContext: 65536 # extends to 1048576 (1M) via YaRN factor 16
+      extendedContext: 1048576
+      license: MIT
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card"
+        verification: authoritative
+    footprint: # weights resident (MoE = ALL experts loaded); KV cache + activations extra
+      basis: weights-only
+      quants:
+        - { quant: q2, memGB: 520, note: "PRO q2 runs on a 512GB-class Mac Studio (measured 9.56 t/s)" }
+        - { quant: q4, memGB: 900, note: "multi-node only" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "estimated: total params x effective bits/8 (q2~2.8b q4~4.5b); cross-checked vs ds4 512GB fit"
+        verification: estimated
+        confidence: low
+    runsOn:
+      # ── DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q2) ────────────────
+      # was ap-deepseek-v4-pro-ds4-mac
+      - endpoint: endpoint-ds4-mac
+        name: "DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q2)"
+        quant: "PRO q2"
+        format: gguf
+        techniques: [technique-moe-expert-2bit]
+        units: 1
+        download:
+          hfRepo: antirez/deepseek-v4-gguf
+          revision: null
+          format: gguf
+          downloadCmd: null # PRO variant arg unconfirmed in README — see repo
+          packager: antirez
+        procedure: "https://github.com/antirez/ds4"
+        outcome:
+          context: { tokens: 32768 }
+          measurements:
+            - { machine: "Mac Studio M3 Ultra 512GB", quant: "PRO q2", promptTokens: 32768, prefillTokS: 138.82, decodeTokS: 9.56 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/antirez/ds4 (README, Speed table)"
+            verification: cited
+            confidence: low
+            versionPins:
+              runtime: DwarfStar (ds4)
+              version: "beta (2026-06)"
+        claims:
+          - kind: caveat
+            body: >-
+              PRO is materially slower than Flash on the same box (9.56 vs 27-37 t/s
+              decode) and needs a 512GB-class machine. PRO GGUF production still depends
+              on the external llama.cpp workflow.
+            provenance:
+              asOf: "2026-06-20"
+              source: "https://github.com/antirez/ds4 (README, Speed table)"
+              verification: cited
+              confidence: low
+  claims:
+    - kind: note
+      body: >-
+        VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 1.6T total / 49B active,
+        61 layers, 384 routed experts + 1 shared, 6/token, native 65536 extended to
+        1M via YaRN, MIT. Larger sibling of V4-Flash (not a quant/fine-tune of it).
+        ds4 PRO GGUF production still depends on the external llama.cpp workflow.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-PRO config.json + model card"
+        verification: authoritative

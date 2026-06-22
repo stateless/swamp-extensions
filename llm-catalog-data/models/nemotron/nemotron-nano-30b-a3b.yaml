@@ -1,0 +1,113 @@
+# Nemotron 3 Nano 30B-A3B (MoE) — 3B active at ~31B total. Two measured operating
+# points embedded as facets.runsOn[]: NVFP4 vLLM @ 1× Spark (solo-only) and the
+# Unsloth GGUF via llama.cpp. variant-of → model-nemotron.
+
+- id: model-nemotron-nano-30b-a3b
+  kind: model
+  name: Nemotron 3 Nano 30B-A3B (MoE)
+  summary: Sparse MoE; 3B active at ~31B total; 256K context
+  visibility: public
+  labels: [nemotron, nano, moe]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+      params: "30B"
+      activeParams: "3B"
+      layers: 52
+      experts: "6/token of 128 routed"
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 config.json"
+        verification: authoritative
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 24, note: "UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3"
+        verification: cited
+    benchmarks: # NVIDIA BF16 reference checkpoint, reasoning-on ("no tools" column)
+      mmluPro: 78.3
+      gpqaDiamond: 73.0 # card "GPQA (no tools)"; NVIDIA confirms = Diamond
+      aime2025: 89.1 # no-tools (with-tools/code 99.2)
+      liveCodeBenchV6: 68.3
+      sweBenchVerified: 38.8 # "SWE-Bench (OpenHands)" row
+      tau2Agentic: 49.0 # TauBench V2 avg (airline 48.0/retail 56.9/telecom 42.2)
+      bfcl: 53.8 # BFCL v4
+      ifBench: 71.5 # prompt
+      hle: 10.6 # no-tools (with-tools 15.5)
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          BF16 reference, reasoning-on. FP8 variant (same source) slightly lower:
+          mmluPro 78.1, gpqaDiamond 72.5, aime2025 87.7, lcbV6 67.6, bfcl 53.2, hle 10.3.
+          A third-party "GPQA Diamond 39.9" conflicts with official 73.0 and was discarded.
+    runsOn:
+      # self-host #1: NVIDIA NVFP4 vLLM @ 1× DGX Spark (SOLO ONLY — cluster mode fails)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Nemotron-3-Nano-30B-A3B · vLLM NVFP4 @ 1× DGX Spark (eugr recipe)"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-prefix-caching]
+        units: 1 # solo_only: true — cluster mode errors; recipe.hardware.units 1, accel GB10
+        download: { hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4, format: safetensors }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 1
+          toolCallParser: qwen3_coder
+          reasoningParser: nano_v3
+          kvCacheDtype: fp8
+          mods: [mods/nemotron-nano]
+          build: { runtime: vLLM, image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 \
+             --moe-backend cutlass \
+             --max-model-len 262144 \
+             --port 8000 --host 0.0.0.0 \
+             --trust-remote-code \
+             --enable-auto-tool-choice \
+             --tool-call-parser qwen3_coder \
+             --reasoning-parser-plugin nano_v3_reasoning_parser.py \
+             --reasoning-parser nano_v3 \
+             --kv-cache-dtype fp8 \
+             --enable-prefix-caching \
+             --load-format fastsafetensors \
+             --gpu-memory-utilization 0.7
+        note: "NVIDIA NVFP4; SINGLE NODE ONLY (cluster fails); CUTLASS MoE; 256K context."
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/nemotron-3-nano-nvfp4.yaml"
+            verification: cited
+      # self-host #2: Unsloth UD-Q4_K_XL GGUF via llama.cpp (~24GB; host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "Nemotron-3-Nano-30B-A3B · llama.cpp GGUF (Unsloth)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/Nemotron-3-Nano-30B-A3B-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/Nemotron-3-Nano-30B-A3B-GGUF:UD-Q4_K_XL \
+            --ctx-size 32768 --temp 0.6 --top-p 0.95
+        note: "tool-calling: temp 0.6/top_p 0.95; general chat: temp 1.0/top_p 1.0. Thinking always-on (strip <think> if needed); use llama.cpp not Ollama. Context extensible toward 1M as RAM allows. Unsloth UD-Q4_K_XL GGUF (~24GB); single-Spark-class."
+        procedure: "https://unsloth.ai/docs/models/nemotron-3"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/nemotron-3"
+            verification: cited

@@ -211,6 +211,41 @@ export const ApiFacetSchema = z.object({
   ),
 }).catchall(z.unknown());
 
+/** The HTTP inference interface itself (the `endpoint` kind). The reusable
+ * surface that an access-path used to repeat: how to reach it + what KIND it is. */
+export const EndpointFacetSchema = z.object({
+  transport: z.string().optional().describe(
+    "Wire protocol the endpoint speaks — openai-compat | anthropic-native | …",
+  ),
+  kind: z.string().optional().describe(
+    "self-host (a runtime on owned/rented hardware) | gateway (a per-token " +
+      "provider) | rental-substrate (prices GPU-hours, not tokens — e.g. Vast).",
+  ),
+  url: z.string().optional().describe("Base URL (may be a placeholder)."),
+}).catchall(z.unknown());
+
+/** Cost BASIS embedded on an endpoint. Per-token gateway prices are per-model so
+ * they live on the access-path; this declares the MODE + any flat rate. */
+export const PricingFacetSchema = z.object({
+  basis: z.string().optional().describe(
+    "owned-amortized | free | per-token | per-gpu-hour — how this endpoint bills.",
+  ),
+  gpuHourUsd: z.number().nonnegative().optional().describe(
+    "Rental rate (USD per GPU-hour) for a rental-substrate endpoint.",
+  ),
+  note: z.string().optional(),
+}).catchall(z.unknown());
+
+/** The model FILTER on an endpoint. Self-host computes which models fit; a
+ * gateway lists them (as access-paths pointing here). */
+export const ServesFacetSchema = z.object({
+  rule: z.string().optional().describe(
+    "fits-hardware (self-host — models COMPUTED from footprint vs the endpoint's " +
+      "hardware budget) | listed (gateway — the priced access-paths via this endpoint).",
+  ),
+  note: z.string().optional(),
+}).catchall(z.unknown());
+
 /**
  * The facet map. Known facets are typed; unknown facets pass through
  * (`.catchall`) so a new dimension layers on with no schema surgery — the
@@ -223,6 +258,9 @@ export const FacetsSchema = z.object({
   hardware: HardwareFacetSchema.optional(),
   serving: ServingFacetSchema.optional(),
   api: ApiFacetSchema.optional(),
+  endpoint: EndpointFacetSchema.optional(),
+  pricing: PricingFacetSchema.optional(),
+  serves: ServesFacetSchema.optional(),
 }).catchall(z.unknown());
 export type Facets = z.infer<typeof FacetsSchema>;
 
@@ -445,6 +483,21 @@ export const DeploymentPlanSchema = z.object({
   plans: z.array(
     z.object({ kind: z.string() }).catchall(z.unknown()),
   ),
+}).catchall(z.unknown());
+
+/** One flat operating-point row (model × runsOn projection) — the query/pivot
+ * surface. Open shape (`.catchall`): denormalised columns for CEL filtering. */
+export const OperatingPointSchema = z.object({
+  id: z.string(),
+  model: z.string(),
+  endpoint: z.string(),
+}).catchall(z.unknown());
+
+/** A `sync`-refreshed gateway price (one per model × gateway runsOn). Open shape. */
+export const PricedPathSchema = z.object({
+  id: z.string(),
+  model: z.string(),
+  endpoint: z.string(),
 }).catchall(z.unknown());
 
 /** Arguments for `sync` — refresh gateway prices from a provider feed. */
