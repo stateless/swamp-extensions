@@ -723,6 +723,45 @@ Deno.test("endpoint proxies: router is transparent (skipped), swap can't host a 
   assert(plan.plans.some((p) => p.kind === "shared"));
 });
 
+Deno.test("measured-point: a private measurement overlays a public model (no shadow), tagged", () => {
+  const entries = [
+    EntrySchema.parse({ id: "hardware-n", kind: "hardware", name: "N", summary: "h", visibility: "public", facets: { hardware: { unifiedMemGB: 128 } } }),
+    EntrySchema.parse({ id: "endpoint-llamacpp-n", kind: "endpoint", name: "llama@N", summary: "e", visibility: "public", relations: [{ rel: "served-by", target: "runtime-llamacpp" }, { rel: "runs-on", target: "hardware-n" }], facets: { endpoint: { kind: "self-host" } } }),
+    EntrySchema.parse({
+      id: "model-pub", kind: "model", name: "Pub", summary: "m", visibility: "public",
+      facets: {
+        architecture: { params: "30B", nativeContext: 131072 },
+        footprint: { quants: [{ quant: "q8", memGB: 34 }] },
+        benchmarks: { ifEval: 90 },
+        runsOn: [{ endpoint: "endpoint-llamacpp-n", quant: "q4", outcome: { speed: { genTokS: 40 } } }],
+      },
+    }),
+    EntrySchema.parse({
+      id: "mp-pub-fleet", kind: "measured-point", name: "our q8 result", summary: "fleet", visibility: "private",
+      relations: [{ rel: "of-model", target: "model-pub" }, { rel: "via-endpoint", target: "endpoint-llamacpp-n" }],
+      facets: { quant: "q8", outcome: { speed: { genTokS: 27 }, quality: { score: "10/10" }, provenance: { asOf: "x", source: "our-fleet-test" } } },
+    }),
+  ];
+  // both the owner-curated runsOn config AND the private measured-point are candidates
+  const opts = enumerateRunOptions(entries);
+  const pub = opts.find((o) => o.source === "runsOn" && o.modelId === "model-pub")!;
+  const mine = opts.find((o) => o.source === "measured-point")!;
+  assertEquals(pub.quant, "q4");
+  assertEquals(mine.quant, "q8");
+  assertEquals(mine.visibility, "private");
+  assertEquals(mine.measuredTokS, 27);
+  // the public model is NOT shadowed — its runsOn config still enumerates
+  assert(opts.some((o) => o.modelId === "model-pub" && o.quant === "q4"));
+  // index: the private row overlays the public model's benchmarks, tagged for filtering
+  const rows = buildOperatingPointIndex(entries);
+  const mineRow = rows.find((r) => r.origin === "measured-point")!;
+  assertEquals(mineRow.visibility, "private");
+  assertEquals(mineRow.model, "model-pub");
+  assertEquals(mineRow.genTokS, 27);
+  assertEquals((mineRow.benchmarks as { ifEval: number }).ifEval, 90);
+  assertEquals(rows.filter((r) => r.visibility === "private").length, 1);
+});
+
 Deno.test("plan: a very tight budget rules out the split, a small shared survives", () => {
   const result = buildDeploymentPlans(
     PlanArgsSchema.parse({
