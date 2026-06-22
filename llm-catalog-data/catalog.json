@@ -233,6 +233,40 @@
       }
     },
     {
+      "id": "endpoint-minimax",
+      "kind": "endpoint",
+      "name": "MiniMax API (gateway)",
+      "summary": "First-party per-token endpoint for MiniMax M-series; standard tier (priority = 1.5×)",
+      "visibility": "public",
+      "labels": [
+        "gateway",
+        "minimax",
+        "first-party",
+        "openai-compat"
+      ],
+      "relations": [
+        {
+          "rel": "via-provider",
+          "target": "provider-minimax"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "gateway",
+          "url": "https://api.minimax.io/v1"
+        },
+        "pricing": {
+          "basis": "per-token",
+          "note": "per-model prices on the via-endpoint runsOn (standard tier); priority tier ×1.5; >512k input ×2; cache-read ~0.2× input — re-check (volatile)"
+        },
+        "serves": {
+          "rule": "listed"
+        }
+      }
+    },
+    {
       "id": "endpoint-openrouter",
       "kind": "endpoint",
       "name": "OpenRouter (gateway)",
@@ -349,6 +383,40 @@
         "serves": {
           "rule": "fits-hardware",
           "note": "models computed from footprint vs (unifiedMemGB − driverReservedGB) × units; measured recipes attach as via-endpoint access-paths"
+        }
+      }
+    },
+    {
+      "id": "endpoint-zai",
+      "kind": "endpoint",
+      "name": "z.ai API (gateway)",
+      "summary": "First-party per-token endpoint for GLM models; serves a listed set",
+      "visibility": "public",
+      "labels": [
+        "gateway",
+        "zai",
+        "first-party",
+        "openai-compat"
+      ],
+      "relations": [
+        {
+          "rel": "via-provider",
+          "target": "provider-zai"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "gateway",
+          "url": "https://api.z.ai/api/paas/v4"
+        },
+        "pricing": {
+          "basis": "per-token",
+          "note": "per-model prices on the via-endpoint runsOn; some Flash tiers free — re-check (volatile)"
+        },
+        "serves": {
+          "rule": "listed"
         }
       }
     },
@@ -1720,6 +1788,21 @@
                 "verification": "cited"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-zai",
+            "name": "GLM-4.7-Flash · z.ai API (gateway, free tier)",
+            "providerModelId": "glm-4.7-flash",
+            "cost": {
+              "perMTokInUsd": 0,
+              "perMTokOutUsd": 0,
+              "note": "free tier on z.ai as of asOf — subject to change / rate limits",
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://docs.z.ai/guides/overview/pricing",
+                "verification": "authoritative"
+              }
+            }
           }
         ]
       }
@@ -1836,6 +1919,20 @@
               "provenance": {
                 "asOf": "2026-06-19",
                 "source": "https://openrouter.ai/api/v1/models",
+                "verification": "authoritative"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-zai",
+            "name": "GLM-5.2 · z.ai API (gateway)",
+            "providerModelId": "glm-5.2",
+            "cost": {
+              "perMTokInUsd": 1.4,
+              "perMTokOutUsd": 4.4,
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://docs.z.ai/guides/overview/pricing",
                 "verification": "authoritative"
               }
             }
@@ -2329,6 +2426,21 @@
                 "verification": "cited"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-minimax",
+            "name": "MiniMax-M2 · MiniMax API (gateway, standard)",
+            "providerModelId": "MiniMax-M2",
+            "cost": {
+              "perMTokInUsd": 0.3,
+              "perMTokOutUsd": 1.2,
+              "note": "standard tier; highspeed variant ×2; priority tier ×1.5; >512k input ×2",
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+                "verification": "authoritative"
+              }
+            }
           }
         ]
       }
@@ -2565,6 +2677,21 @@
                 "verification": "authoritative"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-minimax",
+            "name": "MiniMax-M2.5 · MiniMax API (gateway, standard)",
+            "providerModelId": "MiniMax-M2.5",
+            "cost": {
+              "perMTokInUsd": 0.3,
+              "perMTokOutUsd": 1.2,
+              "note": "standard tier; highspeed variant ×2; priority tier ×1.5; >512k input ×2",
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+                "verification": "authoritative"
+              }
+            }
           }
         ]
       }
@@ -2648,6 +2775,21 @@
                 "asOf": "2026-06-20",
                 "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-minimax",
+            "name": "MiniMax-M2.7 · MiniMax API (gateway, standard)",
+            "providerModelId": "MiniMax-M2.7",
+            "cost": {
+              "perMTokInUsd": 0.3,
+              "perMTokOutUsd": 1.2,
+              "note": "standard tier; MiniMax-M2.7-highspeed = $0.60/$2.40; priority tier ×1.5; >512k input ×2",
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+                "verification": "authoritative"
               }
             }
           }
@@ -4040,7 +4182,7 @@
                 "image": "eugr/spark-vllm-docker (local build, tag vllm-node); also drewid74 docker runbook (cu130, torch 2.12.0)"
               }
             },
-            "procedure": "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
+            "procedure": "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public + Albond's canonical recipe repo github.com/albond/DGX_Spark_Qwen3.5-122B-A10B-AR-INT4 (Intel AutoRound INT4, single Spark, vLLM 0.19.1 2a69949bd, image vllm-qwen35-v2, FlashInfer + hybrid INT4+FP8 + MTP-2 + INT8 LM head, 51-52 tok/s)",
             "outcome": {
               "speed": {
                 "genTokS": 52,
@@ -4973,6 +5115,118 @@
       }
     },
     {
+      "id": "model-qwen36-27b",
+      "kind": "model",
+      "name": "Qwen 3.6 27B (dense)",
+      "summary": "Dense 27B; multimodal; ~196K context; sibling line to the 35B-A3B MoE",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "dense",
+        "multimodal"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-qwen36"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Dense 27B (non-MoE), multimodal, ~196K context. Distinct from Qwen3.5-27B and from the Qwen3.6-35B-A3B MoE. Params/layers from a community forum report; full HF config.json verification pending (confidence low on the architecture, medium on the measured speed).",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "27B",
+          "nativeContext": 196608,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "note": "dense (non-MoE); layers/hidden/exact params not yet HF-verified — confirm against config.json",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-27B · vLLM NVFP4 + DFlash @ 1× DGX Spark (MEASURED)",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-dflash",
+              "technique-prefix-caching",
+              "technique-flashattention"
+            ],
+            "units": 1,
+            "config": {
+              "maxModelLen": 196608,
+              "tensorParallel": 1,
+              "gpuMemoryUtilization": 0.65,
+              "speculative": "dflash (10 tokens)",
+              "attentionBackend": "flashinfer",
+              "kvCacheDtype": "auto",
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.22.1+pr44389.aeon"
+              }
+            },
+            "outcome": {
+              "context": {
+                "tokens": 196608
+              },
+              "speed": {
+                "genTokS": 33.2,
+                "note": "decode 33.2 c1 / 56.8 c2 / 90.8 c4; raw coding bursts ~65 t/s on large ctx; prefill ~2.1k tok/s; high startup mem (~95%) then stabilises"
+              },
+              "measurements": [
+                {
+                  "concurrency": 1,
+                  "prefillTokS": 2117,
+                  "decodeTokS": 33.2,
+                  "ttftMs": 2790
+                },
+                {
+                  "concurrency": 2,
+                  "prefillTokS": 1861,
+                  "decodeTokS": 56.8
+                },
+                {
+                  "concurrency": 4,
+                  "prefillTokS": 1951,
+                  "decodeTokS": 90.8
+                }
+              ],
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561/34",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.22.1+pr44389.aeon",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "model-qwen36-35b-a3b",
       "kind": "model",
       "name": "Qwen 3.6 35B-A3B (MoE)",
@@ -5082,6 +5336,208 @@
           }
         },
         "runsOn": [
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · vLLM NVFP4 + MTP-3 @ 1× DGX Spark (MEASURED)",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-mtp",
+              "technique-prefix-caching",
+              "technique-flashattention"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+              "format": "safetensors"
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "tensorParallel": 1,
+              "speculative": "mtp (3 tokens, triton)",
+              "attentionBackend": "flashinfer",
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.22.1rc1.dev32"
+              }
+            },
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "genTokS": 126.1,
+                "note": "decode 126.1 c1 / 189.9 c2 / 156.3 c4; prefill ~6.4k tok/s; spec-decode best 131 eff t/s @8K code, 92% accept"
+              },
+              "measurements": [
+                {
+                  "concurrency": 1,
+                  "promptTokens": 2048,
+                  "prefillTokS": 6437,
+                  "decodeTokS": 126.1,
+                  "ttftMs": 1010
+                },
+                {
+                  "concurrency": 2,
+                  "promptTokens": 2048,
+                  "prefillTokS": 6405,
+                  "decodeTokS": 189.9,
+                  "ttftMs": 1903
+                },
+                {
+                  "concurrency": 4,
+                  "promptTokens": 2048,
+                  "prefillTokS": 6563,
+                  "decodeTokS": 156.3,
+                  "ttftMs": 3169
+                }
+              ],
+              "quality": {
+                "toolEvalBench": "92/100"
+              },
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://forums.developer.nvidia.com/t/benchmark-report-qwen3-6-35b-a3b-nvfp4-on-nvidia-dgx-spark-jetson-thor-blackwell-6000-pro/371810",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.22.1rc1.dev32",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · vLLM FP8 @ 1× DGX Spark (MEASURED)",
+            "quant": "fp8",
+            "format": "safetensors",
+            "techniques": [
+              "technique-fp8",
+              "technique-flashattention"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "Qwen/Qwen3.6-35B-A3B-FP8",
+              "format": "safetensors"
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "tensorParallel": 1,
+              "gpuMemoryUtilization": 0.8,
+              "kvCacheDtype": "fp8",
+              "attentionBackend": "flashinfer",
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.19.1rc1.dev337+g17d87168d"
+              }
+            },
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "genTokS": 77.7,
+                "note": "decode 77.7 tg128 (serapis, MTP removed); prefill ~7.8-8.5k tok/s pp2048; cosinus saw 52.7 tg32 on a modified recipe"
+              },
+              "measurements": [
+                {
+                  "promptTokens": 2048,
+                  "prefillTokS": 7824,
+                  "decodeTokS": 77.7,
+                  "ttftMs": 264
+                },
+                {
+                  "promptTokens": 2048,
+                  "contextDepth": 8192,
+                  "prefillTokS": 8352,
+                  "ttftMs": 1228
+                }
+              ],
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.19.1rc1.dev337+g17d87168d"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · vLLM NVFP4 + DFlash-11 @ 1× DGX Spark (MEASURED, AEON-7)",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-dflash",
+              "technique-prefix-caching",
+              "technique-flashattention"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4",
+              "format": "safetensors",
+              "note": "~22GB; abliterated 'heretic' variant via llm-compressor; vision tensors BF16"
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "tensorParallel": 1,
+              "gpuMemoryUtilization": 0.85,
+              "maxNumSeqs": 64,
+              "maxNumBatchedTokens": 16384,
+              "attentionBackend": "flash_attn",
+              "kvCacheDtype": "bf16",
+              "speculative": "dflash (z-lab/Qwen3.6-35B-A3B-DFlash drafter, 11 tokens)",
+              "quantization": "compressed-tensors",
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.23.0",
+                "image": "ghcr.io/aeon-7/aeon-vllm-ultimate:latest"
+              }
+            },
+            "procedure": "https://github.com/AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4-DFlash",
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "genTokS": 75,
+                "note": "decode 75-124 c1 (task-dependent); long-ctx 16-32k holds 73-106; aggregate ~740 t/s @c64; DFlash acceptance 24-48% (higher on structured); TTFT p50 88-137ms"
+              },
+              "measurements": [
+                {
+                  "concurrency": 1,
+                  "decodeTokS": 75,
+                  "decodeTokSPeak": 124,
+                  "ttftMs": 100,
+                  "note": "Prose 75 / Math 120+"
+                },
+                {
+                  "concurrency": 64,
+                  "aggregateTokS": 740,
+                  "note": "Math/JSON-extraction; best UX c8-16"
+                }
+              ],
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://github.com/AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4-DFlash",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.23.0",
+                  "quant": "nvfp4",
+                  "drafter": "z-lab/Qwen3.6-35B-A3B-DFlash"
+                }
+              }
+            }
+          },
           {
             "endpoint": "endpoint-vllm-dgx-spark",
             "name": "Qwen3.6-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
@@ -5289,6 +5745,38 @@
                 "asOf": "2026-06-20",
                 "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · vLLM INT4-AutoRound + Ray @ 2× DGX Spark (UNVERIFIED — measure)",
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "techniques": [
+              "technique-autoround",
+              "technique-tensor-parallel",
+              "technique-ray-serve"
+            ],
+            "units": 2,
+            "download": {
+              "hfRepo": "TBD — verify an AutoRound INT4 build exists for Qwen3.6-35B-A3B",
+              "format": "safetensors"
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "tensorParallel": 2,
+              "note": "mirror the Qwen3.5-122B-A10B-int4-AutoRound + Ray recipe; flags/build TBD on measurement"
+            },
+            "outcome": {
+              "speed": {
+                "note": "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on dgx1"
+              },
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "Nic (community report, unverified) — same recipe as Qwen3.5-122B; measure before trusting",
+                "verification": "uncited",
+                "confidence": "low"
               }
             }
           },
@@ -5618,6 +6106,26 @@
       "facets": {
         "api": {
           "apiSpec": "google-native",
+          "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "provider-minimax",
+      "kind": "provider",
+      "name": "MiniMax API",
+      "summary": "First-party API for MiniMax (M-series) models; standard + priority tiers",
+      "visibility": "public",
+      "labels": [
+        "first-party",
+        "minimax",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat",
           "type": "first-party"
         }
       }

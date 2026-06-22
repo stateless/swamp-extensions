@@ -99,6 +99,34 @@
     pricing: { basis: per-token, note: "per-model prices on the via-endpoint access-paths; batch ≤50% off, off-peak 30% on some models — see provider-digitalocean" }
     serves: { rule: listed }
 
+# ── gateway: z.ai first-party API (per-token; GLM models) ────────────────────
+- id: endpoint-zai
+  kind: endpoint
+  name: z.ai API (gateway)
+  summary: First-party per-token endpoint for GLM models; serves a listed set
+  visibility: public
+  labels: [gateway, zai, first-party, openai-compat]
+  relations:
+    - { rel: via-provider, target: provider-zai }
+  facets:
+    endpoint: { transport: openai-compat, kind: gateway, url: "https://api.z.ai/api/paas/v4" }
+    pricing: { basis: per-token, note: "per-model prices on the via-endpoint runsOn; some Flash tiers free — re-check (volatile)" }
+    serves: { rule: listed }
+
+# ── gateway: MiniMax first-party API (per-token; M-series) ────────────────────
+- id: endpoint-minimax
+  kind: endpoint
+  name: MiniMax API (gateway)
+  summary: First-party per-token endpoint for MiniMax M-series; standard tier (priority = 1.5×)
+  visibility: public
+  labels: [gateway, minimax, first-party, openai-compat]
+  relations:
+    - { rel: via-provider, target: provider-minimax }
+  facets:
+    endpoint: { transport: openai-compat, kind: gateway, url: "https://api.minimax.io/v1" }
+    pricing: { basis: per-token, note: "per-model prices on the via-endpoint runsOn (standard tier); priority tier ×1.5; >512k input ×2; cache-read ~0.2× input — re-check (volatile)" }
+    serves: { rule: listed }
+
 # ── proxy: LiteLLM (router — transparent indirection over many backends) ──────
 - id: endpoint-litellm
   kind: endpoint
