@@ -64,6 +64,17 @@
             asOf: "2026-06-19"
             source: "https://openrouter.ai/api/v1/models"
             verification: authoritative # authoritative AT asOf — price is volatile, re-sync
+      # gateway: z.ai first-party (cheaper than the OpenRouter reseller leg)
+      - endpoint: endpoint-zai
+        name: "GLM-5.2 · z.ai API (gateway)"
+        providerModelId: "glm-5.2"
+        cost:
+          perMTokInUsd: 1.4
+          perMTokOutUsd: 4.4
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://docs.z.ai/guides/overview/pricing"
+            verification: authoritative # AT asOf — price is volatile, re-sync
   claims:
     - kind: note
       body: >-

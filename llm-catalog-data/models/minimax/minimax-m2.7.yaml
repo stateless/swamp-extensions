@@ -59,3 +59,15 @@
             asOf: "2026-06-20"
             source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
             verification: cited
+      # gateway: MiniMax first-party (standard tier)
+      - endpoint: endpoint-minimax
+        name: "MiniMax-M2.7 · MiniMax API (gateway, standard)"
+        providerModelId: "MiniMax-M2.7"
+        cost:
+          perMTokInUsd: 0.30
+          perMTokOutUsd: 1.20
+          note: "standard tier; MiniMax-M2.7-highspeed = $0.60/$2.40; priority tier ×1.5; >512k input ×2"
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://platform.minimax.io/docs/guides/pricing-paygo"
+            verification: authoritative # AT asOf — re-check (volatile)

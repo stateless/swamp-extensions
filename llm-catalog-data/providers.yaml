@@ -68,6 +68,15 @@
   facets:
     api: { apiSpec: openai-compat, type: first-party }
 
+- id: provider-minimax
+  kind: provider
+  name: MiniMax API
+  summary: First-party API for MiniMax (M-series) models; standard + priority tiers
+  visibility: public
+  labels: [first-party, minimax, openai-compat]
+  facets:
+    api: { apiSpec: openai-compat, type: first-party }
+
 # ── aggregator / proxy (fronts MANY models from MANY upstreams via one API) ──
 - id: provider-openrouter
   kind: provider

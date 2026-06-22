@@ -1,4 +1,5 @@
-# Qwen 3.6 35B-A3B (MoE) — the only released Qwen 3.6 variant (2026-04-16).
+# Qwen 3.6 35B-A3B (MoE) — the flagship Qwen 3.6 variant (2026-04-16). A dense
+# Qwen 3.6 27B sibling also exists (see qwen36-27b.yaml).
 # Model-level facets (architecture, vendor benchmarks, footprint) + access-paths
 # embedded as facets.runsOn[] keyed by endpoint. Perf-determining fields
 # (quant/units/techniques/versionPins) are explicit on every runsOn entry.
@@ -49,6 +50,101 @@
         source: "https://unsloth.ai/docs/models/qwen3.6"
         verification: cited
     runsOn:
+      # ★ MEASURED single-Spark NVFP4 + MTP-3 — benchmark report (forum 371810, llama-benchy).
+      # The standout local number: 126 tok/s decode on ONE Spark; strong prefill.
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.6-35B-A3B · vLLM NVFP4 + MTP-3 @ 1× DGX Spark (MEASURED)"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-mtp, technique-prefix-caching, technique-flashattention]
+        units: 1 # TP=1, single Spark (NOT the eugr 2× recipe)
+        download: { hfRepo: nvidia/Qwen3.6-35B-A3B-NVFP4, format: safetensors }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 1
+          speculative: "mtp (3 tokens, triton)"
+          attentionBackend: flashinfer
+          build: { runtime: vLLM, version: "0.22.1rc1.dev32" }
+        outcome:
+          context: { tokens: 262144 }
+          speed:
+            genTokS: 126.1 # decode c1 @ pp2048 (llama-benchy)
+            note: "decode 126.1 c1 / 189.9 c2 / 156.3 c4; prefill ~6.4k tok/s; spec-decode best 131 eff t/s @8K code, 92% accept"
+          measurements:
+            - { concurrency: 1, promptTokens: 2048, prefillTokS: 6437, decodeTokS: 126.1, ttftMs: 1010 }
+            - { concurrency: 2, promptTokens: 2048, prefillTokS: 6405, decodeTokS: 189.9, ttftMs: 1903 }
+            - { concurrency: 4, promptTokens: 2048, prefillTokS: 6563, decodeTokS: 156.3, ttftMs: 3169 }
+          quality: { toolEvalBench: "92/100" }
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://forums.developer.nvidia.com/t/benchmark-report-qwen3-6-35b-a3b-nvfp4-on-nvidia-dgx-spark-jetson-thor-blackwell-6000-pro/371810"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: vLLM, version: "0.22.1rc1.dev32", quant: nvfp4 }
+      # ★ MEASURED single-Spark FP8 — forum 366822 (serapis / cosinus).
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.6-35B-A3B · vLLM FP8 @ 1× DGX Spark (MEASURED)"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-flashattention]
+        units: 1
+        download: { hfRepo: Qwen/Qwen3.6-35B-A3B-FP8, format: safetensors }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 1
+          gpuMemoryUtilization: 0.8
+          kvCacheDtype: fp8
+          attentionBackend: flashinfer
+          build: { runtime: vLLM, version: "0.19.1rc1.dev337+g17d87168d" }
+        outcome:
+          context: { tokens: 262144 }
+          speed:
+            genTokS: 77.7 # tg128 decode (serapis); a speculative-MTP config DEGRADED this, removed
+            note: "decode 77.7 tg128 (serapis, MTP removed); prefill ~7.8-8.5k tok/s pp2048; cosinus saw 52.7 tg32 on a modified recipe"
+          measurements:
+            - { promptTokens: 2048, prefillTokS: 7824, decodeTokS: 77.7, ttftMs: 264 }
+            - { promptTokens: 2048, contextDepth: 8192, prefillTokS: 8352, ttftMs: 1228 }
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: vLLM, version: "0.19.1rc1.dev337+g17d87168d" }
+      # MEASURED single-Spark NVFP4 + DFlash-11 (AEON-7 recipe) — note: serves the
+      # "heretic" abliterated weights, but a clean datapoint for 35B-A3B NVFP4+DFlash.
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.6-35B-A3B · vLLM NVFP4 + DFlash-11 @ 1× DGX Spark (MEASURED, AEON-7)"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-dflash, technique-prefix-caching, technique-flashattention]
+        units: 1 # no TP, single Spark
+        download: { hfRepo: "AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4", format: safetensors, note: "~22GB; abliterated 'heretic' variant via llm-compressor; vision tensors BF16" }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 1
+          gpuMemoryUtilization: 0.85
+          maxNumSeqs: 64
+          maxNumBatchedTokens: 16384
+          attentionBackend: flash_attn
+          kvCacheDtype: bf16
+          speculative: "dflash (z-lab/Qwen3.6-35B-A3B-DFlash drafter, 11 tokens)"
+          quantization: compressed-tensors
+          build: { runtime: vLLM, version: "0.23.0", image: "ghcr.io/aeon-7/aeon-vllm-ultimate:latest" }
+        procedure: "https://github.com/AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4-DFlash"
+        outcome:
+          context: { tokens: 262144 }
+          speed:
+            genTokS: 75 # decode c1, category-dependent (Prose ~75, Math/Reasoning 120+)
+            note: "decode 75-124 c1 (task-dependent); long-ctx 16-32k holds 73-106; aggregate ~740 t/s @c64; DFlash acceptance 24-48% (higher on structured); TTFT p50 88-137ms"
+          measurements:
+            - { concurrency: 1, decodeTokS: 75, decodeTokSPeak: 124, ttftMs: 100, note: "Prose 75 / Math 120+" }
+            - { concurrency: 64, aggregateTokS: 740, note: "Math/JSON-extraction; best UX c8-16" }
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://github.com/AEON-7/Qwen3.6-35B-A3B-heretic-NVFP4-DFlash"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: vLLM, version: "0.23.0", quant: nvfp4, drafter: "z-lab/Qwen3.6-35B-A3B-DFlash" }
       # self-host #1: Qwen native FP8 @ 2× Spark (eugr recipe) — was ap-qwen36-35b-spark-vllm-fp8
       - endpoint: endpoint-vllm-dgx-spark
         name: "Qwen3.6-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)"
@@ -238,7 +334,32 @@
             asOf: "2026-06-20"
             source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml"
             verification: cited
-      # self-host #5: Unsloth GGUF via llama.cpp (host-agnostic; ~23GB) — was ap-qwen36-35b-gguf-llamacpp
+      # self-host #5: AutoRound INT4 + Ray @ 2× Spark — UNVERIFIED candidate.
+      # Hypothesis (Nic, to measure): the Qwen3.5-122B AutoRound-INT4 + Ray TP=2
+      # recipe applies here for a comparable speedup. With 3B active (vs the 122B's
+      # 10B) this should land at/above the 122B's measured 56 tok/s — but NO number
+      # is asserted until measured on dgx1. Bonus vs the 122B: ~23GB INT4 footprint
+      # leaves ~100GB free on a single 128GB Spark — enough KV/prefix cache to hold
+      # a high-cache-hit agent workload AND co-resident a second model.
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.6-35B-A3B · vLLM INT4-AutoRound + Ray @ 2× DGX Spark (UNVERIFIED — measure)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # TP=2 Ray cluster (mirrors the 122B recipe)
+        download: { hfRepo: "TBD — verify an AutoRound INT4 build exists for Qwen3.6-35B-A3B", format: safetensors }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 2
+          note: "mirror the Qwen3.5-122B-A10B-int4-AutoRound + Ray recipe; flags/build TBD on measurement"
+        outcome:
+          speed: { note: "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on dgx1" }
+          provenance:
+            asOf: "2026-06-22"
+            source: "Nic (community report, unverified) — same recipe as Qwen3.5-122B; measure before trusting"
+            verification: uncited
+            confidence: low
+      # self-host #6: Unsloth GGUF via llama.cpp (host-agnostic; ~23GB) — was ap-qwen36-35b-gguf-llamacpp
       - endpoint: endpoint-llamacpp
         name: "Qwen3.6-35B-A3B · llama.cpp GGUF (Unsloth)"
         quant: "UD-Q4_K_XL"

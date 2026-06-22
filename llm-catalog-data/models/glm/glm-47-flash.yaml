@@ -130,6 +130,18 @@
             asOf: "2026-06-20"
             source: "https://unsloth.ai/docs/models/tutorials/glm-4.7-flash"
             verification: cited
+      # gateway: z.ai first-party — GLM-4.7-Flash is currently FREE on z.ai
+      - endpoint: endpoint-zai
+        name: "GLM-4.7-Flash · z.ai API (gateway, free tier)"
+        providerModelId: "glm-4.7-flash"
+        cost:
+          perMTokInUsd: 0
+          perMTokOutUsd: 0
+          note: "free tier on z.ai as of asOf — subject to change / rate limits"
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://docs.z.ai/guides/overview/pricing"
+            verification: authoritative # AT asOf — re-check (volatile)
   claims:
     - kind: note
       body: >-
