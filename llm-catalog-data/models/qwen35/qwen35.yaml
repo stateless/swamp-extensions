@@ -1,0 +1,73 @@
+# Qwen3.5 family (Alibaba / Qwen). Public + generic — mined from the Qwen blog /
+# HF (via the MODEL qwen35 card). Hybrid Gated-DeltaNet + attention layout: most
+# layers are linear-attention DeltaNet (O(n), low KV), ~1-in-4 are full attention.
+# Our-fleet eval scores / GB10 tok/s are NOT here (private). Structure: family
+# umbrella + per-variant entries (variant-of → model-qwen35).
+
+# ── family umbrella ─────────────────────────────────────────────────────────
+- id: model-qwen35
+  kind: model
+  name: Qwen3.5 (family)
+  summary: Hybrid Gated-DeltaNet + attention; thinking; multimodal; 201 languages
+  visibility: public
+  labels: [qwen, deltanet, thinking, multimodal]
+  facets:
+    architecture:
+      attention: hybrid-deltanet # N × (3×(Gated DeltaNet → FFN/MoE) → 1×(Gated Attention → FFN/MoE))
+      notes: "Most layers are Gated DeltaNet (linear attention, O(n)); ~1-in-4 full attention. Trained with Multi-Token Prediction (MTP)."
+      multilingual: 201
+      released: "2026-03-09"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+    config:
+      thinking:
+        control: "--reasoning-budget 0 (suppress) | -1 (unlimited)"
+        minContextForThinking: 131072
+      sampling: # Qwen / Unsloth recommendations
+        thinkingGeneral: { temp: 1.0, top_p: 0.95, top_k: 20, presence_penalty: 1.5 }
+        thinkingCoding: { temp: 0.6, top_p: 0.95, top_k: 20, presence_penalty: 0.0 }
+        nonThinkingGeneral: { temp: 0.7, top_p: 0.8, top_k: 20, presence_penalty: 1.5 }
+      provenance:
+        asOf: "2026-06-19"
+        source: "Qwen/Unsloth guidance (via MODEL qwen35 card)"
+        verification: cited
+  claims:
+    - kind: note
+      body: >-
+        DeltaNet linear-attention majority → lower KV memory and higher
+        throughput than an equivalent-size transformer; better long-context
+        memory profile.
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+    - kind: finding
+      body: >-
+        Quant guidance (DeltaNet-hybrid tensor sensitivity): `ssm_out` very
+        sensitive (degrades sharply below Q4); `attn_*` sensitive (keep Q4+);
+        `ffn_up`/`gate_exps` tolerate 3-bit. Recommended UD-Q4_K_XL / UD-Q4_K_M.
+        MXFP4 retired (worse than Q4_K on many tensors). Prefer task evals over
+        perplexity (PPL is not a chat/code-quality proxy).
+      provenance:
+        asOf: "2026-06-19"
+        source: "Unsloth GGUF analysis (via MODEL qwen35 card)"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Ollama incompatible (separate mmproj vision files); use llama.cpp. Think
+        flag unreliable in Ollama — use `--reasoning-budget 0` or
+        `--chat-template-kwargs '{"enable_thinking":false}'`. With thinking on,
+        answers land in `choices[0].message.reasoning_content` (not `content`) —
+        clients must read both.
+      provenance:
+        asOf: "2026-04-17"
+        source: "MODEL qwen35 card (re-verify against primary source)"
+        verification: cited
+    - kind: note
+      body: "License not stated in the source card — needs a primary source (HF model card)."
+      provenance:
+        asOf: "2026-06-19"
+        source: "gap — needs primary source"
+        verification: cited

@@ -1,0 +1,61 @@
+# MiniMax-M2.7 — later-generation MiniMax-M2 (same minimax_m2 arch; arch verified
+# via the cyankiwi AWQ quant repo's config.json — no MiniMaxAI base repo confirmed).
+
+- id: model-minimax-m27
+  kind: model
+  name: MiniMax-M2.7
+  summary: Later-generation MiniMax-M2 (same minimax_m2 arch); distinct weights
+  visibility: public
+  labels: [minimax, moe]
+  relations:
+    - { rel: variant-of, target: model-minimax-m2 }
+  facets:
+    architecture:
+      hfRepo: MiniMaxAI/MiniMax-M2.7
+      modelType: minimax_m2
+      attention: full-attention
+      params: "~230B"
+      activeParams: "~10B"
+      layers: 62
+      hidden: 3072
+      experts: "8/token of 256 routed"
+      nativeContext: 196608
+      vocab: 200064
+      mtp: true
+      modality: [text]
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/cyankiwi/MiniMax-M2.7-AWQ-4bit/resolve/main/config.json (minimax_m2 arch)"
+        verification: cited
+        confidence: medium
+    runsOn:
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "cyankiwi AWQ @ 2× Spark"
+        quant: awq
+        format: safetensors
+        techniques: [technique-awq, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # cluster_only
+        download: { hfRepo: cyankiwi/MiniMax-M2.7-AWQ-4bit, format: safetensors }
+        config:
+          maxModelLen: 196608
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.8
+          toolCallParser: minimax_m2
+          reasoningParser: minimax_m2
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+        command: |
+          vllm serve cyankiwi/MiniMax-M2.7-AWQ-4bit \
+              --trust-remote-code --port 8000 --host 0.0.0.0 \
+              --gpu-memory-utilization 0.8 \
+              -tp 2 --distributed-executor-backend ray \
+              --max-model-len 196608 --load-format fastsafetensors \
+              --enable-auto-tool-choice \
+              --tool-call-parser minimax_m2 --reasoning-parser minimax_m2
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+        outcome:
+          context: { tokens: 196608 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/minimax-m2.7-awq.yaml"
+            verification: cited

@@ -1,0 +1,54 @@
+# Qwen3.5-9B (dense) — Dense; ~6GB Q4; 256K context with DeltaNet —
+# small-footprint candidate. Run-options embedded in facets.runsOn[].
+
+- id: model-qwen35-9b
+  kind: model
+  name: Qwen3.5-9B (dense)
+  summary: Dense; ~6GB Q4; 256K context with DeltaNet — small-footprint candidate
+  visibility: public
+  labels: [qwen, dense, small]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "9B"
+      layers: 32
+      hidden: 4096
+      nativeContext: 262144
+      modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 5.5 }
+        - { quant: "4-bit", memGB: 6.5 }
+        - { quant: "6-bit", memGB: 9 }
+        - { quant: "8-bit", memGB: 13 }
+        - { quant: BF16, memGB: 19 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
+
+    # ── run-options: keyed by endpoint ─────────────────────────────────────────
+    runsOn:
+      # self-host, endpoint-llamacpp — Unsloth GGUF (host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "Qwen3.5-9B · llama.cpp GGUF (Unsloth)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/Qwen3.5-9B-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL \
+            --temp 1.0 --top-p 0.95 --top-k 20
+        note: "Unsloth Dynamic 2.0 (UD-Q2_K_XL minimum); multimodal needs --mmproj; use llama.cpp not Ollama (mmproj). thinking-general sampling."
+        procedure: "https://unsloth.ai/docs/models/qwen3.5"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/qwen3.5"
+            verification: cited

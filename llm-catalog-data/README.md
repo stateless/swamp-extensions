@@ -40,9 +40,10 @@ benchmarks, and configs is the ongoing community work.
 
 A contribution is small and self-contained:
 
-1. Edit the right file — a model family file (`models/<family>.yaml`) or a shared
-   reference file (`runtimes.yaml`, `providers.yaml`, `hardware.yaml`,
-   `techniques.yaml`). New family → new `models/<family>.yaml`.
+1. Edit the right file — a per-model file (`models/<family>/<model>.yaml`) or a
+   shared reference file (`endpoints.yaml`, `runtimes.yaml`, `providers.yaml`,
+   `hardware.yaml`, `techniques.yaml`). New model → new
+   `models/<family>/<model>.yaml`.
 2. Every entry needs `id`, `kind`, `name`, `summary`, `visibility: public`; every
    claim and volatile outcome needs **`provenance` (`asOf` + `source`)** — no
    source, no entry.
@@ -60,50 +61,53 @@ A contribution is small and self-contained:
 ## Layout
 
 ```
-models/        per-family files — the contribution unit (a family's variants +
-  qwen35.yaml    the access-paths/recipes that serve those models)
-  glm.yaml
-  gemma4.yaml
-  deepseek-v4.yaml
-runtimes.yaml  ┐ shared reference entities — small, slow, cross-cutting,
-providers.yaml │ referenced BY id from the family files (served-by: runtime-…,
-hardware.yaml  │ via-provider: provider-…, runs-on: hardware-…). Defined once, never
-techniques.yaml┘ duplicated per family.
+models/        ONE FILE PER MODEL under a family dir — the contribution unit;
+  qwen35/        each model carries its run-options in facets.runsOn[]
+    qwen3.5-122b.yaml
+    qwen3.5-35b.yaml
+  minimax/
+    minimax-m2.5.yaml
+endpoints.yaml ┐ shared reference entities — small, slow, cross-cutting,
+runtimes.yaml  │ referenced BY id (runsOn[].endpoint → endpoint-…; endpoints
+providers.yaml │ carry served-by: runtime-…, via-provider: provider-…,
+hardware.yaml  │ runs-on: hardware-…). Defined once, never duplicated per model.
+techniques.yaml┘
 scripts/
   assemble.ts  validate + integrity-check + emit catalog.json
 catalog.json   generated artifact (do not hand-edit) — what `update` fetches
 ```
 
-**Placement rule:** an `access-path` lives in the file of the **model it
-serves** — a "Qwen on Spark" recipe goes in `models/qwen35.yaml`. So everything
-about running a given model is one file, one diff.
+**Placement rule:** a model's run-options live **on the model**, in
+`facets.runsOn[]` keyed by an `endpoint` — so everything about running a given
+model is one file, one diff. The reusable interface (runtime × hardware, or a
+gateway) is an `endpoint` entry in `endpoints.yaml`, referenced by id.
 
 ## Variants, fine-tunes, quants, packagers
 
 One rule sorts these: **different weights → a new `model` entry; same weights,
-different encoding/packaging → an `access-path` artifact, not a new model.**
+different encoding/packaging → a `runsOn[]` operating point, not a new model.**
 
 | thing | example | where it lives |
 | --- | --- | --- |
-| **variant** | Qwen3.5-35B vs 122B | own `model` entry, `relations: [{ rel: variant-of, target: <family> }]` |
+| **variant** | Qwen3.5-35B vs 122B | own `model` entry/file, `relations: [{ rel: variant-of, target: <family> }]` |
 | **fine-tune** | Nemotron Cascade-2 ← Nano-30B base | own `model` entry, `{ rel: finetune-of, target: <base> }` |
-| **quant** | Q4_K_M, FP8 | `access-path` → `facets.recipe.artifact.quant` |
-| **packager** | Unsloth, bartowski, GGML | `access-path` → `facets.recipe.artifact.packager` + `hfRepo`; quant *scheme* is a `technique` referenced via `{ rel: uses-technique, target: technique-… }` |
+| **quant / config** | Q4_K_M, FP8, a tuned recipe | a `facets.runsOn[]` entry (`quant`, `units`, `techniques`, `config`, `outcome`) keyed by `endpoint` |
+| **packager** | Unsloth, bartowski | `runsOn[].download` (`hfRepo` + `packager`); the quant *scheme* is a `technique` via `techniques: [technique-…]` |
 
 **Architecture is quant-independent** — Q4 and FP16 of a model share the same
 layers/experts/context. So a `model` entry has **one** authoritative architecture
 (verified against the **original** vendor repo's `config.json`, never a
-GGUF/quant repo), and the **same model spawns many access-paths** (one per
-artifact × runtime × hardware), each with its own `outcome`. The quant quality
-tradeoff is a comparison *across access-paths of one model*, never duplicated
-model entries. Packager quant schemes (e.g. Unsloth Dynamic `UD-Q*`) live in
-`techniques.yaml` so recipes can reference and filter by them.
+GGUF/quant repo), and the **same model carries many `runsOn[]` operating points**
+(one per quant × endpoint × config), each self-contained with its own `outcome`.
+The quant quality tradeoff is a comparison *across a model's runsOn entries*,
+never duplicated model entries. Packager quant schemes (e.g. Unsloth Dynamic
+`UD-Q*`) live in `techniques.yaml` so recipes can reference and filter by them.
 
 ## Schema
 
 The canonical schema is `EntrySchema` in the extension
 (`extensions/models/llm-catalog/schemas.ts`) — six `kind`s (model, runtime,
-provider, hardware, technique, access-path) sharing one uniform shape, with an
+provider, hardware, technique, endpoint) sharing one uniform shape, with an
 open `facets` map and a mandatory provenance envelope on claims. See the
 extension README and design note `docs/decisions/2026-06-19-0cee6e` for the full
 model.

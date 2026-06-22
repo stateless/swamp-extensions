@@ -1,0 +1,56 @@
+# Gemma 4 family umbrella (Google DeepMind). Public + generic — mined from public
+# primary sources (Google model card, HF, Unsloth notes). Our-fleet measurements
+# (smoke/T9 scores, GB10 tok/s, GB10 VRAM) are NOT here — they stay private and,
+# if shared, become sanitised runsOn operating points with community attribution.
+# Shared architecture/license/config/caveats live once here; variant entries
+# carry only what differs (variant-of → model-gemma4). ONE model per file;
+# run-options embedded in facets.runsOn[] keyed by endpoint.
+
+- id: model-gemma4
+  kind: model
+  name: Gemma 4 (family)
+  summary: Google open-weights family; hybrid local-sliding + global attention
+  visibility: public
+  labels: [gemma, google, open-weights]
+  facets:
+    architecture:
+      attention: hybrid-sliding-global # interleaved local sliding + full global; final layer always global
+      notes: "Global layers use unified K/V with Proportional RoPE (p-RoPE) for long-context memory."
+      vocab: 262144
+    license:
+      spdx: apache-2.0
+      released: "2026"
+      trainingCutoff: "2025-01"
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+    config:
+      thinking:
+        supported: true
+        disable: "--chat-template-kwargs '{\"enable_thinking\":false}'" # gemma4-native (llama.cpp)
+        disableGeneric: "--reasoning-budget 0"
+      sampling: { temp: 1.0, top_p: 0.95, top_k: 64 } # Google recommendation
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: >-
+        Do NOT run any Gemma 4 GGUF on the CUDA 13.2 runtime — it produces poor
+        outputs. Use a known-good CUDA build.
+      provenance:
+        asOf: "2026-04-11"
+        source: "Unsloth note (via MODEL gemma4 card)"
+        verification: cited
+        versionPins: { cuda: "13.2-BAD" }
+    - kind: note
+      body: >-
+        Disable thinking reliably with `llama-server` + the gemma4-native
+        `enable_thinking:false`; `llama-cli` may not suppress thinking reliably.
+        Do not feed prior thinking output back into multi-turn history.
+      provenance:
+        asOf: "2026-04-17"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4 + llama.cpp"
+        verification: cited

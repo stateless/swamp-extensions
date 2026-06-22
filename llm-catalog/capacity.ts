@@ -305,20 +305,121 @@ export interface CapacityPlan {
   unmet: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Endpoint model — run-options come from model.facets.runsOn[] keyed by endpoint
+// (the `endpoint` kind factors out the reusable interface). These helpers
+// resolve an endpoint and flatten every (model × runsOn) into one candidate.
+// ---------------------------------------------------------------------------
+
+// deno-lint-ignore no-explicit-any
+function endpointKindOf(ep: any): string {
+  return ep?.facets?.endpoint?.kind ??
+    (rel(ep, "via-provider") ? "gateway" : "self-host");
+}
+
+/** Headline decode tok/s from a runsOn outcome (direct genTokS else measurement). */
+// deno-lint-ignore no-explicit-any
+function decodeFromOutcome(outcome: any): number | undefined {
+  const sp = outcome?.speed ?? {};
+  if (typeof sp.genTokS === "number") return sp.genTokS;
+  if (typeof sp.decodeTokS === "number") return sp.decodeTokS;
+  const ms: Array<Record<string, number>> | undefined = outcome?.measurements;
+  const ds = (ms ?? [])
+    .map((m) => m.decodeTokS ?? m.decodeShortTokS)
+    .filter((x): x is number => typeof x === "number");
+  return ds.length ? Math.max(...ds) : undefined;
+}
+
+/** A flattened run-option: one model on one endpoint via one runsOn entry. */
+export interface RunCandidate {
+  // deno-lint-ignore no-explicit-any
+  model: any;
+  modelId: string;
+  // deno-lint-ignore no-explicit-any
+  endpoint: any;
+  endpointId: string;
+  kind: string; // self-host | gateway | rental-substrate
+  hardwareId?: string; // self-host: the endpoint's runs-on (undefined = host-agnostic)
+  // deno-lint-ignore no-explicit-any
+  ro: any; // the runsOn entry
+  id: string; // stable label for this operating point
+  quant?: string;
+  units: number;
+  ctx?: number;
+  measuredTokS?: number;
+  concurrent: boolean; // false for a swap proxy — can't be co-resident with another
+  placement: "local" | "cloud"; // self-host + swap-proxy = local; gateway = cloud
+}
+
 /**
- * Build the plan over the gathered pool. Pure + deterministic. For every
- * access-path: classify local vs cloud, apply the hard constraints (privacy,
- * context, throughput, cost), fit-check local paths against the host's free
+ * Flatten every model.facets.runsOn[] into resolved candidates. Skips endpoints
+ * that aren't a direct run TARGET: a `rental-substrate` (Vast — prices GPU-hours,
+ * you instantiate a real endpoint on it) and a `router` proxy (LiteLLM —
+ * transparent indirection; the placement is the routed backend's, already
+ * enumerated, so counting the router too would double-count). A `swap` proxy IS a
+ * real target (it serves the model) but carries `concurrent:false`. Pure.
+ */
+export function enumerateRunOptions(entries: Entry[]): RunCandidate[] {
+  // deno-lint-ignore no-explicit-any
+  const endpoints = new Map<string, any>(
+    entries.filter((e) => e.kind === "endpoint").map((e) => [e.id, e]),
+  );
+  const out: RunCandidate[] = [];
+  for (const m of entries.filter((e) => e.kind === "model")) {
+    // deno-lint-ignore no-explicit-any
+    const runs: any[] = (m as any).facets?.runsOn ?? [];
+    runs.forEach((ro, i) => {
+      const ep = endpoints.get(ro?.endpoint);
+      if (!ep) return;
+      const kind = endpointKindOf(ep);
+      // deno-lint-ignore no-explicit-any
+      const epf: any = ep?.facets?.endpoint ?? {};
+      if (kind === "rental-substrate" || epf.role === "router") return;
+      // deno-lint-ignore no-explicit-any
+      const ma: any = (m as any).facets?.architecture ?? {};
+      const ctx: number | undefined = ro.outcome?.context?.tokens ??
+        ma.extendedContext ?? ma.nativeContext;
+      const quantSlug = ro.quant
+        ? String(ro.quant).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(
+          0,
+          24,
+        )
+        : `r${i}`;
+      out.push({
+        model: m,
+        modelId: m.id,
+        endpoint: ep,
+        endpointId: ro.endpoint,
+        kind,
+        hardwareId: rel(ep, "runs-on"),
+        ro,
+        // index suffix guarantees uniqueness — two configs can share a quant on
+        // one endpoint (e.g. int4 at units 2/3/4), and these ids key resources.
+        id: `${m.id}::${ro.endpoint}::${quantSlug}#${i}`,
+        quant: ro.quant,
+        units: typeof ro.units === "number" ? ro.units : 1,
+        ctx,
+        measuredTokS: decodeFromOutcome(ro.outcome),
+        concurrent: epf.concurrent !== false, // swap proxy → false
+        // a swap proxy runs on owned hardware → local, like self-host
+        placement: kind === "gateway" ? "cloud" : "local",
+      });
+    });
+  }
+  return out;
+}
+
+/**
+ * Build the plan over the gathered pool. Pure + deterministic. Run-options come
+ * from each model's `runsOn[]` (keyed by endpoint). For every candidate: classify
+ * local (self-host endpoint) vs cloud (gateway), apply the hard constraints
+ * (privacy, context, throughput, cost), fit-check local against the host's free
  * memory (after co-resident reservations), then Pareto-rank.
  */
 export function buildCapacityPlan(
   args: CapacityArgs,
   entries: Entry[],
 ): CapacityPlan {
-  // deno-lint-ignore no-explicit-any
-  const models = new Map<string, any>(
-    entries.filter((e) => e.kind === "model").map((e) => [e.id, e]),
-  );
   const hw = entries.find((e) => e.id === args.host);
   // deno-lint-ignore no-explicit-any
   const hwf: any = (hw as any)?.facets?.hardware ?? {};
@@ -341,43 +442,37 @@ export function buildCapacityPlan(
   const recs: Recommendation[] = [];
   const unmet: string[] = [];
 
-  for (const ap of entries.filter((e) => e.kind === "access-path")) {
-    const model = models.get(rel(ap, "of-model") ?? "");
-    if (!model) continue;
-    const isCloud = !!rel(ap, "via-provider");
-    const isLocal = !!rel(ap, "runs-on");
+  for (const cand of enumerateRunOptions(entries)) {
+    const model = cand.model;
+    const isCloud = cand.placement === "cloud";
+    const isLocal = cand.placement === "local";
     if (!isCloud && !isLocal) continue;
 
     // hard gate: privacy
     if (args.privacy === "local-only" && isCloud) continue;
 
-    // deno-lint-ignore no-explicit-any
-    const f: any = ap.facets ?? {};
-    const ctx: number | undefined = f.outcome?.context?.tokens ??
-      model.facets?.architecture?.extendedContext ??
-      model.facets?.architecture?.nativeContext;
+    const ctx = cand.ctx;
     if (args.minContext && typeof ctx === "number" && ctx < args.minContext) {
       continue;
     }
 
     if (isLocal) {
-      // only local paths that target THIS host's hardware class
-      if (args.host && rel(ap, "runs-on") !== args.host) continue;
-      // node-count gate: a recipe needing more units than the host has is out.
-      const hwf = f.recipe?.hardware ?? {};
-      const reqUnits: number = typeof hwf.units === "number"
-        ? hwf.units
-        : (/cluster|multi-node|ray|spread/i.test(String(hwf.config ?? ""))
-          ? 2
-          : 1);
-      if (reqUnits > hostUnits) {
-        unmet.push(`${ap.id}: needs ${reqUnits} units, host has ${hostUnits}`);
+      // a self-host endpoint serves THIS host if it pins this hardware, or is
+      // host-agnostic (no runs-on, e.g. llama.cpp runs on whatever you ask about).
+      if (args.host && cand.hardwareId && cand.hardwareId !== args.host) {
         continue;
       }
-      const quant: string | undefined = f.recipe?.artifact?.quant;
+      // node-count gate: a recipe needing more units than the host has is out.
+      if (cand.units > hostUnits) {
+        unmet.push(
+          `${cand.id}: needs ${cand.units} units, host has ${hostUnits}`,
+        );
+        continue;
+      }
+      const quant = cand.quant;
       // Measured genTokS wins; else the bandwidth estimate fills the gap so a
       // model with no benchmarked recipe still gets a throughput figure.
-      const measuredTokS = decodeTokS(ap);
+      const measuredTokS = cand.measuredTokS;
       const tokS = measuredTokS ?? decodeTokSEstimate(model, quant, hw);
       if (args.minDecodeTokS && tokS && tokS < args.minDecodeTokS) continue;
       const q = weights ? qualityScore(model, weights) : undefined;
@@ -388,18 +483,18 @@ export function buildCapacityPlan(
       const fits = freeGB === undefined || need === undefined || need <= freeGB;
       if (!fits) {
         unmet.push(
-          `${ap.id}: needs ~${need}GB @${fitCtx} ctx, ${freeGB}GB free after ${reserved}GB reserved`,
+          `${cand.id}: needs ~${need}GB @${fitCtx} ctx, ${freeGB}GB free after ${reserved}GB reserved`,
         );
         continue;
       }
       recs.push({
-        accessPath: ap.id,
-        placement: `local:${args.host ?? "?"}${
-          reqUnits > 1 ? `×${reqUnits}` : ""
+        accessPath: cand.id,
+        placement: `local:${args.host ?? cand.hardwareId ?? "?"}${
+          cand.units > 1 ? `×${cand.units}` : ""
         }`,
         model: model.id,
         quant,
-        units: reqUnits,
+        units: cand.units,
         needGB: need,
         fitContext: fitCtx,
         freeAfterGB: need !== undefined && freeGB !== undefined
@@ -410,26 +505,26 @@ export function buildCapacityPlan(
         qualityScore: q?.score,
         qualityCoverage: q?.coverage,
         context: ctx,
-        confidence: f.outcome?.provenance?.confidence,
-        source: f.outcome?.provenance?.source,
+        confidence: cand.ro.outcome?.provenance?.confidence,
+        source: cand.ro.outcome?.provenance?.source,
       });
     } else {
-      // cloud
-      const cost: number | undefined = f.cost?.perMTokOutUsd;
+      // cloud (gateway) — price lives on the runsOn entry's cost facet
+      const cost: number | undefined = cand.ro.cost?.perMTokOutUsd;
       if (
         args.maxCostPerMTokOut != null && cost != null &&
         cost > args.maxCostPerMTokOut
       ) continue;
       const q = weights ? qualityScore(model, weights) : undefined;
       recs.push({
-        accessPath: ap.id,
+        accessPath: cand.id,
         placement: "cloud",
         model: model.id,
         perMTokOutUsd: cost,
         qualityScore: q?.score,
         qualityCoverage: q?.coverage,
         context: ctx,
-        source: f.cost?.provenance?.source,
+        source: cand.ro.cost?.provenance?.source,
       });
     }
   }
@@ -532,10 +627,6 @@ export function buildDeploymentPlans(
   args: PlanArgs,
   entries: Entry[],
 ): DeploymentPlanResult {
-  // deno-lint-ignore no-explicit-any
-  const models = new Map<string, any>(
-    entries.filter((e) => e.kind === "model").map((e) => [e.id, e]),
-  );
   const hw = entries.find((e) => e.id === args.host);
   // deno-lint-ignore no-explicit-any
   const hwf: any = (hw as any)?.facets?.hardware ?? {};
@@ -562,7 +653,9 @@ export function buildDeploymentPlans(
     minDecodeTokS: w.minDecodeTokS,
   }));
 
-  // Candidate local access-paths on this host (node-count gate applied).
+  // Candidate self-host run-options on this host (from runsOn[], node-gate applied).
+  // Gateways and rentals are not deployment members — this is about placing models
+  // on owned hardware. Host-agnostic endpoints (no runs-on, e.g. llama.cpp) qualify.
   interface Cand {
     apId: string;
     modelId: string;
@@ -573,36 +666,26 @@ export function buildDeploymentPlans(
     ctx?: number;
     tokS?: number;
     tokSEstimated: boolean;
+    endpointId: string;
+    concurrent: boolean; // false → swap proxy: can't co-reside with another model on it
   }
   const cands: Cand[] = [];
-  for (const ap of entries.filter((e) => e.kind === "access-path")) {
-    if (rel(ap, "runs-on") !== args.host) continue;
-    const modelEntry = models.get(rel(ap, "of-model") ?? "");
-    if (!modelEntry) continue;
-    // deno-lint-ignore no-explicit-any
-    const f: any = ap.facets ?? {};
-    const hwr = f.recipe?.hardware ?? {};
-    const reqUnits: number = typeof hwr.units === "number"
-      ? hwr.units
-      : (/cluster|multi-node|ray|spread/i.test(String(hwr.config ?? ""))
-        ? 2
-        : 1);
-    if (reqUnits > hostUnits) continue;
-    const quant: string | undefined = f.recipe?.artifact?.quant;
-    const ctx: number | undefined = f.outcome?.context?.tokens ??
-      modelEntry.facets?.architecture?.extendedContext ??
-      modelEntry.facets?.architecture?.nativeContext;
-    const measuredTokS = decodeTokS(ap);
-    const tokS = measuredTokS ?? decodeTokSEstimate(modelEntry, quant, hw);
+  for (const c of enumerateRunOptions(entries)) {
+    if (c.placement !== "local") continue; // self-host + swap-proxy; not gateways
+    if (c.hardwareId && c.hardwareId !== args.host) continue;
+    if (c.units > hostUnits) continue;
+    const tokS = c.measuredTokS ?? decodeTokSEstimate(c.model, c.quant, hw);
     cands.push({
-      apId: ap.id,
-      modelId: modelEntry.id,
-      modelEntry,
-      quant,
-      reqUnits,
-      ctx,
+      apId: c.id,
+      modelId: c.modelId,
+      modelEntry: c.model,
+      quant: c.quant,
+      reqUnits: c.units,
+      ctx: c.ctx,
       tokS,
-      tokSEstimated: measuredTokS === undefined && tokS !== undefined,
+      tokSEstimated: c.measuredTokS === undefined && tokS !== undefined,
+      endpointId: c.endpointId,
+      concurrent: c.concurrent,
     });
   }
 
@@ -723,9 +806,19 @@ export function buildDeploymentPlans(
     let chosen: typeof capped[number] | null = null;
     let bestKey = [-1, -1, Infinity]; // [effMin, effAvg, total] — maximise, then minimise total
     let anyFit = false;
+    let swapBlocked = false;
     for (const combo of combos) {
       const pick = combo.map((j, i) => capped[i][j]);
       if (new Set(pick.map((s) => s.c.modelId)).size < wls.length) continue;
+      // swap-proxy conflict: a concurrent:false endpoint (llama-swap) serializes —
+      // two members can't co-reside on it. Reject combos placing ≥2 members on one.
+      const swapEps = pick.filter((s) => s.c.concurrent === false).map((s) =>
+        s.c.endpointId
+      );
+      if (new Set(swapEps).size < swapEps.length) {
+        swapBlocked = true;
+        continue;
+      }
       const t = pick.reduce((s, p) => s + (p.need ?? 0), 0) +
         iso * (wls.length - 1);
       if (budget !== undefined && t > budget) continue;
@@ -777,6 +870,10 @@ export function buildDeploymentPlans(
         workloads: perWl,
         verdict: "",
       });
+    } else if (swapBlocked) {
+      unmet.push(
+        "split: members would share a swap endpoint (serialized, not concurrent) — use distinct endpoints or run them sequentially",
+      );
     } else {
       unmet.push(
         anyFit
@@ -839,4 +936,79 @@ export function buildDeploymentPlans(
     alsoConsidered: plans.length,
     unmet,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Operating-point flat index — the query/pivot projection
+// ---------------------------------------------------------------------------
+
+/**
+ * One flat, denormalised row per (model × runsOn entry). The embedded `runsOn[]`
+ * is the SOURCE OF TRUTH (authored, eyeball-able); this is the read-optimised
+ * projection so `swamp data query operating-point '<CEL>'` can pivot across all
+ * configs by any field — performance (genTokS), price, quant, endpoint — without
+ * filtering nested arrays. `benchmarks` carries the model-level (vendor) eval;
+ * `configEval` carries a recipe's own measured eval, kept separate so the two
+ * tiers are never conflated. Generated by `apply`, never hand-edited.
+ */
+export interface OperatingPointRow {
+  id: string;
+  model: string;
+  family?: string;
+  endpoint: string;
+  endpointKind: string;
+  quant?: string;
+  units: number;
+  techniques: string[];
+  context?: number;
+  genTokS?: number;
+  genTokSEstimated?: boolean;
+  needGB?: number;
+  perMTokInUsd?: number;
+  perMTokOutUsd?: number;
+  // deno-lint-ignore no-explicit-any
+  benchmarks?: any; // model-level (vendor) eval — evalScope "model"
+  // deno-lint-ignore no-explicit-any
+  configEval?: any; // recipe-specific measured eval — evalScope "config"
+  asOf?: string;
+  source?: string;
+}
+
+/** Explode every model.runsOn[] into flat, CEL-pivotable rows. Pure. */
+export function buildOperatingPointIndex(
+  entries: Entry[],
+): OperatingPointRow[] {
+  // deno-lint-ignore no-explicit-any
+  const hwById = new Map<string, any>(
+    entries.filter((e) => e.kind === "hardware").map((e) => [e.id, e]),
+  );
+  const rows: OperatingPointRow[] = [];
+  for (const c of enumerateRunOptions(entries)) {
+    const hw = c.hardwareId ? hwById.get(c.hardwareId) : undefined;
+    const measured = c.measuredTokS;
+    const genTokS = measured ??
+      (hw ? decodeTokSEstimate(c.model, c.quant, hw) : undefined);
+    const ro = c.ro;
+    rows.push({
+      id: c.id,
+      model: c.modelId,
+      family: rel(c.model, "variant-of"),
+      endpoint: c.endpointId,
+      endpointKind: c.kind,
+      quant: c.quant,
+      units: c.units,
+      techniques: ro.techniques ?? [],
+      context: c.ctx,
+      genTokS,
+      genTokSEstimated: measured === undefined && genTokS !== undefined,
+      needGB: footprintGB(c.model, c.quant, c.ctx ?? 0),
+      perMTokInUsd: ro.cost?.perMTokInUsd,
+      perMTokOutUsd: ro.cost?.perMTokOutUsd,
+      benchmarks: c.model.facets?.benchmarks,
+      configEval: ro.outcome?.quality ?? ro.benchmarks,
+      asOf: ro.outcome?.provenance?.asOf ?? ro.cost?.provenance?.asOf,
+      source: ro.outcome?.provenance?.source ?? ro.cost?.provenance?.source,
+    });
+  }
+  return rows;
 }

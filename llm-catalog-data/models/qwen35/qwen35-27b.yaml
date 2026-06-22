@@ -1,0 +1,44 @@
+# Qwen3.5-27B (dense) — Dense; 64 layers (deep for its size); competitive with
+# 35B-A3B. No measured run-options in source — runsOn omitted.
+
+- id: model-qwen35-27b
+  kind: model
+  name: Qwen3.5-27B (dense)
+  summary: Dense; 64 layers (deep for its size); competitive with 35B-A3B
+  visibility: public
+  labels: [qwen, dense, long-context]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "27B"
+      layers: 64
+      hidden: 5120
+      nativeContext: 262144
+      modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 14 }
+        - { quant: "4-bit", memGB: 17, note: "runs on an 18GB device at 4-bit" }
+        - { quant: "6-bit", memGB: 24 }
+        - { quant: "8-bit", memGB: 30 }
+        - { quant: BF16, memGB: 54 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
+    benchmarks:
+      mmluPro: 86.1
+      gpqaDiamond: 85.5
+      ifEval: 95.0
+      ifBench: 76.5
+      sweBenchVerified: 72.4
+      liveCodeBenchV6: 80.7
+      tau2Agentic: 79.0
+      mmmlu: 85.9
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited

@@ -1,0 +1,76 @@
+# Nemotron family (NVIDIA). Public + generic. Architecture VERIFIED against the
+# canonical nvidia/* HF config.json (2026-06-19) → authoritative; this CORRECTED
+# a card-mining error (the source card claimed "NoPE / 1M context", but the real
+# configs are model_type nemotron_h, a Mamba2-Transformer hybrid, with 256K
+# context). Our-fleet measurements (smoke scores, T7, GB10 tok/s) are NOT here.
+# Family umbrella; variants live in sibling files (variant-of → model-nemotron).
+
+- id: model-nemotron
+  kind: model
+  name: Nemotron (family)
+  summary: NVIDIA open-weights family; nemotron_h Mamba2-Transformer hybrid; 256K context
+  visibility: public
+  labels: [nemotron, nvidia, open-weights, hybrid-ssm]
+  facets:
+    architecture:
+      attention: nemotron_h # Mamba2-Transformer hybrid (model_type); NOT a NoPE attention design
+      nativeContext: 262144 # 256K (max_position_embeddings) — corrected from a card error claiming 1M
+      vocab: 131072
+      modality: [text]
+      notes: "Hybrid state-space (Mamba2) + Transformer layers. Designed for coding, math, agentic, reasoning."
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/* HF config.json (verified: model_type nemotron_h, max_position_embeddings 262144, vocab 131072)"
+        verification: authoritative
+    license:
+      name: NVIDIA Open Model License
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://huggingface.co/nvidia"
+        verification: cited
+    config:
+      thinking:
+        supported: true
+        always: true
+        tokens: "<think> / </think> (token IDs 12 / 13)"
+        disable: "no --reasoning-budget support confirmed; strip <think>...</think> in post-processing if needed"
+      sampling:
+        chat: { temp: 1.0, top_p: 1.0 }
+        toolCalling: { temp: 0.6, top_p: 0.95 }
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+  claims:
+    - kind: caveat
+      body: >-
+        CORRECTION: the source card's "NoPE / no positional embeddings / 1M
+        context" description was NOT supported by the canonical config.json —
+        real model_type is nemotron_h (Mamba2-Transformer hybrid), context 256K.
+        Do not rely on a 1M native context for this family.
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/* HF config.json vs MODEL nemotron card"
+        verification: authoritative
+    - kind: caveat
+      body: >-
+        Thinking is always on: no confirmed `--reasoning-budget` suppression —
+        thinking is structural (`<think>` tokens in the template). Strip
+        `<think>...</think>` blocks in post-processing if clean output is needed.
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+    - kind: caveat
+      body: "Ollama `think` flag unreliable for this family — use llama.cpp for reliable thinking behaviour."
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (re-verify against primary source)"
+        verification: cited
+        runtimes: [runtime-ollama, runtime-llamacpp]
+    - kind: note
+      body: "No vendor-published benchmark numbers in the source card — benchmark facets omitted pending a primary source."
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card"
+        verification: cited

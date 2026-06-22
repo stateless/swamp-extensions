@@ -1,0 +1,77 @@
+# GPT-OSS 20B (OpenAI). Variant-of model-gpt-oss; access-paths embedded as
+# facets.runsOn[] keyed by endpoint.
+
+- id: model-gpt-oss-20b
+  kind: model
+  name: GPT-OSS 20B
+  summary: Smaller MoE variant; rivals o3-mini; locally runnable (~14GB Q4)
+  visibility: public
+  labels: [gpt-oss, openai, moe, reasoning, local]
+  relations:
+    - { rel: variant-of, target: model-gpt-oss }
+  facets:
+    architecture:
+      attention: alternating-swa-full
+      params: "21B"
+      activeParams: "3.6B" # MoE: 32 experts, 4 active per token
+      experts: "4/token of 32"
+      nativeContext: 131072
+      modality: [text]
+      notes: >-
+        Comparative positioning: rivals o3-mini; strong function calling and CoT
+        reasoning. Approx. on-disk size ~14GB at dynamic Q4 / ~20GB at F16; 2-bit
+        (~11.5GB) reportedly near-identical to F16 (~14GB) per the card.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://huggingface.co/openai/gpt-oss-20b (+ /raw/main/config.json)"
+        verification: authoritative
+    footprint: # weights-only; Unsloth run guide
+      basis: weights-only
+      quants:
+        - { quant: "2-bit", memGB: 11.5, note: "near-identical to F16 per Unsloth (MoE-aware quant)" }
+        - { quant: F16, memGB: 14, note: "Unsloth recommends ~14GB unified memory for 6+ tok/s" }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        verification: cited
+    benchmarks: # OpenAI official model card, Table 3 (Full Evaluations), high reasoning
+      mmlu: 85.3
+      gpqaDiamond: 74.2 # with tools (71.5 no-tools)
+      aime2025: 98.7 # with tools (91.7 no-tools)
+      aime2024: 96.0 # with tools (92.1 no-tools)
+      hle: 17.3 # Humanity's Last Exam, with tools (10.9 no-tools)
+      sweBenchVerified: 60.7
+      tauBenchRetail: 54.8 # tau-bench v1 retail (airline 38.0); NOT tau2-bench
+      mmmlu: 75.7 # 14-language average
+      codeforcesElo: 2516 # with tools (2230 no-tools)
+      provenance:
+        asOf: "2025-08-05"
+        source: "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
+        verification: authoritative
+        note: >-
+          High reasoning column. With-tools figures shown for AIME/HLE/Codeforces;
+          GPQA-D no-tools = 71.5. Card reports tau-bench v1 retail (54.8), NOT
+          tau2-bench. AIME 2025 (98.7) slightly exceeds the 120b (97.9) with tools.
+          No authoritative MMLU-Pro, BFCL, IFEval/IFBench, AIME 2026, or LCB-v6 for 20b.
+    runsOn:
+      # from ap-gpt-oss-20b-gguf-llamacpp: Unsloth GGUF via llama.cpp (host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "GPT-OSS 20B · llama.cpp GGUF (Unsloth)"
+        quant: F16
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        units: 1
+        download: { hfRepo: "unsloth/gpt-oss-20b-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 131072
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/gpt-oss-20b-GGUF:F16 --jinja -ngl 99 \
+            --ctx-size 16384 --temp 1.0 --top-p 1.0 --top-k 0
+        note: "temp fixed 1.0 (do not lower); reasoning effort low/medium/high via Harmony chat template. 2-bit (~11.5GB) reportedly near-identical to F16."
+        procedure: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+        outcome:
+          context: { tokens: 131072 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/gpt-oss-how-to-run-and-fine-tune"
+            verification: cited

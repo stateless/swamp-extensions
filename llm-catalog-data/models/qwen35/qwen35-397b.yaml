@@ -1,0 +1,222 @@
+# Qwen3.5-397B-A17B — Flagship MoE; hosted as Qwen3.5-Plus (1M ctx); not locally
+# practical. Run-options (cluster topologies) embedded in facets.runsOn[] keyed by
+# endpoint. Three materially different INT4-AutoRound topologies (2×/3×/4×) + an
+# FP8 4× variant.
+
+- id: model-qwen35-397b
+  kind: model
+  name: Qwen3.5-397B-A17B
+  summary: Flagship MoE; hosted as Qwen3.5-Plus (1M ctx); not locally practical
+  visibility: public
+  labels: [qwen, moe, flagship]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "397B"
+      activeParams: "17B"
+      layers: 60
+      experts: "10/token of 512 routed + 1 shared"
+      hidden: 4096
+      nativeContext: 262144 # extends toward 1M for hosted
+      modality: [text, image, video]
+
+    # ── run-options: cluster topologies, keyed by endpoint ─────────────────────
+    runsOn:
+      # self-host, endpoint-vllm-dgx-spark — INT4-AutoRound @ 2× (TP=2, --no-ray, gpu-mem-in-GB, EXPERIMENTAL)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 2× DGX Spark (eugr EXPERIMENTAL recipe)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-prefix-caching, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # cluster_only; recipe note: use with --no-ray, gpu-mem in GB
+        download: { hfRepo: Intel/Qwen3.5-397B-A17B-int4-AutoRound, format: safetensors, kvCacheDtype: fp8 }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 2
+          maxNumSeqs: 2
+          maxNumBatchedTokens: 4176
+          toolCallParser: qwen3_xml
+          reasoningParser: qwen3
+          env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1", VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "0" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
+          mods: [mods/fix-qwen3.5-chat-template, mods/gpu-mem-util-gb, mods/kv-cache-prealloc-cleanup, mods/drop-caches]
+        command: |
+          vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \
+            --max-model-len 262144 \
+            --max-num-seqs 2 \
+            --kv-cache-dtype fp8 \
+            --gpu-memory-utilization-gb 108 \
+            --kv-cache-memory-bytes 2415919104 \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --enable-prefix-caching \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_xml \
+            --reasoning-parser qwen3 \
+            --max-num-batched-tokens 4176 \
+            --trust-remote-code \
+            --chat-template unsloth.jinja \
+            --load-format instanttensor \
+            -tp 2 \
+            --distributed-executor-backend ray
+        note: >-
+          EXPERIMENTAL. Set memory utilization in GB (mod gpu-mem-util-gb), not
+          percentage; requires --no-ray to fit full context on two Sparks. On node
+          shutdown, limit GPU clocks (`sudo nvidia-smi -lgc 200,2150`).
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-397b-int4-autoround.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published EXPERIMENTAL recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-397b-int4-autoround.yaml"
+            verification: cited
+
+      # self-host, SAME endpoint — INT4-AutoRound @ 3× (PP=3, eugr 3x-cluster)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 3× DGX Spark (PP=3, eugr 3x-cluster)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-pipeline-parallel, technique-prefix-caching, technique-ray-serve]
+        units: 3 # 3x-spark-cluster; PP=3 mesh
+        download: { hfRepo: Intel/Qwen3.5-397B-A17B-int4-AutoRound, format: safetensors, kvCacheDtype: fp8 }
+        config:
+          maxModelLen: 262144
+          pipelineParallel: 3
+          maxNumSeqs: 10
+          maxNumBatchedTokens: 16384
+          toolCallParser: qwen3_coder
+          reasoningParser: qwen3
+          env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
+          mods: [mods/fix-qwen3.5-chat-template]
+        command: |
+          vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \
+            --max-model-len 262144 \
+            --max-num-seqs 10 \
+            --kv-cache-dtype fp8 \
+            --gpu-memory-utilization 0.7 \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --enable-prefix-caching \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --reasoning-parser qwen3 \
+            --max-num-batched-tokens 16384 \
+            --trust-remote-code \
+            --chat-template unsloth.jinja \
+            -tp 1 \
+            -pp 3 \
+            --load-format instanttensor \
+            --distributed-executor-backend ray
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/3x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/3x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+            verification: cited
+
+      # self-host, SAME endpoint — INT4-AutoRound @ 4× (TP=4, eugr 4x-cluster)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-397B-A17B · vLLM INT4-AutoRound @ 4× DGX Spark (TP=4, eugr 4x-cluster)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-prefix-caching, technique-tensor-parallel, technique-ray-serve]
+        units: 4 # 4x-spark-cluster; TP=4 mesh
+        download: { hfRepo: Intel/Qwen3.5-397B-A17B-int4-AutoRound, format: safetensors, kvCacheDtype: fp8 }
+        config:
+          maxModelLen: 32768
+          tensorParallel: 4
+          maxNumBatchedTokens: 8192
+          toolCallParser: qwen3_coder
+          reasoningParser: qwen3
+          env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1", PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
+          mods: [mods/fix-qwen3-coder-next, mods/fix-qwen35-tp4-marlin]
+        command: |
+          vllm serve Intel/Qwen3.5-397B-A17B-int4-AutoRound \
+            --tool-call-parser qwen3_coder \
+            --reasoning-parser qwen3 \
+            --enable-auto-tool-choice \
+            --tensor-parallel-size 4 \
+            --distributed-executor-backend ray \
+            --kv-cache-dtype fp8 \
+            --gpu-memory-utilization 0.78 \
+            --max-model-len 32768 \
+            --max-num-batched-tokens 8192 \
+            --enable-prefix-caching \
+            --trust-remote-code \
+            --host 0.0.0.0 \
+            --port 8000
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+        outcome:
+          context: { tokens: 32768 }
+          speed:
+            genTokS: 37
+            aggregateTokS: 103
+            note: >-
+              from recipe comment ("37 tok/s single-user, 103 tok/s aggregate (4
+              concurrent) on 4× DGX Spark"), not an independent benchmark. Requires
+              NVIDIA driver 580.x (590.x has a CUDAGraph deadlock bug on GB10).
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-int4-autoround.yaml"
+            verification: cited
+
+      # self-host, SAME endpoint — Qwen native FP8 @ 4× (TP=4, eugr 4x-cluster; multimodal)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-397B-A17B · vLLM FP8 @ 4× DGX Spark (TP=4, eugr 4x-cluster)"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-prefix-caching, technique-flashattention, technique-tensor-parallel, technique-ray-serve]
+        units: 4 # 4x-spark-cluster; TP=4 mesh
+        download: { hfRepo: Qwen/Qwen3.5-397B-A17B-FP8, format: safetensors, kvCacheDtype: fp8 }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 4
+          maxNumSeqs: 32
+          maxNumBatchedTokens: 8192
+          toolCallParser: qwen3_coder
+          reasoningParser: qwen3
+          env: { VLLM_USE_DEEP_GEMM: "0", VLLM_USE_FLASHINFER_MOE_FP16: "1", VLLM_USE_FLASHINFER_SAMPLER: "0", OMP_NUM_THREADS: "4" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node-tf5)" } # build_args: --tf5
+          mods: [mods/fix-qwen3.5-autoround]
+        command: |
+          vllm serve Qwen/Qwen3.5-397B-A17B-FP8 \
+            --max-model-len 262144 \
+            --gpu-memory-utilization 0.85 \
+            --port 8000 \
+            --host 0.0.0.0 \
+            --load-format fastsafetensors \
+            --enable-prefix-caching \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --reasoning-parser qwen3 \
+            --max-num-batched-tokens 8192 \
+            --trust-remote-code \
+            -tp 4 \
+            --distributed-executor-backend ray \
+            --mm-encoder-tp-mode data \
+            --kv-cache-dtype fp8 \
+            --compilation-config.cudagraph_mode none \
+            --max-num-seqs 32 \
+            --attention-backend flashinfer
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-a17B-fp8.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/4x-spark-cluster/qwen3.5-397b-a17B-fp8.yaml"
+            verification: cited
+  claims:
+    - kind: note
+      body: "Hosted as Qwen3.5-Plus (1M context, built-in tools); ~200GB+ — multi-node for local."
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited

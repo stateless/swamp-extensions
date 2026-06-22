@@ -1,0 +1,46 @@
+# Nemotron 3 Nano 4B — smallest variant; DENSE (no experts). No measured
+# operating points in the source data (no access-paths). variant-of → model-nemotron.
+
+- id: model-nemotron-nano-4b
+  kind: model
+  name: Nemotron 3 Nano 4B
+  summary: Smallest variant; DENSE ~4B (no experts); 256K context
+  visibility: public
+  labels: [nemotron, nano, small, dense]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16
+      params: "4B"
+      dense: true # CORRECTED: dense, not MoE (no n_routed_experts in config)
+      layers: 42
+      hidden: 3136
+      attentionHeads: 40
+      nativeContext: 262144
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16 config.json"
+        verification: authoritative
+    footprint:
+      q4: "~3 GB"
+      q8: "~5 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited
+    benchmarks: # NVIDIA BF16 model card, reasoning-on
+      aime2025: 78.5
+      gpqaDiamond: 53.2 # card labels plain "GPQA" (Diamond not explicit)
+      ifEval: 92.0 # IFEval-Instruction (prompt-level 87.9)
+      ifBench: 44.2 # IFBench-Instruction
+      liveCodeBench: 51.8 # card says only "LCB" — version unstated (do NOT assume v6)
+      tau2Agentic: 39.8 # Tau2-Retail (airline 33.3, telecom 33.0)
+      bfcl: 61.1 # BFCL v3
+      provenance:
+        asOf: "2026-03-16"
+        source: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16/raw/main/README.md"
+        verification: authoritative
+        note: "Reasoning-on. Not on card: mmluPro, aime2026, sweBenchVerified, mmmlu, mmlu, hle."

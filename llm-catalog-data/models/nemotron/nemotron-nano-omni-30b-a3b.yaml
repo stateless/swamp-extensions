@@ -1,0 +1,106 @@
+# Nemotron 3 Nano Omni 30B-A3B (MoE, multimodal) — audio/video/image/docs in,
+# text out. One measured operating point: Unsloth GGUF + mmproj via llama.cpp.
+# Large 4-block benchmarks (text/vision/video/audio) preserved verbatim.
+# variant-of → model-nemotron.
+
+- id: model-nemotron-nano-omni-30b-a3b
+  kind: model
+  name: Nemotron 3 Nano Omni 30B-A3B (MoE, multimodal)
+  summary: Omni multimodal MoE; 3B active at 30B total; audio/video/image/docs in, text out; 256K
+  visibility: public
+  labels: [nemotron, nano, moe, multimodal, omni]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+  facets:
+    architecture:
+      attention: nemotron_h # family hybrid Mamba2-Transformer (config.json not independently fetched for this variant)
+      params: "30B"
+      activeParams: "3B"
+      nativeContext: 262144 # 256K per Unsloth
+      vocab: 131072
+      modality: [audio, video, text, image] # "audio, video, text, images and docs as input, with text output"
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni + family nemotron_h config"
+        verification: cited
+        confidence: medium
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 25, note: "UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        verification: cited
+    benchmarks: # NVIDIA Nemotron 3 Omni technical report (arXiv:2604.24954v1), Omni model's OWN column
+      # text (Table 10)
+      mmluPro: 77.3
+      gpqaDiamond: 72.2 # report "GPQA (no tools)"; methodology = GPQA-Diamond, avg-4
+      aime2025: 82.1 # no-tools, pass@1 avg-8
+      liveCodeBenchV5: 63.2 # v5 (07/24-05/25) — NOT v6
+      ifBench: 74.2 # prompt
+      tau2Telecom: 42.7 # TauBench V2 telecom (no airline/retail reported)
+      sciCode: 32.0
+      aaLcr: 41.0
+      # vision (Table 7, reasoning-on)
+      mmmu: 70.8
+      mathVista: 82.8
+      docvqa: 95.6
+      chartqa: 90.3
+      ai2d: 88.5
+      ocrBench: 86.6
+      textVqa: 81.0
+      infoVqa: 86.8
+      cvBench: 84.0
+      # video / audio
+      videoMme: 72.2 # w/o subtitles, reasoning-on
+      voiceBench: 89.4 # reasoning-on
+      openAsrWer: 5.95 # WER (lower=better), reasoning-off
+      mmau: 74.6 # reasoning-off
+      provenance:
+        asOf: "2026-04-27"
+        source: "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Omni-report.pdf"
+        verification: authoritative
+        note: >-
+          Omni model's OWN column (lower than its LLM backbone — a common confusion
+          point). Vision/video reasoning-on; ASR/MMAU reasoning-off. LiveCodeBench=v5
+          not v6. Not found: sweBenchVerified, bfcl, hle, mmmlu, mmlu, aime2026, lcbV6.
+    runsOn:
+      # self-host: Unsloth UD-Q4_K_XL GGUF + mmproj via llama.cpp (~25GB; multimodal)
+      - endpoint: endpoint-llamacpp
+        name: "Nemotron-3-Nano-Omni-30B-A3B · llama.cpp GGUF (Unsloth, multimodal)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF", format: gguf, packager: unsloth, mmproj: "mmproj-BF16.gguf" }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli \
+            --model unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf \
+            --mmproj unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF/mmproj-BF16.gguf \
+            --temp 0.6 --top-p 0.95 --min-p 0.01
+        note: "Multimodal (audio/video/image/docs in) REQUIRES --mmproj; thinking-mode sampling temp 0.6/top_p 0.95/min_p 0.01. Unsloth UD-Q4_K_XL GGUF + mmproj (~25GB); single-Spark-class."
+        procedure: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+            verification: cited
+  claims:
+    - kind: note
+      body: >-
+        Open 30B-A3B hybrid reasoning MoE for multimodal agentic workloads:
+        audio/video/text/images/docs in, text out; 256K context. Unsloth
+        positions it as "the strongest omni model for its size", surpassing
+        Qwen3-Omni-30B-A3B on every benchmark (Unsloth page publishes no numbers;
+        numeric scores added from the NVIDIA technical report — see benchmarks).
+        Architecture (layers/experts) NOT independently verified vs config.json —
+        inherited from the nemotron_h family; confidence medium.
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/nemotron-3-nano-omni"
+        verification: cited
+        confidence: medium

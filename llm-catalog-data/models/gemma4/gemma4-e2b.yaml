@@ -1,0 +1,57 @@
+# Gemma 4 e2b — on-device efficiency variant (Per-Layer Embeddings). Model-only
+# (no measured access-paths). variant-of → model-gemma4.
+
+- id: model-gemma4-e2b
+  kind: model
+  name: Gemma 4 e2b
+  summary: On-device efficiency variant (Per-Layer Embeddings); fastest; small
+  visibility: public
+  labels: [gemma, efficiency, on-device]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "5.1B"
+      effectiveParams: "2.3B" # PLE: per-layer embedding tables are lookup-only
+      layers: 35
+      slidingWindow: 512
+      nativeContext: 131072
+      modality: [text, image, audio]
+      visionEncoderParams: "~150M"
+      audioEncoderParams: "~300M"
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 4 }
+        - { quant: "8-bit", memGB: 6.5, note: "5–8GB range; 8-bit recommended for E-series" }
+        - { quant: BF16, memGB: 10 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
+    benchmarks: # Google published, instruction-tuned
+      mmluPro: 60.0
+      aime2026: 37.5
+      liveCodeBenchV6: 44.0
+      codeforcesElo: 633
+      gpqaDiamond: 43.4
+      tau2Agentic: 24.5
+      bigBenchExtraHard: 21.9
+      mmmlu: 67.4
+      mrcrV2_128k: 19.1
+      mmmuProVision: 44.2
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: >-
+        128K context + 512-token sliding window are architectural HARD caps
+        (PLE on-device design). `--ctx-size` above 131072 is silently clamped
+        (HTTP 400 only on inference). Usable ~100K; not for long-context tasks.
+      provenance:
+        asOf: "2026-04-14"
+        source: "GGUF metadata + server clamp log (verified)"
+        verification: reproduced

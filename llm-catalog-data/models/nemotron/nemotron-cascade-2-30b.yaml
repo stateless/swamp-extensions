@@ -1,0 +1,51 @@
+# Nemotron Cascade-2 30B-A3B — post-trained from Nemotron-3-Nano-30B-A3B-Base.
+# No measured operating points in the source data (no access-paths).
+
+- id: model-nemotron-cascade-2-30b
+  kind: model
+  name: Nemotron Cascade-2 30B-A3B
+  summary: Cascade-2; post-trained from Nemotron-3-Nano-30B-A3B-Base; MoE 3B active
+  visibility: public
+  labels: [nemotron, cascade, moe, fine-tune]
+  relations:
+    - { rel: variant-of, target: model-nemotron }
+    - { rel: finetune-of, target: model-nemotron-nano-30b-a3b } # post-trained from the Nano-30B-A3B base
+  facets:
+    architecture:
+      hfRepo: nvidia/Nemotron-Cascade-2-30B-A3B
+      params: "30B"
+      activeParams: "3B" # FILLED from config (was "?" in the card)
+      layers: 52
+      experts: "6/token of 128 routed + 1 shared"
+      nativeContext: 262144 # FILLED from config (was "?" in the card)
+      vocab: 131072
+      modality: [text]
+      provenance:
+        asOf: "2026-06-19"
+        source: "nvidia/Nemotron-Cascade-2-30B-A3B config.json"
+        verification: authoritative
+    footprint:
+      q4: "~24 GB"
+      provenance:
+        asOf: "2026-06-19"
+        source: "MODEL nemotron card (estimated)"
+        verification: cited
+    benchmarks: # NVIDIA official HF model card (released 2026-03-19), reasoning-capable
+      mmluPro: 79.8
+      gpqaDiamond: 76.1
+      ifBench: 82.9 # prompt
+      aime2025: 92.4 # base (TIR variant 98.6)
+      aime2026: 90.9 # base (TIR variant 95.0)
+      sweBenchVerified: 50.2 # OpenHands harness
+      liveCodeBenchV6: 87.2 # v6 (2408-2505); TIR variant 88.4
+      tau2Agentic: 58.9 # tau-2-Bench
+      bfcl: 52.9 # BFCL v4
+      hle: 17.7 # no-tools
+      provenance:
+        asOf: "2026-03-19"
+        source: "https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B/raw/main/README.md"
+        verification: authoritative
+        note: >-
+          Several math/code rows have higher Tool-Integrated-Reasoning (TIR) variants
+          (noted inline). Card uses MMLU-Redux (86.3) and MMLU-ProX (72.5) — neither
+          is plain MMLU/MMMLU, omitted.

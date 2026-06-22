@@ -1,0 +1,68 @@
+# Gemma 4 31B (dense) — largest dense variant; 256K context; strongest Gemma 4
+# benchmarks. variant-of → model-gemma4. Run-options embedded in facets.runsOn[].
+
+- id: model-gemma4-31b
+  kind: model
+  name: Gemma 4 31B (dense)
+  summary: Largest dense variant; 256K context; strongest Gemma 4 benchmarks
+  visibility: public
+  labels: [gemma, dense]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "30.7B"
+      layers: 60
+      slidingWindow: 1024
+      nativeContext: 262144
+      modality: [text, image]
+      visionEncoderParams: "~550M"
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 18.5, note: "17–20GB range; UD-Q4_K_XL recommended" }
+        - { quant: "8-bit", memGB: 36, note: "34–38GB range" }
+        - { quant: BF16, memGB: 62 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
+    benchmarks:
+      mmluPro: 85.2
+      aime2026: 89.2
+      liveCodeBenchV6: 80.0
+      codeforcesElo: 2150
+      gpqaDiamond: 84.3
+      tau2Agentic: 76.9
+      hleNoTools: 19.5
+      bigBenchExtraHard: 74.4
+      mmmlu: 88.4
+      mrcrV2_128k: 66.4
+      mmmuProVision: 76.9
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+    runsOn:
+      # self-host: Unsloth GGUF via llama.cpp (host-agnostic; ~18.5GB)
+      # from ap-gemma4-31b-gguf-llamacpp
+      - endpoint: endpoint-llamacpp
+        name: "Unsloth UD-Q4_K_XL GGUF"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/gemma-4-31B-it-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/gemma-4-31B-it-GGUF:UD-Q4_K_XL \
+            --temp 1.0 --top-p 0.95 --top-k 64
+        note: "Google default sampling temp 1.0/top_p 0.95/top_k 64. Do NOT run Gemma 4 GGUF on CUDA 13.2."
+        procedure: "https://unsloth.ai/docs/models/gemma-4"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/gemma-4"
+            verification: cited

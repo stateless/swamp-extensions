@@ -1,0 +1,54 @@
+# Gemma 4 e4b — on-device efficiency variant (PLE); barrier candidate. Model-only
+# (no measured access-paths). variant-of → model-gemma4.
+
+- id: model-gemma4-e4b
+  kind: model
+  name: Gemma 4 e4b
+  summary: On-device efficiency variant; barrier candidate; PLE
+  visibility: public
+  labels: [gemma, efficiency, on-device]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "8B"
+      effectiveParams: "4.5B"
+      layers: 42
+      slidingWindow: 512
+      nativeContext: 131072
+      modality: [text, image, audio]
+      visionEncoderParams: "~150M"
+      audioEncoderParams: "~300M"
+    footprint: # Unsloth-published per-quant memory (weights-only)
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 5.75, note: "5.5–6GB range" }
+        - { quant: "8-bit", memGB: 10.5, note: "9–12GB range" }
+        - { quant: BF16, memGB: 16 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/gemma-4"
+        verification: cited
+    benchmarks:
+      mmluPro: 69.4
+      aime2026: 42.5
+      liveCodeBenchV6: 52.0
+      codeforcesElo: 940
+      gpqaDiamond: 58.6
+      tau2Agentic: 42.2
+      bigBenchExtraHard: 33.1
+      mmmlu: 76.6
+      mrcrV2_128k: 25.4
+      mmmuProVision: 52.6
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://ai.google.dev/gemma/docs/core/model_card_4"
+        verification: authoritative
+  claims:
+    - kind: caveat
+      body: "128K hard cap + 512 sliding window (same PLE limits as e2b)."
+      provenance:
+        asOf: "2026-04-14"
+        source: "GGUF metadata (verified)"
+        verification: reproduced

@@ -188,6 +188,54 @@ for (const l of loaded) {
   }
 }
 
+// 5c. endpoint model (the `runsOn` embedded operating points). Endpoints factor
+//     out the reusable interface; a model's run-options live on it, keyed by
+//     endpoint. Validate the same invariants the access-path checks enforce:
+//     endpoint resolves, context within cap, artifact format loadable by the
+//     endpoint's runtime. Runs ALONGSIDE the access-path checks (transition-safe).
+const endpointById = new Map(
+  loaded.filter((l) => l.entry.kind === "endpoint").map((l) => [l.id, l.entry]),
+);
+const endpointRuntime = new Map<string, string | undefined>();
+for (const [id, ep] of endpointById) {
+  endpointRuntime.set(
+    id,
+    (ep.relations ?? []).find((r) => r.rel === "served-by")?.target,
+  );
+}
+for (const l of loaded) {
+  if (l.entry.kind !== "model") continue;
+  // deno-lint-ignore no-explicit-any
+  const a: any = l.entry.facets?.architecture ?? {};
+  // deno-lint-ignore no-explicit-any
+  const runsOn: any[] = (l.entry.facets as any)?.runsOn ?? [];
+  for (const ro of runsOn) {
+    if (ro?.endpoint && !endpointById.has(ro.endpoint)) {
+      errors.push(
+        `${l.file} [${l.id}]: runsOn endpoint "${ro.endpoint}" does not resolve`,
+      );
+    }
+    const roCtx = ro?.outcome?.context?.tokens;
+    const usesExt = Array.isArray(ro?.techniques) &&
+      ro.techniques.includes("technique-context-extension");
+    const cap = (usesExt && typeof a.extendedContext === "number")
+      ? a.extendedContext
+      : a.nativeContext;
+    if (typeof cap === "number" && typeof roCtx === "number" && roCtx > cap) {
+      errors.push(
+        `${l.file} [${l.id}]: runsOn[${ro.endpoint}] context ${roCtx} exceeds cap ${cap}`,
+      );
+    }
+    const rt = ro?.endpoint ? endpointRuntime.get(ro.endpoint) : undefined;
+    const supported = rt ? runtimeFormats.get(rt) : undefined;
+    if (ro?.format && supported && !supported.includes(ro.format)) {
+      errors.push(
+        `${l.file} [${l.id}]: runsOn format "${ro.format}" not loadable by ${rt} (loads ${supported.join("/")})`,
+      );
+    }
+  }
+}
+
 // 5. report + emit
 const kinds = loaded.reduce((m, l) => {
   m[l.entry.kind] = (m[l.entry.kind] ?? 0) + 1;

@@ -1,0 +1,122 @@
+# Qwen3.5-35B-A3B — MoE; run-options embedded in facets.runsOn[] keyed by endpoint.
+
+- id: model-qwen35-35b
+  kind: model
+  name: Qwen3.5-35B-A3B
+  summary: MoE; leads TAU2 agentic for its size (beats the 122B); strong general
+  visibility: public
+  labels: [qwen, moe, agentic]
+  relations:
+    - { rel: variant-of, target: model-qwen35 }
+  facets:
+    architecture:
+      attention: hybrid-deltanet
+      params: "35B"
+      activeParams: "3B"
+      layers: 40
+      experts: "8/token of 256 routed + 1 shared"
+      hidden: 2048
+      nativeContext: 262144
+      modality: [text, image, video]
+    footprint: # Unsloth-published per-quant memory (weights-only); fits a single DGX Spark
+      basis: weights-only
+      quants:
+        - { quant: "3-bit", memGB: 17 }
+        - { quant: "4-bit", memGB: 22, note: "runs on a 22GB device at 4-bit (UD-Q4)" }
+        - { quant: "6-bit", memGB: 30 }
+        - { quant: "8-bit", memGB: 38 }
+        - { quant: BF16, memGB: 70 }
+      provenance:
+        asOf: "2026-06-20"
+        source: "https://unsloth.ai/docs/models/qwen3.5"
+        verification: cited
+    benchmarks: # Qwen-published, thinking mode
+      mmluPro: 85.3
+      gpqaDiamond: 84.2
+      ifEval: 91.9
+      ifBench: 70.2
+      sweBenchVerified: 69.2
+      liveCodeBenchV6: 74.6
+      tau2Agentic: 81.2
+      bfcl: 67.3 # BFCL V4 overall (Qwen HF card; corroborated llm-stats.com 0.673)
+      mmmlu: 85.2
+      provenance:
+        asOf: "2026-06-19"
+        source: "https://qwen.ai/blog?id=qwen3.5"
+        verification: cited
+        note: "bfcl (BFCL V4 overall) from the Qwen HF card; rest from the blog."
+
+    # ── run-options: every tested config + gateway, keyed by endpoint ──────────
+    runsOn:
+      # self-host, endpoint-vllm-dgx-spark — Qwen native FP8, TP=2 Ray (eugr recipe)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-prefix-caching, technique-flashattention, technique-tensor-parallel, technique-ray-serve]
+        units: 2
+        download: { hfRepo: Qwen/Qwen3.5-35B-A3B-FP8, format: safetensors, kvCacheDtype: fp8 }
+        config:
+          maxModelLen: 262144
+          tensorParallel: 2
+          maxNumBatchedTokens: 16384
+          toolCallParser: qwen3_coder
+          env: { VLLM_MARLIN_USE_ATOMIC_ADD: "1" }
+          build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
+          mods: [mods/fix-qwen3-coder-next, mods/fix-qwen3.5-chat-template]
+        command: |
+          vllm serve Qwen/Qwen3.5-35B-A3B-FP8 \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --max-model-len 262144 \
+            --max-num-batched-tokens 16384 \
+            --gpu-memory-utilization 0.8 \
+            --enable-auto-tool-choice \
+            --tool-call-parser qwen3_coder \
+            --kv-cache-dtype fp8 \
+            --load-format fastsafetensors \
+            --attention-backend flashinfer \
+            --enable-prefix-caching \
+            --chat-template unsloth.jinja \
+            -tp 2 \
+            --distributed-executor-backend ray
+        procedure: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-35b-a3b-fp8.yaml"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "published recipe; tok/s not benchmarked in repo — measure" }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-35b-a3b-fp8.yaml"
+            verification: cited
+
+      # self-host, endpoint-llamacpp — Unsloth UD-Q4 GGUF (host-agnostic)
+      - endpoint: endpoint-llamacpp
+        name: "Qwen3.5-35B-A3B · llama.cpp GGUF (Unsloth)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/Qwen3.5-35B-A3B-GGUF", format: gguf, packager: unsloth }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/Qwen3.5-35B-A3B-GGUF:UD-Q4_K_XL \
+            --temp 1.0 --top-p 0.95 --top-k 20
+        note: "runs on a 22GB device at 4-bit; multimodal needs --mmproj; use llama.cpp not Ollama. thinking-general sampling."
+        procedure: "https://unsloth.ai/docs/models/qwen3.5"
+        outcome:
+          context: { tokens: 262144 }
+          provenance:
+            asOf: "2026-06-20"
+            source: "https://unsloth.ai/docs/models/qwen3.5"
+            verification: cited
+
+      # gateway — endpoint-openrouter: carries PRICE, not config
+      - endpoint: endpoint-openrouter
+        providerModelId: "qwen/qwen3.5-35b-a3b"
+        cost:
+          perMTokInUsd: 0.14
+          perMTokOutUsd: 1.0
+          provenance:
+            asOf: "2026-06-19"
+            source: "https://openrouter.ai/api/v1/models"
+            verification: authoritative

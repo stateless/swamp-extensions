@@ -1,0 +1,158 @@
+# Endpoints — the reusable HTTP inference interface (the `endpoint` kind).
+# Factors out the runtime × hardware × provider surface that access-paths used to
+# repeat. Self-host endpoints serve "anything that fits the hardware" (computed);
+# gateway endpoints serve a listed set (their priced access-paths). See
+# docs/decisions/2026-06-22-e1d4a9-llm-catalog-endpoint-model.md.
+
+# ── self-host: vLLM (via the spark-vllm-docker distribution) on a DGX Spark ───
+- id: endpoint-vllm-dgx-spark
+  kind: endpoint
+  name: vLLM @ DGX Spark
+  summary: OpenAI-compatible vLLM server on a GB10 Spark (spark-vllm-docker distribution); serves anything that fits unified memory
+  visibility: public
+  labels: [self-host, vllm, dgx-spark, cuda]
+  relations:
+    - { rel: served-by, target: runtime-vllm }
+    - { rel: built-with, target: runtime-spark-vllm-docker }
+    - { rel: runs-on, target: hardware-dgx-spark }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized, note: "owned GB10; opex ≈ power (~70W/unit)" }
+    serves: { rule: fits-hardware, note: "models computed from footprint vs (unifiedMemGB − driverReservedGB) × units; measured recipes attach as via-endpoint access-paths" }
+
+# ── self-host: llama.cpp (host-agnostic local GGUF) ──────────────────────────
+- id: endpoint-llamacpp
+  kind: endpoint
+  name: llama.cpp (local GGUF)
+  summary: llama-server OpenAI-compatible endpoint; host-agnostic — runs GGUF on whatever host capacity is asked about
+  visibility: public
+  labels: [self-host, llama.cpp, gguf]
+  relations:
+    - { rel: served-by, target: runtime-llamacpp }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized }
+    serves: { rule: fits-hardware, note: "no fixed hardware — fit is computed against the caller's host; GGUF artifacts" }
+
+# ── self-host: DwarfStar (ds4) on Apple Silicon ──────────────────────────────
+- id: endpoint-ds4-mac
+  kind: endpoint
+  name: DwarfStar @ Apple Silicon
+  summary: ds4 (DwarfStar) inference on Apple-silicon unified memory; custom GGUF + agent harness
+  visibility: public
+  labels: [self-host, dwarfstar, ds4, apple-silicon]
+  relations:
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-apple-silicon }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized }
+    serves: { rule: fits-hardware }
+
+# ── self-host: DwarfStar (ds4) on a DGX Spark (CUDA — UNVERIFIED on GB10) ─────
+- id: endpoint-ds4-dgx-spark
+  kind: endpoint
+  name: DwarfStar @ DGX Spark
+  summary: ds4 (DwarfStar) on a GB10 Spark; CUDA backend on GB10 is UNVERIFIED (repo Speed table is Mac-only)
+  visibility: public
+  labels: [self-host, dwarfstar, ds4, dgx-spark, cuda]
+  relations:
+    - { rel: served-by, target: runtime-dwarfstar }
+    - { rel: runs-on, target: hardware-dgx-spark }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized }
+    serves: { rule: fits-hardware }
+  claims:
+    - kind: caveat
+      body: "ds4 CUDA backend on GB10 is UNVERIFIED — confirm it compiles/runs before trusting any -dgx-spark operating point."
+      provenance:
+        asOf: "2026-06-22"
+        source: "https://github.com/antirez/ds4 (Speed table Mac-only; days-old beta)"
+        verification: cited
+
+# ── gateway: OpenRouter (aggregator, per-token) ──────────────────────────────
+- id: endpoint-openrouter
+  kind: endpoint
+  name: OpenRouter (gateway)
+  summary: Per-token aggregator endpoint; serves a listed set (its priced access-paths)
+  visibility: public
+  labels: [gateway, openrouter, openai-compat]
+  relations:
+    - { rel: via-provider, target: provider-openrouter }
+  facets:
+    endpoint: { transport: openai-compat, kind: gateway, url: "https://openrouter.ai/api/v1" }
+    pricing: { basis: per-token, note: "per-model prices live on the via-endpoint access-paths; sync from /models — don't pin" }
+    serves: { rule: listed }
+
+# ── gateway: DigitalOcean serverless inference (per-token) ────────────────────
+- id: endpoint-digitalocean
+  kind: endpoint
+  name: DigitalOcean Inference (gateway)
+  summary: Per-token serverless endpoint fronting open + closed models; serves a listed set
+  visibility: public
+  labels: [gateway, digitalocean, serverless, openai-compat]
+  relations:
+    - { rel: via-provider, target: provider-digitalocean }
+  facets:
+    endpoint: { transport: openai-compat, kind: gateway }
+    pricing: { basis: per-token, note: "per-model prices on the via-endpoint access-paths; batch ≤50% off, off-peak 30% on some models — see provider-digitalocean" }
+    serves: { rule: listed }
+
+# ── proxy: LiteLLM (router — transparent indirection over many backends) ──────
+- id: endpoint-litellm
+  kind: endpoint
+  name: LiteLLM (router proxy)
+  summary: One OpenAI API fronting many backends (cloud + local) with fallback, load-balance, cost-tracking, virtual keys; transparent — placement is the backend's
+  visibility: public
+  labels: [proxy, router, litellm, openai-compat]
+  relations:
+    - { rel: routes-to, target: endpoint-openrouter }
+    - { rel: routes-to, target: endpoint-digitalocean }
+    - { rel: routes-to, target: endpoint-vllm-dgx-spark }
+  facets:
+    endpoint: { transport: openai-compat, kind: proxy, role: router, concurrent: true }
+    pricing: { basis: pass-through, note: "cost is the routed backend's (per-token for cloud legs, owned for local)" }
+    serves: { rule: routed, note: "union of routes-to backends; a unifying access layer, not a placement — capacity resolves to the backend" }
+
+# ── proxy: llama-swap (hot-swaps GGUFs on one box — serves many, one at a time) ─
+- id: endpoint-llama-swap-dgx-spark
+  kind: endpoint
+  name: llama-swap @ DGX Spark
+  summary: Single OpenAI endpoint over one box that hot-swaps GGUF models on demand — serves a configured set but ONE AT A TIME (not concurrent)
+  visibility: public
+  labels: [proxy, swap, llama-swap, dgx-spark]
+  relations:
+    - { rel: routes-to, target: endpoint-llamacpp }
+    - { rel: runs-on, target: hardware-dgx-spark }
+  facets:
+    endpoint: { transport: openai-compat, kind: proxy, role: swap, concurrent: false }
+    pricing: { basis: owned-amortized, note: "local; add model-swap latency on a cold switch" }
+    serves: { rule: swap, note: "many models configured, but loads A OR B — NOT a co-residency solution; plan treats it as serialized" }
+
+# ── rental substrate: Vast.ai (prices GPU-hours, NOT tokens) ──────────────────
+- id: endpoint-vast-ai
+  kind: endpoint
+  name: Vast.ai (GPU rental marketplace)
+  summary: NOT a per-token gateway — a marketplace that rents GPUs by the second; a self-host endpoint placed here inherits a $/GPU-hr basis (per-token cost is DERIVED = $/hr ÷ throughput)
+  visibility: public
+  labels: [rental-substrate, vast, marketplace, gpu]
+  relations:
+    - { rel: via-provider, target: provider-vast-ai }
+  facets:
+    endpoint: { transport: n/a, kind: rental-substrate, url: "https://cloud.vast.ai" }
+    pricing:
+      basis: per-gpu-hour
+      note: "per-second billing; on-demand vs interruptible (~50%+ cheaper) vs reserved (up to 50% off); marketplace-dynamic — snapshot only, never pin"
+    serves: { rule: fits-hardware, note: "rents the GPU; you instantiate vLLM/llama.cpp on it. Model fit = the rented GPU's memory." }
+  claims:
+    - kind: note
+      body: >-
+        Live $/GPU-hr SNAPSHOT (volatile marketplace, re-pull from the API): Tesla
+        V100 $0.08–0.16, RTX 4090 $0.27, RTX 5090 $0.22, H200 $1.32. 68+ GPU types,
+        RTX 3060 → B200 (Blackwell). No per-token, storage, or egress pricing on
+        the public page (JS calculator); numbers via the bundles API.
+      provenance:
+        asOf: "2026-06-22"
+        source: "https://vast.ai/pricing + https://console.vast.ai/api/v0/bundles/ (snapshot)"
+        verification: cited
