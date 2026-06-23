@@ -1,0 +1,30 @@
+manifestVersion: 1
+name: "@stateless/sourced-kb"
+version: "2026.06.23.1"
+description: >-
+  A domain-neutral, sourced, versioned knowledge base — the provenance-aware core
+  generalised out of @stateless/llm-catalog. One uniform `entry` record (open
+  `kind` + open `facets` + `claims` + `relations`, like @stateless/inventory),
+  but with a provenance envelope (asOf, source, versionPins, supersededBy) on
+  every volatile assertion, so it can hold external, decaying, contested
+  knowledge honestly — a value without a date + source is not trustworthy here.
+  Declarative lifecycle: `apply` materialises the declared entries (re-run =
+  versioned trend), `update` folds in a public catalog without clobbering local
+  truth, `prune` soft-retires undeclared entries, `contribute` sanitises selected
+  entries into PR-ready public fragments. It knows no domain (no typed facets, no
+  compute methods); a consuming catalog — LLM-ops, cloud-storage pricing — is an
+  instance whose entries carry that domain's kinds and facets.
+repository: "https://github.com/stateless/swamp-extensions/tree/main/sourced-kb"
+paths:
+  base: manifest
+labels:
+  - knowledge-base
+  - catalog
+  - provenance
+  - sourced
+  - neutral
+models:
+  - sourced_kb.ts
+additionalFiles:
+  - README.md
+  - LICENSE.txt
