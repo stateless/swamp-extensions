@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/sourced-kb"
-version: "2026.06.23.1"
+version: "2026.06.23.2"
 description: >-
   A domain-neutral, sourced, versioned knowledge base — the provenance-aware core
   generalised out of @stateless/llm-catalog. One uniform `entry` record (open
@@ -17,6 +17,8 @@ description: >-
 repository: "https://github.com/stateless/swamp-extensions/tree/main/sourced-kb"
 paths:
   base: manifest
+dependencies:
+  - "@stateless/table-report"
 labels:
   - knowledge-base
   - catalog

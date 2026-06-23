@@ -122,7 +122,11 @@ async function loadCatalog(url: string): Promise<unknown[]> {
 /** The `@stateless/sourced-kb` model definition. */
 export const model = {
   type: "@stateless/sourced-kb",
-  version: "2026.06.23.1",
+  version: "2026.06.23.2",
+  // Default report: every instance gets a generic data-table view of its
+  // entries (auto-tables, or curated via a `tableViews` tag). Override
+  // per-instance with `reports.skip`; domain reports stay opt-in via `require`.
+  reports: ["@stateless/table-report"],
   globalArguments: GlobalArgsSchema,
   resources: {
     entry: {
