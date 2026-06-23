@@ -483,6 +483,20 @@ export function buildCapacityPlan(
   // deno-lint-ignore no-explicit-any
   const hwf: any = (hw as any)?.facets?.hardware ?? {};
   const perUnitGB: number | undefined = hwf.unifiedMemGB;
+  // Fail loud on a named-but-unresolvable host — a typo'd host id must NOT silently
+  // degrade to "no budget" (cloud-only) and look like a valid answer. Omitting host
+  // is the explicit way to ask for a cloud-only ranking; naming a bad one is an error.
+  if (args.host && hw === undefined) {
+    throw new Error(
+      `unknown host '${args.host}' — no hardware entry with that id in the catalog ` +
+        `(omit 'host' for a cloud-only answer)`,
+    );
+  }
+  if (args.host && perUnitGB === undefined) {
+    throw new Error(
+      `host '${args.host}' has no hardware.unifiedMemGB facet — cannot compute a local memory budget`,
+    );
+  }
   // Driver/firmware permanently reserves memory (e.g. GB10 ~22GB) — usable < installed.
   const reservedPerUnit: number = typeof hwf.driverReservedGB === "number"
     ? hwf.driverReservedGB
@@ -690,6 +704,19 @@ export function buildDeploymentPlans(
   // deno-lint-ignore no-explicit-any
   const hwf: any = (hw as any)?.facets?.hardware ?? {};
   const perUnitGB: number | undefined = hwf.unifiedMemGB;
+  // Deployment plans are inherently about placing models ON a host → a budget is
+  // MANDATORY. Fail loud on an unknown host or one lacking unifiedMemGB, rather than
+  // letting an undefined budget read as "unlimited" and emit feasible-looking plans.
+  if (hw === undefined) {
+    throw new Error(
+      `unknown host '${args.host}' — no hardware entry with that id in the catalog`,
+    );
+  }
+  if (perUnitGB === undefined) {
+    throw new Error(
+      `host '${args.host}' has no hardware.unifiedMemGB facet — cannot compute a memory budget`,
+    );
+  }
   const reservedPerUnit: number = typeof hwf.driverReservedGB === "number"
     ? hwf.driverReservedGB
     : 0;

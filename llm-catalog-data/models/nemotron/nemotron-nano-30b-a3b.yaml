@@ -111,3 +111,22 @@
             asOf: "2026-06-20"
             source: "https://unsloth.ai/docs/models/nemotron-3"
             verification: cited
+      # ★ Atlas (pure-Rust DGX-Spark engine) — supported-models target
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Nemotron 3 Nano 30B-A3B · Atlas fp8 @ DGX Spark"
+        quant: fp8
+        format: safetensors
+        units: 1
+        config:
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          speed:
+            genTokS: 88
+            note: "Atlas, Nemotron-3-Nano-30B-A3B kernel (Mamba-2 + attention + MoE); confirm this maps to this catalog model"
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: fp8 }

@@ -184,3 +184,18 @@
         asOf: "2026-06-22"
         source: "https://vast.ai/pricing + https://console.vast.ai/api/v0/bundles/ (snapshot)"
         verification: cited
+
+# ── self-host: Atlas (pure-Rust engine) on a DGX Spark ───────────────────────
+- id: endpoint-atlas-dgx-spark
+  kind: endpoint
+  name: Atlas @ DGX Spark (GB10)
+  summary: Pure-Rust Atlas engine on a GB10 Spark; serves its ~12 supported models (LISTED, not fits-hardware)
+  visibility: public
+  labels: [self-host, atlas, dgx-spark, gb10, cuda]
+  relations:
+    - { rel: served-by, target: runtime-atlas }
+    - { rel: runs-on, target: hardware-dgx-spark }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized, note: "owned GB10; opex ≈ power (~70W)" }
+    serves: { rule: listed, note: "NOT fits-hardware — Atlas only runs models with a BUILT kernel (~12 targets); the supported set IS the filter. Measured recipes attach as runsOn." }

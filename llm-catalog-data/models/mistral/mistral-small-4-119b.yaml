@@ -1,0 +1,59 @@
+# Mistral-Small-4-119B (MoE) — attention + MoE; 119B total. Architecture sourced
+# from the Atlas supported-models table only (NOT HF-verified). Atlas run-option
+# embedded as facets.runsOn[].
+
+- id: model-mistral-small-4-119b
+  kind: model
+  name: Mistral-Small-4-119B
+  summary: Attention + MoE; 119B
+  visibility: public
+  labels: [mistral, moe]
+  facets:
+    architecture:
+      params: "119B"
+      attention: "attention + MoE"
+      modality: [text]
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)"
+        verification: cited
+        confidence: low
+    footprint: # estimated weights-only (params × bits/8); NOT vendor-published
+      basis: weights-only
+      quants:
+        - { quant: nvfp4, memGB: 63, note: "estimate: 119B × 4.25 bits / 8 ≈ 63GB" }
+      provenance:
+        asOf: "2026-06-23"
+        source: "estimated from params × bits/8 (nvfp4 ≈ 4.25 bits)"
+        verification: estimated
+        confidence: low
+    runsOn:
+      # ★ Atlas (pure-Rust DGX-Spark engine) — supported-models target
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Mistral-Small-4-119B · Atlas nvfp4 @ DGX Spark"
+        quant: nvfp4
+        format: safetensors
+        units: 1
+        config:
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          speed:
+            genTokS: 33
+            note: "Atlas single-GPU"
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: nvfp4 }
+  claims:
+    - kind: note
+      body: >-
+        Architecture from the Atlas supported-models table; full HF config.json
+        verification pending.
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)"
+        verification: cited
+        confidence: low

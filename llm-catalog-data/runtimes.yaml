@@ -179,3 +179,48 @@
         asOf: "2026-06-20"
         source: "https://github.com/eugr/spark-vllm-docker (README)"
         verification: cited
+
+- id: runtime-atlas
+  kind: runtime
+  name: Atlas (Avarok)
+  summary: Pure-Rust DGX-Spark-only inference engine; per-(hardware×model×quant) CUDA kernels; OpenAI-compat
+  visibility: public
+  labels: [self-host, rust, dgx-spark, gb10, cuda, openai-compat]
+  facets:
+    formats: [safetensors] # serves HF model ids directly; speed from per-model×quant kernels
+    platform: [cuda] # GB10/SM121 ONLY (Spark); ROCm/Metal/Intel planned
+    api: { apiSpec: openai-compat } # /v1/chat/completions; OpenAI SDK / Open WebUI / Cline / Claude Code
+    license: "AGPLv3 (community) / commercial (enterprise)"
+    capabilities:
+      perModelQuantKernels: true # 35+ hand-optimised CUDA kernels, hardware×model×quant-specific (not generic)
+      mtpSpecDecode: true        # MTP K=2 on supported models
+      prefixCaching: true
+      fp8KvAutoPromote: true     # FP8 KV + auto-promoted boundary layers
+      coldStart: "~2min"
+  claims:
+    - kind: note
+      body: >-
+        Pure-Rust engine, GB10/SM121 ONLY (single binary; kernels auto-select at
+        startup). Docker `avarok/atlas-gb10:latest` → `serve <hf-model-id> --port`.
+        ~12 supported models — speed comes from per-(hardware×model×quant) kernels,
+        so the trade is NARROW model coverage (not a generic loader; a model needs a
+        built kernel). AGPLv3 / commercial dual-license. ~100 commits, no version pin.
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas + forum 369263"
+        verification: cited
+    - kind: caveat
+      body: >-
+        Quant rationale (ADR-0004, Accepted 2026-04-17): NVFP4 + FP8 block-scaled
+        are the ONLY primary formats (AWQ/GPTQ/W4A16/MX4 out of scope). NVFP4 = half
+        FP8's footprint at production quality WHEN CALIBRATED — but two caveats the
+        speed numbers hide: (1) GB10 lacks native E2M1 conversion → SOFTWARE FALLBACK
+        (a perf tax on the NVFP4 path); (2) NVFP4 calibration quality depends on the
+        checkpoint publisher, detectable only by testing. Per-(model×quant) kernel
+        trees mean complexity grows ~quadratically → this is WHY the supported set is
+        ~12 (the endpoint's serves:listed). Atlas publishes design rationale as ADRs
+        (docs/adr/) — a durable provenance source for each recipe's config choices.
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas/blob/main/docs/adr/0004-nvfp4-fp8-quantization.md"
+        verification: cited

@@ -1,0 +1,61 @@
+# Qwen3-Next-80B-A3B (MoE) — SSM + attention + MoE hybrid; 80B total / 3B active.
+# Architecture sourced from the Atlas supported-models table only (NOT HF-verified).
+# Atlas run-option embedded as facets.runsOn[].
+
+- id: model-qwen3-next-80b-a3b
+  kind: model
+  name: Qwen3-Next-80B-A3B
+  summary: SSM + attention + MoE; 80B total / 3B active
+  visibility: public
+  labels: [qwen, moe]
+  facets:
+    architecture:
+      params: "80B"
+      activeParams: "3B"
+      attention: "SSM + attention hybrid"
+      experts: "MoE"
+      modality: [text]
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)"
+        verification: cited
+        confidence: low
+    footprint: # estimated weights-only (params × bits/8); NOT vendor-published
+      basis: weights-only
+      quants:
+        - { quant: fp8, memGB: 80, note: "estimate: 80B × 8 bits / 8" }
+      provenance:
+        asOf: "2026-06-23"
+        source: "estimated from params × bits/8 (fp8 = 8 bits)"
+        verification: estimated
+        confidence: low
+    runsOn:
+      # ★ Atlas (pure-Rust DGX-Spark engine) — supported-models target
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Qwen3-Next-80B-A3B · Atlas fp8 @ DGX Spark"
+        quant: fp8
+        format: safetensors
+        units: 1
+        config:
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          speed:
+            genTokS: 74
+            note: "Atlas single-GPU"
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: fp8 }
+  claims:
+    - kind: note
+      body: >-
+        Architecture from the Atlas supported-models table; full HF config.json
+        verification pending.
+      provenance:
+        asOf: "2026-06-23"
+        source: "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)"
+        verification: cited
+        confidence: low

@@ -1,6 +1,45 @@
 {
   "entries": [
     {
+      "id": "endpoint-atlas-dgx-spark",
+      "kind": "endpoint",
+      "name": "Atlas @ DGX Spark (GB10)",
+      "summary": "Pure-Rust Atlas engine on a GB10 Spark; serves its ~12 supported models (LISTED, not fits-hardware)",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "atlas",
+        "dgx-spark",
+        "gb10",
+        "cuda"
+      ],
+      "relations": [
+        {
+          "rel": "served-by",
+          "target": "runtime-atlas"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-dgx-spark"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "self-host"
+        },
+        "pricing": {
+          "basis": "owned-amortized",
+          "note": "owned GB10; opex ≈ power (~70W)"
+        },
+        "serves": {
+          "rule": "listed",
+          "note": "NOT fits-hardware — Atlas only runs models with a BUILT kernel (~12 targets); the supported set IS the filter. Measured recipes attach as runsOn."
+        }
+      }
+    },
+    {
       "id": "endpoint-digitalocean",
       "kind": "endpoint",
       "name": "DigitalOcean Inference (gateway)",
@@ -1180,6 +1219,172 @@
       }
     },
     {
+      "id": "model-gemma4-12b",
+      "kind": "model",
+      "name": "Gemma 4 12B (dense, multimodal)",
+      "summary": "Unified text+image+audio+video dense ~12B; 256K ctx; demand-paged vision-intake fit (prefill-bound)",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "dense",
+        "multimodal",
+        "audio",
+        "vision"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-gemma4"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Unified multimodal (text + image + audio + video) in ONE ~12B dense model — encoder-free (raw patches → linear projection; audio native). 256K context, Apache-2.0. Audio ≤30s, video ≤60s @1fps. AUDIO IS CONFIRMED for the 12B (config.json carries audio_config + vision_config + text_config, model_type gemma4_unified, audio_token_id/video_token_id/image_token_id; card: \"Audio (E2B, E4B, and 12B only) – ASR and speech-to-translated-text\"). Note: unlike Gemma-3-12B (vision-only, SigLIP), Gemma-4 added native audio to the 12B.",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "https://huggingface.co/google/gemma-4-12B/raw/main/config.json + model card",
+            "verification": "authoritative"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "PLACEMENT (per KoJ review 2026-06-22): demand-page it, don't co-host standing. Co-residency is trivially feasible — at ~10-12GB resident (Q4 weights + vision encoder + KV) it sits next to the always-on 35B-A3B (~23GB) on a 128GB Spark with room to spare; only the 122B privacy-coder (107GB) evicts everything (§3.1 exclusivity is 122B-vs-all, NOT 12B). But multimodal intake is BURSTY (a clip/image/audio note arrives), not the always-on firehose the small model absorbs — so paying ~12GB of STANDING budget for an intermittent job fights the \"standing ≠ 24/7\" principle. Default: LOAD-ON-INTAKE-EVENT + unload (llama-swap hot-swap or the S6 gateway; a 12B loads in seconds). Cohost-standing only if intake volume justifies warm.",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "KoJ review (PLUMTREE-0004 §3.1 placement); footprint arithmetic vs 128GB",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "GB10 FIT (per KoJ): multimodal intake is PREFILL-BOUND (image patches / audio frames are expensive to ingest; the output is one short caption/summary) — that is GB10's STRONG axis and the opposite of the gen-bound agent load, so a vision-intake model is a more natural GB10 fit than the agents themselves. The AEON-7 ~234-509 tok/s vision-prefill figure is this workload class.",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "KoJ review (prefill-bound vs gen-bound); AEON-7 vision-prefill datapoint",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "CONSUMER (per KoJ): the strong, unsolved case is VISION intake — caption/ describe images, diagrams, screenshots, charts so their content becomes qmd-searchable (today they are opaque blobs in the corpus). The AUDIO case is weaker: WhisperX already yields diarized text, so \"understanding\" over audio can feed that text to the agent model — Gemma's audio is redundant with the existing Whisper seam unless a single unified omni-model is specifically wanted (then a Qwen-Omni-class model is the candidate). So the real gap this fills = images→text for the corpus, not audio.",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "KoJ review (intake question: vision→qmd vs audio→WhisperX)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid-sliding-global",
+          "params": "12B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "audio",
+            "video"
+          ],
+          "layers": 48,
+          "slidingWindow": 1024,
+          "visionEncoder": "encoder-free unified (raw patches → linear projection); audio native, no separate encoder",
+          "limits": {
+            "audioSec": 30,
+            "videoSec": 60,
+            "videoFps": 1
+          },
+          "license": "Apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "https://huggingface.co/google/gemma-4-12B",
+            "verification": "authoritative"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "4-bit",
+              "memGB": 8,
+              "note": "~7-8GB; UD-Q4_K_XL expected — confirm vs Unsloth"
+            },
+            {
+              "quant": "8-bit",
+              "memGB": 13
+            },
+            {
+              "quant": "BF16",
+              "memGB": 24
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "estimated: 11.95B × quant-bits/8; cross-check against unsloth.ai/docs when published",
+            "verification": "estimated",
+            "confidence": "low"
+          }
+        },
+        "benchmarks": {
+          "mmluPro": 77.2,
+          "aime2026": 77.5,
+          "liveCodeBenchV6": 72,
+          "gpqaDiamond": 78.8,
+          "mmmuProVision": 69.1,
+          "mathVision": 79.7,
+          "mrcrV2_128k": 43.4,
+          "covostAudio": 38.5,
+          "fleursWer": 0.069,
+          "provenance": {
+            "asOf": "2026-06-22",
+            "source": "https://huggingface.co/google/gemma-4-12B (model card, -it)",
+            "verification": "authoritative"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-llamacpp",
+            "name": "Gemma 4 12B-it · Unsloth GGUF (llama.cpp)",
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "techniques": [
+              "technique-gguf-kquant",
+              "technique-unsloth-dynamic"
+            ],
+            "download": {
+              "hfRepo": "unsloth/gemma-4-12B-it-GGUF",
+              "format": "gguf",
+              "packager": "unsloth",
+              "note": "repo id to confirm on publish"
+            },
+            "config": {
+              "maxModelLen": 262144
+            },
+            "command": "./llama.cpp/llama-cli -hf unsloth/gemma-4-12B-it-GGUF:UD-Q4_K_XL \\\n  --temp 1.0 --top-p 0.95 --top-k 64\n",
+            "note": "Google default sampling temp 1.0/top_p 0.95/top_k 64. Multimodal needs --mmproj. Do NOT run Gemma 4 GGUF on CUDA 13.2.",
+            "procedure": "https://unsloth.ai/docs/models/gemma-4",
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "note": "tok/s unbenchmarked on our fleet — measure (cf. gemma4-26b/31b family numbers)"
+              },
+              "provenance": {
+                "asOf": "2026-06-22",
+                "source": "https://huggingface.co/google/gemma-4-12B + https://unsloth.ai/docs/models/gemma-4",
+                "verification": "cited",
+                "confidence": "low"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "model-gemma4-26b",
       "kind": "model",
       "name": "Gemma 4 26B-A4B (MoE)",
@@ -1329,6 +1534,36 @@
                 "verification": "cited"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Gemma 4 26B-A4B · Atlas NVFP4A16 @ DGX Spark",
+            "quant": "NVFP4A16",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 67,
+                "note": "Atlas supported target; single-GPU"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "NVFP4A16"
+                }
+              }
+            }
           }
         ]
       }
@@ -1434,6 +1669,36 @@
                 "asOf": "2026-06-20",
                 "source": "https://unsloth.ai/docs/models/gemma-4",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Gemma 4 31B · Atlas nvfp4 @ DGX Spark",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 9,
+                "note": "Atlas single-GPU at batch=2; slow — dense 31B is a poor Atlas fit"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "nvfp4"
+                }
               }
             }
           }
@@ -2792,6 +3057,122 @@
                 "verification": "authoritative"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "MiniMax-M2.7 · Atlas (unpublished) @ DGX Spark",
+            "quant": "(unpublished)",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "note": "Atlas-supported target (229B/10B-active, 256-expert MoE); recipe quant + tok/s not yet published in the Atlas table"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "(unpublished)"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "model-mistral-small-4-119b",
+      "kind": "model",
+      "name": "Mistral-Small-4-119B",
+      "summary": "Attention + MoE; 119B",
+      "visibility": "public",
+      "labels": [
+        "mistral",
+        "moe"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Architecture from the Atlas supported-models table; full HF config.json verification pending.",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "attention + MoE",
+          "params": "119B",
+          "modality": [
+            "text"
+          ],
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "nvfp4",
+              "memGB": 63,
+              "note": "estimate: 119B × 4.25 bits / 8 ≈ 63GB"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "estimated from params × bits/8 (nvfp4 ≈ 4.25 bits)",
+            "verification": "estimated",
+            "confidence": "low"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Mistral-Small-4-119B · Atlas nvfp4 @ DGX Spark",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 33,
+                "note": "Atlas single-GPU"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "nvfp4"
+                }
+              }
+            }
           }
         ]
       }
@@ -3114,6 +3495,36 @@
                 "asOf": "2026-06-20",
                 "source": "https://unsloth.ai/docs/models/nemotron-3",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Nemotron 3 Nano 30B-A3B · Atlas fp8 @ DGX Spark",
+            "quant": "fp8",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 88,
+                "note": "Atlas, Nemotron-3-Nano-30B-A3B kernel (Mamba-2 + attention + MoE); confirm this maps to this catalog model"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "fp8"
+                }
               }
             }
           }
@@ -3469,6 +3880,36 @@
                 "asOf": "2026-06-20",
                 "source": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Nemotron 3 Super 120B-A12B · Atlas fp8 @ DGX Spark",
+            "quant": "fp8",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 24,
+                "note": "Atlas, Nemotron-3-Super-120B-A12B kernel (Mamba-2 + attention + MoE)"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "fp8"
+                }
               }
             }
           }
@@ -3888,6 +4329,187 @@
       }
     },
     {
+      "id": "model-qwen3-next-80b-a3b",
+      "kind": "model",
+      "name": "Qwen3-Next-80B-A3B",
+      "summary": "SSM + attention + MoE; 80B total / 3B active",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Architecture from the Atlas supported-models table; full HF config.json verification pending.",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "SSM + attention hybrid",
+          "params": "80B",
+          "activeParams": "3B",
+          "modality": [
+            "text"
+          ],
+          "experts": "MoE",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "fp8",
+              "memGB": 80,
+              "note": "estimate: 80B × 8 bits / 8"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "estimated from params × bits/8 (fp8 = 8 bits)",
+            "verification": "estimated",
+            "confidence": "low"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3-Next-80B-A3B · Atlas fp8 @ DGX Spark",
+            "quant": "fp8",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 74,
+                "note": "Atlas single-GPU"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "fp8"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "model-qwen3-vl-30b-a3b",
+      "kind": "model",
+      "name": "Qwen3-VL-30B-A3B",
+      "summary": "Vision + attention + MoE; 30B total / 3B active; multimodal",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "moe",
+        "multimodal",
+        "vision"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Architecture from the Atlas supported-models table; full HF config.json verification pending.",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "attention + MoE",
+          "params": "30B",
+          "activeParams": "3B",
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "nvfp4",
+              "memGB": 16,
+              "note": "estimate: 30B × 4.25 bits / 8 ≈ 16GB"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "estimated from params × bits/8 (nvfp4 ≈ 4.25 bits)",
+            "verification": "estimated",
+            "confidence": "low"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3-VL-30B-A3B · Atlas nvfp4 @ DGX Spark",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 97,
+                "note": "Atlas single-GPU; vision MoE"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "model-qwen35",
       "kind": "model",
       "name": "Qwen3.5 (family)",
@@ -4152,6 +4774,44 @@
           }
         },
         "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3.5-122B-A10B · Atlas NVFP4 (Recipe C) @ 1× DGX Spark",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4"
+            ],
+            "units": 1,
+            "config": {
+              "maxModelLen": 16384,
+              "concurrentServe": 4,
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "context": {
+                "tokens": 16384
+              },
+              "speed": {
+                "genTokS": 32,
+                "note": "Atlas Recipe C, single-GPU NVFP4, 16K ctx, no spec-decode (fits over speed) — comparable to other single-Spark 122B paths (cf. Albond AR-INT4 51-52 with the full opt stack)"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (Recipe C)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          },
           {
             "endpoint": "endpoint-vllm-dgx-spark",
             "name": "Qwen3.5-122B · vLLM @ 1× Spark — forum 365639 v2.4 (current best)",
@@ -4465,7 +5125,39 @@
             "source": "https://qwen.ai/blog?id=qwen3.5",
             "verification": "cited"
           }
-        }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3.5-27B · Atlas fp8 @ DGX Spark",
+            "quant": "fp8",
+            "format": "safetensors",
+            "units": 1,
+            "config": {
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 13,
+                "note": "Atlas, hybrid SSM+attention; notably slow (dense-ish 27B is a poor Atlas fit vs the A3B MoEs)"
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "fp8"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -4550,6 +5242,43 @@
           }
         },
         "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3.5-35B-A3B · Atlas NVFP4 + MTP K=2 (Recipe B) @ DGX Spark",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-mtp",
+              "technique-prefix-caching"
+            ],
+            "units": 1,
+            "config": {
+              "speculative": "mtp (K=2)",
+              "kvCacheDtype": "fp8",
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "speed": {
+                "genTokS": 131,
+                "note": "Atlas Recipe B, single-GPU, NVFP4 + MTP K=2 — repo's fastest target; ~2min cold start. Repo figure; re-verify single-stream vs concurrent (cf. the qwen3.6 headline-vs-single-thread caveat)."
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (Recipe B)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest)",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          },
           {
             "endpoint": "endpoint-vllm-dgx-spark",
             "name": "Qwen3.5-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)",
@@ -5336,6 +6065,48 @@
           }
         },
         "runsOn": [
+          {
+            "endpoint": "endpoint-atlas-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · Atlas FP8 (Recipe A) @ DGX Spark",
+            "quant": "fp8",
+            "format": "safetensors",
+            "techniques": [
+              "technique-fp8",
+              "technique-mtp",
+              "technique-prefix-caching"
+            ],
+            "units": 1,
+            "config": {
+              "maxModelLen": 16384,
+              "speculative": "mtp (K=2)",
+              "kvCacheDtype": "fp8 + auto-promoted boundary layers",
+              "build": {
+                "runtime": "Atlas",
+                "image": "avarok/atlas-gb10:latest"
+              }
+            },
+            "command": "sudo docker run -d --network host --gpus all --ipc=host avarok/atlas-gb10:latest serve Qwen/Qwen3.6-35B-A3B-FP8 --port 8888",
+            "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
+            "outcome": {
+              "context": {
+                "tokens": 16384
+              },
+              "speed": {
+                "genTokS": 84,
+                "note": "DISCREPANCY: repo Recipe A claims ~130 tok/s; community SINGLE-THREAD measured 75-93 (forum 369263, AzeezIsh maintainer + users); ~35-40% throughput drop at 2× concurrency. Use ~75-93 single-stream as the trustable number until reconciled. ~2min cold start."
+              },
+              "provenance": {
+                "asOf": "2026-06-23",
+                "source": "https://github.com/Avarok-Cybersecurity/atlas (Recipe A) + https://forums.developer.nvidia.com/t/369263",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "Atlas (avarok/atlas-gb10:latest, ~100 commits, no version pin)",
+                  "quant": "fp8"
+                }
+              }
+            }
+          },
           {
             "endpoint": "endpoint-vllm-dgx-spark",
             "name": "Qwen3.6-35B-A3B · vLLM NVFP4 + MTP-3 @ 1× DGX Spark (MEASURED)",
@@ -6217,6 +6988,61 @@
         "api": {
           "apiSpec": "openai-compat",
           "type": "first-party"
+        }
+      }
+    },
+    {
+      "id": "runtime-atlas",
+      "kind": "runtime",
+      "name": "Atlas (Avarok)",
+      "summary": "Pure-Rust DGX-Spark-only inference engine; per-(hardware×model×quant) CUDA kernels; OpenAI-compat",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "rust",
+        "dgx-spark",
+        "gb10",
+        "cuda",
+        "openai-compat"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Pure-Rust engine, GB10/SM121 ONLY (single binary; kernels auto-select at startup). Docker `avarok/atlas-gb10:latest` → `serve <hf-model-id> --port`. ~12 supported models — speed comes from per-(hardware×model×quant) kernels, so the trade is NARROW model coverage (not a generic loader; a model needs a built kernel). AGPLv3 / commercial dual-license. ~100 commits, no version pin.",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas + forum 369263",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "Quant rationale (ADR-0004, Accepted 2026-04-17): NVFP4 + FP8 block-scaled are the ONLY primary formats (AWQ/GPTQ/W4A16/MX4 out of scope). NVFP4 = half FP8's footprint at production quality WHEN CALIBRATED — but two caveats the speed numbers hide: (1) GB10 lacks native E2M1 conversion → SOFTWARE FALLBACK (a perf tax on the NVFP4 path); (2) NVFP4 calibration quality depends on the checkpoint publisher, detectable only by testing. Per-(model×quant) kernel trees mean complexity grows ~quadratically → this is WHY the supported set is ~12 (the endpoint's serves:listed). Atlas publishes design rationale as ADRs (docs/adr/) — a durable provenance source for each recipe's config choices.",
+          "provenance": {
+            "asOf": "2026-06-23",
+            "source": "https://github.com/Avarok-Cybersecurity/atlas/blob/main/docs/adr/0004-nvfp4-fp8-quantization.md",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "api": {
+          "apiSpec": "openai-compat"
+        },
+        "formats": [
+          "safetensors"
+        ],
+        "platform": [
+          "cuda"
+        ],
+        "license": "AGPLv3 (community) / commercial (enterprise)",
+        "capabilities": {
+          "perModelQuantKernels": true,
+          "mtpSpecDecode": true,
+          "prefixCaching": true,
+          "fp8KvAutoPromote": true,
+          "coldStart": "~2min"
         }
       }
     },
