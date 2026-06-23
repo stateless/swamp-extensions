@@ -1,0 +1,24 @@
+manifestVersion: 1
+name: "@stateless/table-report"
+version: "2026.06.23.1"
+description: >-
+  A generic data-table report for any swamp model — render materialised resource
+  data as markdown tables, dataview-style, instead of hand-writing a bespoke
+  report per model. Declare a `tableViews` tag (JSON: a list of {spec, columns,
+  where, sort, limit}) for curated views — the config lives in the model's
+  free-form `tags`, so it works on ANY model type with no schema change — or get
+  an auto-table per resource spec with zero config. Column paths are
+  content-relative (e.g. `facets.pricing.perTBMonth`); filters are scalar-
+  equality. Point it at any model, get tables, no TypeScript.
+repository: "https://github.com/stateless/swamp-extensions/tree/main/table-report"
+labels:
+  - view
+  - table
+  - report
+  - generic
+  - dataview
+reports:
+  - table_report.ts
+additionalFiles:
+  - README.md
+  - LICENSE.txt
