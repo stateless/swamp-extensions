@@ -518,6 +518,32 @@ Deno.test("capacity: node-count gate rules out multi-unit recipes on a single ho
   assert(cluster.recommendations.some((r) => r.model === "model-c" && r.units === 2));
 });
 
+Deno.test("capacity/plan: a named-but-unknown host FAILS LOUD (not silent unlimited budget)", () => {
+  const entries = [
+    EntrySchema.parse({
+      id: "hardware-box", kind: "hardware", name: "Box", summary: "h",
+      visibility: "public", facets: { hardware: { unifiedMemGB: 128 } },
+    }),
+  ];
+  // capacity: a typo'd host must throw, NOT silently degrade to a cloud-only answer.
+  assertThrows(
+    () => buildCapacityPlan(CapacityArgsSchema.parse({ task: "t", host: "hardware-typo" }), entries),
+    Error,
+    "unknown host 'hardware-typo'",
+  );
+  // capacity: omitting host is the legitimate cloud-only mode — must NOT throw.
+  buildCapacityPlan(CapacityArgsSchema.parse({ task: "t" }), entries);
+  // plan: host is mandatory; an unknown one must throw rather than emit unlimited-budget plans.
+  assertThrows(
+    () => buildDeploymentPlans(
+      PlanArgsSchema.parse({ host: "hardware-typo", workloads: [{ label: "w" }] }),
+      entries,
+    ),
+    Error,
+    "unknown host 'hardware-typo'",
+  );
+});
+
 Deno.test("capacity: driver-reserved memory shrinks the usable budget", () => {
   const entries = [
     EntrySchema.parse({

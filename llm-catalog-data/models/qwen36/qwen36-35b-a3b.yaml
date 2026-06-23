@@ -50,6 +50,31 @@
         source: "https://unsloth.ai/docs/models/qwen3.6"
         verification: cited
     runsOn:
+      # ★ Atlas (pure-Rust engine) — Recipe A, "daily driver for agentic coding"
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Qwen3.6-35B-A3B · Atlas FP8 (Recipe A) @ DGX Spark"
+        quant: fp8
+        format: safetensors
+        techniques: [technique-fp8, technique-mtp, technique-prefix-caching]
+        units: 1
+        config:
+          maxModelLen: 16384 # capped at 16K (was over-provisioned at 131K)
+          speculative: "mtp (K=2)"
+          kvCacheDtype: "fp8 + auto-promoted boundary layers"
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        command: "sudo docker run -d --network host --gpus all --ipc=host avarok/atlas-gb10:latest serve Qwen/Qwen3.6-35B-A3B-FP8 --port 8888"
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          context: { tokens: 16384 }
+          speed:
+            genTokS: 84 # community single-thread 75-93 (forum 369263); repo headline claims ~130
+            note: "DISCREPANCY: repo Recipe A claims ~130 tok/s; community SINGLE-THREAD measured 75-93 (forum 369263, AzeezIsh maintainer + users); ~35-40% throughput drop at 2× concurrency. Use ~75-93 single-stream as the trustable number until reconciled. ~2min cold start."
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (Recipe A) + https://forums.developer.nvidia.com/t/369263"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest, ~100 commits, no version pin)", quant: fp8 }
       # ★ MEASURED single-Spark NVFP4 + MTP-3 — benchmark report (forum 371810, llama-benchy).
       # The standout local number: 126 tok/s decode on ONE Spark; strong prefill.
       - endpoint: endpoint-vllm-dgx-spark

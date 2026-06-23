@@ -50,6 +50,27 @@
 
     # ── run-options: every tested config + gateway, keyed by endpoint ──────────
     runsOn:
+      # Atlas (pure-Rust engine) — Recipe C, "large model on single Spark" (fit over speed)
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Qwen3.5-122B-A10B · Atlas NVFP4 (Recipe C) @ 1× DGX Spark"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4]
+        units: 1
+        config:
+          maxModelLen: 16384 # 16K — no speculative (memory); 4-way concurrent serve
+          concurrentServe: 4
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          context: { tokens: 16384 }
+          speed: { genTokS: 32, note: "Atlas Recipe C, single-GPU NVFP4, 16K ctx, no spec-decode (fits over speed) — comparable to other single-Spark 122B paths (cf. Albond AR-INT4 51-52 with the full opt stack)" }
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (Recipe C)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: nvfp4 }
       # self-host, endpoint-vllm-dgx-spark — config #1: Albond v2.4 (current best, forum 365639)
       - endpoint: endpoint-vllm-dgx-spark
         name: "Qwen3.5-122B · vLLM @ 1× Spark — forum 365639 v2.4 (current best)"

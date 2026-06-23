@@ -121,7 +121,7 @@ interface MethodResult {
 /** The `@stateless/llm-catalog` model definition. */
 export const model = {
   type: "@stateless/llm-catalog",
-  version: "2026.06.22.3",
+  version: "2026.06.23.1",
   globalArguments: GlobalArgsSchema,
   resources: {
     entry: {

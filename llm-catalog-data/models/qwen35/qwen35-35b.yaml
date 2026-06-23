@@ -48,6 +48,26 @@
 
     # ── run-options: every tested config + gateway, keyed by endpoint ──────────
     runsOn:
+      # ★ Atlas (pure-Rust engine) — Recipe B, "fastest single-GPU target"
+      - endpoint: endpoint-atlas-dgx-spark
+        name: "Qwen3.5-35B-A3B · Atlas NVFP4 + MTP K=2 (Recipe B) @ DGX Spark"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-mtp, technique-prefix-caching]
+        units: 1
+        config:
+          speculative: "mtp (K=2)"
+          kvCacheDtype: fp8
+          build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
+        procedure: "https://github.com/Avarok-Cybersecurity/atlas"
+        outcome:
+          speed: { genTokS: 131, note: "Atlas Recipe B, single-GPU, NVFP4 + MTP K=2 — repo's fastest target; ~2min cold start. Repo figure; re-verify single-stream vs concurrent (cf. the qwen3.6 headline-vs-single-thread caveat)." }
+          provenance:
+            asOf: "2026-06-23"
+            source: "https://github.com/Avarok-Cybersecurity/atlas (Recipe B)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: nvfp4 }
       # self-host, endpoint-vllm-dgx-spark — Qwen native FP8, TP=2 Ray (eugr recipe)
       - endpoint: endpoint-vllm-dgx-spark
         name: "Qwen3.5-35B-A3B · vLLM FP8 @ 2× DGX Spark (eugr recipe)"

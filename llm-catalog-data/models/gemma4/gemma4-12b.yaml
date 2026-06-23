@@ -1,0 +1,134 @@
+# Gemma 4 12B (dense, unified multimodal) — text + image + audio + video in one
+# ~12B model; 256K context; encoder-FREE unified design (no separate vision/audio
+# encoder). Small enough to CO-HOST with a text/agent model (e.g. qwen3.6-35B-A3B
+# NVFP4) on a single 128GB Spark. variant-of → model-gemma4.
+
+- id: model-gemma4-12b
+  kind: model
+  name: Gemma 4 12B (dense, multimodal)
+  summary: Unified text+image+audio+video dense ~12B; 256K ctx; demand-paged vision-intake fit (prefill-bound)
+  visibility: public
+  labels: [gemma, dense, multimodal, audio, vision]
+  relations:
+    - { rel: variant-of, target: model-gemma4 }
+  facets:
+    architecture:
+      attention: hybrid-sliding-global
+      params: "12B" # 11.95B
+      layers: 48
+      slidingWindow: 1024
+      nativeContext: 262144 # 256K
+      modality: [text, image, audio, video]
+      visionEncoder: "encoder-free unified (raw patches → linear projection); audio native, no separate encoder"
+      limits: { audioSec: 30, videoSec: 60, videoFps: 1 }
+      license: Apache-2.0
+      provenance:
+        asOf: "2026-06-22"
+        source: "https://huggingface.co/google/gemma-4-12B"
+        verification: authoritative
+    footprint: # ESTIMATED (params × effective bits/8); confirm vs Unsloth per-quant when published
+      basis: weights-only
+      quants:
+        - { quant: "4-bit", memGB: 8, note: "~7-8GB; UD-Q4_K_XL expected — confirm vs Unsloth" }
+        - { quant: "8-bit", memGB: 13 }
+        - { quant: BF16, memGB: 24 }
+      provenance:
+        asOf: "2026-06-22"
+        source: "estimated: 11.95B × quant-bits/8; cross-check against unsloth.ai/docs when published"
+        verification: estimated
+        confidence: low
+    benchmarks: # Google-published, gemma-4-12B-it
+      mmluPro: 77.2
+      aime2026: 77.5
+      liveCodeBenchV6: 72.0
+      gpqaDiamond: 78.8
+      mmmuProVision: 69.1 # MMMU Pro
+      mathVision: 79.7 # MATH-Vision (distinct from MathVista)
+      mrcrV2_128k: 43.4
+      covostAudio: 38.5 # CoVoST speech-translation, excl. Chinese
+      fleursWer: 0.069 # FLEURS ASR word-error-rate (lower better), excl. Chinese
+      provenance:
+        asOf: "2026-06-22"
+        source: "https://huggingface.co/google/gemma-4-12B (model card, -it)"
+        verification: authoritative
+    runsOn:
+      # self-host: Unsloth GGUF via llama.cpp (host-agnostic). No measured tok/s yet — measure.
+      - endpoint: endpoint-llamacpp
+        name: "Gemma 4 12B-it · Unsloth GGUF (llama.cpp)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic]
+        download: { hfRepo: "unsloth/gemma-4-12B-it-GGUF", format: gguf, packager: unsloth, note: "repo id to confirm on publish" }
+        config:
+          maxModelLen: 262144
+        command: |
+          ./llama.cpp/llama-cli -hf unsloth/gemma-4-12B-it-GGUF:UD-Q4_K_XL \
+            --temp 1.0 --top-p 0.95 --top-k 64
+        note: "Google default sampling temp 1.0/top_p 0.95/top_k 64. Multimodal needs --mmproj. Do NOT run Gemma 4 GGUF on CUDA 13.2."
+        procedure: "https://unsloth.ai/docs/models/gemma-4"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "tok/s unbenchmarked on our fleet — measure (cf. gemma4-26b/31b family numbers)" }
+          provenance:
+            asOf: "2026-06-22"
+            source: "https://huggingface.co/google/gemma-4-12B + https://unsloth.ai/docs/models/gemma-4"
+            verification: cited
+            confidence: low
+  claims:
+    - kind: note
+      body: >-
+        Unified multimodal (text + image + audio + video) in ONE ~12B dense model —
+        encoder-free (raw patches → linear projection; audio native). 256K context,
+        Apache-2.0. Audio ≤30s, video ≤60s @1fps. AUDIO IS CONFIRMED for the 12B
+        (config.json carries audio_config + vision_config + text_config, model_type
+        gemma4_unified, audio_token_id/video_token_id/image_token_id; card: "Audio
+        (E2B, E4B, and 12B only) – ASR and speech-to-translated-text"). Note: unlike
+        Gemma-3-12B (vision-only, SigLIP), Gemma-4 added native audio to the 12B.
+      provenance:
+        asOf: "2026-06-22"
+        source: "https://huggingface.co/google/gemma-4-12B/raw/main/config.json + model card"
+        verification: authoritative
+    - kind: note
+      body: >-
+        PLACEMENT (per KoJ review 2026-06-22): demand-page it, don't co-host standing.
+        Co-residency is trivially feasible — at ~10-12GB resident (Q4 weights + vision
+        encoder + KV) it sits next to the always-on 35B-A3B (~23GB) on a 128GB Spark
+        with room to spare; only the 122B privacy-coder (107GB) evicts everything
+        (§3.1 exclusivity is 122B-vs-all, NOT 12B). But multimodal intake is BURSTY
+        (a clip/image/audio note arrives), not the always-on firehose the small model
+        absorbs — so paying ~12GB of STANDING budget for an intermittent job fights the
+        "standing ≠ 24/7" principle. Default: LOAD-ON-INTAKE-EVENT + unload (llama-swap
+        hot-swap or the S6 gateway; a 12B loads in seconds). Cohost-standing only if
+        intake volume justifies warm.
+      provenance:
+        asOf: "2026-06-22"
+        source: "KoJ review (PLUMTREE-0004 §3.1 placement); footprint arithmetic vs 128GB"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        GB10 FIT (per KoJ): multimodal intake is PREFILL-BOUND (image patches / audio
+        frames are expensive to ingest; the output is one short caption/summary) — that
+        is GB10's STRONG axis and the opposite of the gen-bound agent load, so a
+        vision-intake model is a more natural GB10 fit than the agents themselves. The
+        AEON-7 ~234-509 tok/s vision-prefill figure is this workload class.
+      provenance:
+        asOf: "2026-06-22"
+        source: "KoJ review (prefill-bound vs gen-bound); AEON-7 vision-prefill datapoint"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        CONSUMER (per KoJ): the strong, unsolved case is VISION intake — caption/
+        describe images, diagrams, screenshots, charts so their content becomes
+        qmd-searchable (today they are opaque blobs in the corpus). The AUDIO case is
+        weaker: WhisperX already yields diarized text, so "understanding" over audio can
+        feed that text to the agent model — Gemma's audio is redundant with the existing
+        Whisper seam unless a single unified omni-model is specifically wanted (then a
+        Qwen-Omni-class model is the candidate). So the real gap this fills = images→text
+        for the corpus, not audio.
+      provenance:
+        asOf: "2026-06-22"
+        source: "KoJ review (intake question: vision→qmd vs audio→WhisperX)"
+        verification: cited
+        confidence: medium
