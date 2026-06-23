@@ -46,8 +46,9 @@ Deno.test("autoColumns: id/kind/name + facet scalar leaves", () => {
 Deno.test("autoColumns: picks ALL top-level scalars (not just catalogue fields)", () => {
   // inventory-shaped record — site/location/purpose are top-level, not facets
   const inv: Rec[] = [{
-    id: "sh1", name: "SH1", kind: "host", site: "colo", location: "Penrose",
-    status: "active", components: [], relations: [], facets: {},
+    id: "host-1", name: "Host 1", kind: "host", site: "site-a",
+    location: "Example DC", status: "active", components: [], relations: [],
+    facets: {},
   }];
   const cols = autoColumns(inv);
   // the previously-missed top-level scalars are now auto-included
