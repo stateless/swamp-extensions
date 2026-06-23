@@ -81,12 +81,27 @@ const isScalar = (v: unknown): boolean =>
 /** Auto-detect a sensible column set (label → path) from a set of records. */
 export function autoColumns(
   records: Rec[],
-  maxCols = 10,
+  maxCols = 12,
 ): Record<string, string> {
   const cols: Record<string, string> = {};
-  for (const k of ["id", "name", "kind", "status", "visibility"]) {
-    if (records.some((r) => r[k] !== undefined)) cols[k] = k;
+  // id + name lead (the identity columns), when present.
+  for (const k of ["id", "name"]) {
+    if (records.some((r) => isScalar(r[k]))) cols[k] = k;
   }
+  // then EVERY other top-level scalar field (first-seen order) — so the view is
+  // generic, not biased to any one model's shape (an inventory `site`/`location`
+  // is auto-picked the same as a catalogue `kind`).
+  for (const r of records) {
+    if (Object.keys(cols).length >= maxCols) break;
+    for (const [k, v] of Object.entries(r)) {
+      if (k === "id" || k === "name" || k in cols) continue;
+      if (isScalar(v)) {
+        if (Object.keys(cols).length >= maxCols) break;
+        cols[k] = k;
+      }
+    }
+  }
+  // then facet scalar leaves (facets.<facet>.<key>), if room.
   const facetLeaves = new Set<string>();
   for (const r of records) {
     const facets = r.facets;
@@ -102,7 +117,8 @@ export function autoColumns(
   }
   for (const p of facetLeaves) {
     if (Object.keys(cols).length >= maxCols) break;
-    cols[p.replace(/^facets\./, "")] = p; // label without the facets. prefix
+    const label = p.replace(/^facets\./, ""); // label without the facets. prefix
+    if (!(label in cols)) cols[label] = p;
   }
   return cols;
 }

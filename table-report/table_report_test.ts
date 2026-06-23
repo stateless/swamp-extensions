@@ -43,6 +43,25 @@ Deno.test("autoColumns: id/kind/name + facet scalar leaves", () => {
   assertEquals(cols["pricing.perTBMonth"], "facets.pricing.perTBMonth");
 });
 
+Deno.test("autoColumns: picks ALL top-level scalars (not just catalogue fields)", () => {
+  // inventory-shaped record — site/location/purpose are top-level, not facets
+  const inv: Rec[] = [{
+    id: "sh1", name: "SH1", kind: "host", site: "colo", location: "Penrose",
+    status: "active", components: [], relations: [], facets: {},
+  }];
+  const cols = autoColumns(inv);
+  // the previously-missed top-level scalars are now auto-included
+  assertEquals(cols.site, "site");
+  assertEquals(cols.location, "location");
+  assertEquals(cols.purpose, undefined); // absent field → not invented
+  // arrays/objects are never columns
+  assert(!("components" in cols));
+  assert(!("relations" in cols));
+  assert(!("facets" in cols));
+  // id + name lead
+  assertEquals(Object.keys(cols).slice(0, 2), ["id", "name"]);
+});
+
 Deno.test("applyView: where-filter + column project + sort + limit", () => {
   const t = applyView(RECS, {
     spec: "entry",

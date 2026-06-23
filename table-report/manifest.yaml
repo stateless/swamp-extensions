@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/table-report"
-version: "2026.06.23.1"
+version: "2026.06.23.2"
 description: >-
   A generic data-table report for any swamp model — render materialised resource
   data as markdown tables, dataview-style, instead of hand-writing a bespoke
