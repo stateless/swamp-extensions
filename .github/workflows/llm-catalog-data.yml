@@ -1,0 +1,51 @@
+name: llm-catalog-data
+
+# Validate the public LLM catalog dataset on every PR / push that touches it.
+# assemble.ts is the gate: it schema-validates every entry, checks referential
+# integrity + the contradiction classes, AND runs the anonymization gate (§5d:
+# private-range IPv4, *.ts.net, and an owned-name denylist). The owned-name
+# denylist lives in a PRIVATE file that is never published, so here only the
+# generic structural patterns apply — which is correct: an outside contributor
+# has no fleet names to leak. A schema-valid but malformed/un-sanitised entry
+# fails this job, not a human reviewer.
+
+on:
+  pull_request:
+    paths:
+      - "llm-catalog-data/**"
+      - "llm-catalog/**"            # the schema (EntrySchema) lives in the extension
+      - ".github/workflows/llm-catalog-data.yml"
+  push:
+    branches: [main]
+    paths:
+      - "llm-catalog-data/**"
+      - "llm-catalog/**"
+      - ".github/workflows/llm-catalog-data.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: llm-catalog-data-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Assemble + gate (schema, integrity, contradictions, anonymization)
+        working-directory: llm-catalog-data
+        run: deno run --allow-read --allow-write scripts/assemble.ts
+
+      - name: catalog.json is up to date
+        run: |
+          if ! git diff --exit-code -- llm-catalog-data/catalog.json; then
+            echo "::error::catalog.json is stale — run 'deno run --allow-read --allow-write scripts/assemble.ts' in llm-catalog-data/ and commit the result."
+            exit 1
+          fi

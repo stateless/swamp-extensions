@@ -20,7 +20,30 @@
 import { parse } from "jsr:@std/yaml@1";
 import { walk } from "jsr:@std/fs@1/walk";
 import { dirname, fromFileUrl, isAbsolute, join, relative } from "jsr:@std/path@1";
-import { EntrySchema } from "../../extensions/models/llm-catalog/schemas.ts";
+
+// EntrySchema is the single source of truth, owned by the llm-catalog extension.
+// Its location relative to this dataset differs by tree: a development working
+// copy keeps the extension at extensions/models/llm-catalog/, the published
+// monorepo at llm-catalog/ (repo root). Resolve against both so assemble runs
+// identically in either tree — dev checkout, the public monorepo, a community
+// clone, or CI — without a vendored copy that would drift from the extension.
+// schemas.ts imports only npm:zod, so a bare path resolve is enough.
+// deno-lint-ignore no-explicit-any
+const EntrySchema: any = await (async () => {
+  for (
+    const p of [
+      "../../extensions/models/llm-catalog/schemas.ts",
+      "../../llm-catalog/schemas.ts",
+    ]
+  ) {
+    try {
+      return (await import(new URL(p, import.meta.url).href)).EntrySchema;
+    } catch { /* try the next layout */ }
+  }
+  throw new Error(
+    "EntrySchema not found — looked in extensions/models/llm-catalog/ and llm-catalog/",
+  );
+})();
 
 const ROOT = dirname(dirname(fromFileUrl(import.meta.url))); // llm-catalog-data/
 const SCRIPTS = join(ROOT, "scripts");
