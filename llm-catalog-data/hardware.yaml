@@ -42,14 +42,14 @@
         `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`).
       provenance: &spark-runbook
         asOf: "2026-06-20"
-        source: "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check"
+        source: "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit"
         verification: cited
     - kind: caveat
       body: >-
         Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory;
         set `multi-user.target` (no display manager) to reclaim it for inference.
-        Our dgx1 is already headless (verified 2026-06-20: gdm/lightdm/sddm inactive,
-        default target multi-user, only ~0.4GB in use idle).
+        A headless DGX Spark idles at only ~0.4GB GPU memory in use (observed
+        2026-06-20: gdm/lightdm/sddm inactive, default target multi-user).
       provenance: *spark-runbook
     - kind: caveat
       body: >-
@@ -64,8 +64,8 @@
       body: >-
         nvidia-smi can't report GB10 unified memory (memory.used/total/reserved =
         N/A, "Not Supported") — use `free`/vLLM's memory profiler / tegrastats
-        instead. dgx1 live: NVIDIA GB10, driver 580.159.03, CUDA 13.0, kernel
-        6.17.0-1021-nvidia (DGX OS 7).
+        instead. Observed on a DGX Spark (GB10): driver 580.159.03, CUDA 13.0,
+        DGX OS 7.
       provenance: *spark-runbook
 
 - id: hardware-apple-silicon

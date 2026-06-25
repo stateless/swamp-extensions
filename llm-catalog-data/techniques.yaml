@@ -1,6 +1,32 @@
 # Techniques — KV-compression, quant schemes, attention/decoding methods.
 # Shared reference entities, referenced by id (uses-technique: technique-…). Public.
 
+- id: technique-preserve-thinking-template
+  kind: technique
+  name: Thinking-preserving chat template (KV-cache reuse)
+  summary: Use a chat template that retains prior reasoning blocks so the KV-cache prefix is reused across turns
+  visibility: public
+  labels: [kv-cache, chat-template, reasoning, jinja, performance]
+  facets: { qualityImpact: lossless }
+  claims:
+    - kind: guideline
+      body: >-
+        Onboarding checklist item — before measuring a reasoning model's
+        multi-turn throughput, verify its chat template PRESERVES prior thinking
+        blocks in history. Many stock templates strip them each turn, which
+        mutates the prompt prefix so llama.cpp can't reuse the KV-cache prefix
+        and recomputes the entire conversation every turn (large speed
+        regression in agent/multi-turn sessions). Fix = a jinja template that
+        retains prior reasoning blocks, passed via llama.cpp
+        `--chat-template-file` (cf. qwen36 `preserve_thinking`, Gemma e4b custom
+        reasoning template). Worked example (Gemma e4b, retains thinking)
+        vendored at artifacts/templates/gemma4-e4b-retain.jinja (upstream gist in
+        provenance.source).
+      provenance:
+        asOf: "2026-06-21"
+        source: "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf) + Qwen3.6 preserve_thinking"
+        confidence: medium
+
 - id: technique-kv-quant-bf16
   kind: technique
   name: KV-cache quant (bf16)

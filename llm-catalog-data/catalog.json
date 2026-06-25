@@ -528,16 +528,16 @@
           "body": "Usable memory < 128GB: the CUDA driver permanently reserves ~22GB, leaving ~100-106GB for weights+KV. vLLM `gpu_memory_utilization` 0.85 is the validated safe ceiling for a ~110GB-class load (0.90 fails — needs ~109.5GB; 0.80 silently OOMs at CUDA-graph capture unless `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1`).",
           "provenance": {
             "asOf": "2026-06-20",
-            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit",
             "verification": "cited"
           }
         },
         {
           "kind": "caveat",
-          "body": "Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory; set `multi-user.target` (no display manager) to reclaim it for inference. Our dgx1 is already headless (verified 2026-06-20: gdm/lightdm/sddm inactive, default target multi-user, only ~0.4GB in use idle).",
+          "body": "Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory; set `multi-user.target` (no display manager) to reclaim it for inference. A headless DGX Spark idles at only ~0.4GB GPU memory in use (observed 2026-06-20: gdm/lightdm/sddm inactive, default target multi-user).",
           "provenance": {
             "asOf": "2026-06-20",
-            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit",
             "verification": "cited"
           }
         },
@@ -546,16 +546,16 @@
           "body": "USB-C Power-Delivery firmware WEDGE (seen on ASUS GX10; not DGX Founders): after OOM-kills / crash-loops the PD firmware can pin the SM clock at 611/708MHz (vs 2400-2600), power <15W, with NO throttle reason reported and `nvidia-smi -lgc` silently ignored — throughput 30-50% low. Fix = AC cold drain (poweroff, unplug brick from wall 90-120s, replug); persistent → request ASUS PD firmware >=5.8. Worth a smart-plug for remote drains.",
           "provenance": {
             "asOf": "2026-06-20",
-            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit",
             "verification": "cited"
           }
         },
         {
           "kind": "note",
-          "body": "nvidia-smi can't report GB10 unified memory (memory.used/total/reserved = N/A, \"Not Supported\") — use `free`/vLLM's memory profiler / tegrastats instead. dgx1 live: NVIDIA GB10, driver 580.159.03, CUDA 13.0, kernel 6.17.0-1021-nvidia (DGX OS 7).",
+          "body": "nvidia-smi can't report GB10 unified memory (memory.used/total/reserved = N/A, \"Not Supported\") — use `free`/vLLM's memory profiler / tegrastats instead. Observed on a DGX Spark (GB10): driver 580.159.03, CUDA 13.0, DGX OS 7.",
           "provenance": {
             "asOf": "2026-06-20",
-            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + dgx1 live check",
+            "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit",
             "verification": "cited"
           }
         }
@@ -1806,6 +1806,10 @@
         {
           "rel": "variant-of",
           "target": "model-gemma4"
+        },
+        {
+          "rel": "uses-technique",
+          "target": "technique-preserve-thinking-template"
         }
       ],
       "claims": [
@@ -1816,6 +1820,15 @@
             "asOf": "2026-04-14",
             "source": "GGUF metadata (verified)",
             "verification": "reproduced"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "The chat template that SHIPS with e4b drops prior thinking blocks from history every turn, forcing full KV-cache recompute each turn (large multi-turn speed regression). Fix: install a custom jinja reasoning template that retains prior thinking blocks — reporter measured a substantial speedup. See technique-preserve-thinking-template.",
+          "provenance": {
+            "asOf": "2026-06-21",
+            "source": "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf, author joematthewsdev)",
+            "confidence": "medium"
           }
         }
       ],
@@ -1875,7 +1888,46 @@
             "source": "https://ai.google.dev/gemma/docs/core/model_card_4",
             "verification": "authoritative"
           }
-        }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-llamacpp",
+            "name": "Gemma 4 e4b-it · Unsloth GGUF (llama.cpp serve, reasoning-template)",
+            "quant": "UD-Q4_K_XL",
+            "format": "gguf",
+            "techniques": [
+              "technique-gguf-kquant",
+              "technique-unsloth-dynamic",
+              "technique-preserve-thinking-template"
+            ],
+            "download": {
+              "hfRepo": "unsloth/gemma-4-E4B-it-GGUF",
+              "format": "gguf",
+              "packager": "unsloth",
+              "note": "~5.13GB download; 8GB+ VRAM"
+            },
+            "config": {
+              "maxModelLen": 65536
+            },
+            "command": "llama serve -hf unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL \\\n  -c 65536 -fa 1 --jinja \\\n  --chat-template-file ~/.llama-templates/gemma-e4b-retain.jinja \\\n  --parallel 1 --cache-ram 0 \\\n  --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0\n",
+            "note": "E4B MUST use the custom reasoning template (--chat-template-file) — the stock template strips prior thinking and forces full KV recompute each turn (see technique-preserve-thinking-template). Template vendored at artifacts/templates/gemma4-e4b-retain.jinja (upstream gist in provenance.source). `--cache-ram 0` + `--parallel 1` = single slot, no cache bloat. -fa 1 = flash attention. Sampling is Google default (min-p 0 = off). Do NOT run Gemma 4 GGUF on CUDA 13.2.",
+            "procedure": "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f",
+            "outcome": {
+              "context": {
+                "tokens": 65536,
+                "note": "recipe value; e4b caps at 131072"
+              },
+              "speed": {
+                "note": "reporter ~25 tok/s on M4 Air 16GB, throttling to ~13 on heat-soak (single-source anecdote, not our fleet)"
+              },
+              "provenance": {
+                "asOf": "2026-06-21",
+                "source": "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf, joematthewsdev)",
+                "confidence": "medium"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -6541,11 +6593,11 @@
             },
             "outcome": {
               "speed": {
-                "note": "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on dgx1"
+                "note": "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on a DGX Spark"
               },
               "provenance": {
                 "asOf": "2026-06-22",
-                "source": "Nic (community report, unverified) — same recipe as Qwen3.5-122B; measure before trusting",
+                "source": "community report (unverified) — same recipe as Qwen3.5-122B; measure before trusting",
                 "verification": "uncited",
                 "confidence": "low"
               }
@@ -7796,6 +7848,35 @@
       ],
       "facets": {
         "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-preserve-thinking-template",
+      "kind": "technique",
+      "name": "Thinking-preserving chat template (KV-cache reuse)",
+      "summary": "Use a chat template that retains prior reasoning blocks so the KV-cache prefix is reused across turns",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "chat-template",
+        "reasoning",
+        "jinja",
+        "performance"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "guideline",
+          "body": "Onboarding checklist item — before measuring a reasoning model's multi-turn throughput, verify its chat template PRESERVES prior thinking blocks in history. Many stock templates strip them each turn, which mutates the prompt prefix so llama.cpp can't reuse the KV-cache prefix and recomputes the entire conversation every turn (large speed regression in agent/multi-turn sessions). Fix = a jinja template that retains prior reasoning blocks, passed via llama.cpp `--chat-template-file` (cf. qwen36 `preserve_thinking`, Gemma e4b custom reasoning template). Worked example (Gemma e4b, retains thinking) vendored at artifacts/templates/gemma4-e4b-retain.jinja (upstream gist in provenance.source).",
+          "provenance": {
+            "asOf": "2026-06-21",
+            "source": "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf) + Qwen3.6 preserve_thinking",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossless"
       }
     },
     {

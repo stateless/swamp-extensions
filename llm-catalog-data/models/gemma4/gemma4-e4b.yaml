@@ -9,6 +9,7 @@
   labels: [gemma, efficiency, on-device]
   relations:
     - { rel: variant-of, target: model-gemma4 }
+    - { rel: uses-technique, target: technique-preserve-thinking-template }
   facets:
     architecture:
       attention: hybrid-sliding-global
@@ -45,6 +46,39 @@
         asOf: "2026-06-19"
         source: "https://ai.google.dev/gemma/docs/core/model_card_4"
         verification: authoritative
+    runsOn:
+      # self-host: Unsloth GGUF via llama.cpp `llama serve` (host-agnostic, on-device
+      # target: 16GB Apple Silicon). "Humble Pi" recipe — no measured tok/s on our fleet.
+      - endpoint: endpoint-llamacpp
+        name: "Gemma 4 e4b-it · Unsloth GGUF (llama.cpp serve, reasoning-template)"
+        quant: "UD-Q4_K_XL"
+        format: gguf
+        techniques: [technique-gguf-kquant, technique-unsloth-dynamic, technique-preserve-thinking-template]
+        download: { hfRepo: "unsloth/gemma-4-E4B-it-GGUF", format: gguf, packager: unsloth, note: "~5.13GB download; 8GB+ VRAM" }
+        config:
+          maxModelLen: 65536 # recipe runs 64k; e4b hard-caps at 131072
+        command: |
+          llama serve -hf unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL \
+            -c 65536 -fa 1 --jinja \
+            --chat-template-file ~/.llama-templates/gemma-e4b-retain.jinja \
+            --parallel 1 --cache-ram 0 \
+            --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0
+        note: >-
+          E4B MUST use the custom reasoning template (--chat-template-file) — the
+          stock template strips prior thinking and forces full KV recompute each
+          turn (see technique-preserve-thinking-template). Template vendored at
+          artifacts/templates/gemma4-e4b-retain.jinja (upstream gist in
+          provenance.source). `--cache-ram 0` + `--parallel 1` = single slot, no
+          cache bloat. -fa 1 = flash attention. Sampling is Google default
+          (min-p 0 = off). Do NOT run Gemma 4 GGUF on CUDA 13.2.
+        procedure: "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f"
+        outcome:
+          context: { tokens: 65536, note: "recipe value; e4b caps at 131072" }
+          speed: { note: "reporter ~25 tok/s on M4 Air 16GB, throttling to ~13 on heat-soak (single-source anecdote, not our fleet)" }
+          provenance:
+            asOf: "2026-06-21"
+            source: "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf, joematthewsdev)"
+            confidence: medium
   claims:
     - kind: caveat
       body: "128K hard cap + 512 sliding window (same PLE limits as e2b)."
@@ -52,3 +86,14 @@
         asOf: "2026-04-14"
         source: "GGUF metadata (verified)"
         verification: reproduced
+    - kind: caveat
+      body: >-
+        The chat template that SHIPS with e4b drops prior thinking blocks from
+        history every turn, forcing full KV-cache recompute each turn (large
+        multi-turn speed regression). Fix: install a custom jinja reasoning
+        template that retains prior thinking blocks — reporter measured a
+        substantial speedup. See technique-preserve-thinking-template.
+      provenance:
+        asOf: "2026-06-21"
+        source: "https://gist.github.com/joematthews/d02639bcbe0e0c1c404f5d3a64c3c06f (r/PiCodingAgent 1ubhrgf, author joematthewsdev)"
+        confidence: medium

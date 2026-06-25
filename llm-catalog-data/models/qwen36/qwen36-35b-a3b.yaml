@@ -360,10 +360,10 @@
             source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-nvfp4-no-mtp.yaml"
             verification: cited
       # self-host #5: AutoRound INT4 + Ray @ 2× Spark — UNVERIFIED candidate.
-      # Hypothesis (Nic, to measure): the Qwen3.5-122B AutoRound-INT4 + Ray TP=2
-      # recipe applies here for a comparable speedup. With 3B active (vs the 122B's
-      # 10B) this should land at/above the 122B's measured 56 tok/s — but NO number
-      # is asserted until measured on dgx1. Bonus vs the 122B: ~23GB INT4 footprint
+      # Hypothesis (community report, to measure): the Qwen3.5-122B AutoRound-INT4
+      # + Ray TP=2 recipe applies here for a comparable speedup. With 3B active (vs
+      # the 122B's 10B) this should land at/above the 122B's measured 56 tok/s — but
+      # NO number is asserted until measured on a DGX Spark. Bonus vs the 122B: ~23GB INT4 footprint
       # leaves ~100GB free on a single 128GB Spark — enough KV/prefix cache to hold
       # a high-cache-hit agent workload AND co-resident a second model.
       - endpoint: endpoint-vllm-dgx-spark
@@ -378,10 +378,10 @@
           tensorParallel: 2
           note: "mirror the Qwen3.5-122B-A10B-int4-AutoRound + Ray recipe; flags/build TBD on measurement"
         outcome:
-          speed: { note: "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on dgx1" }
+          speed: { note: "HYPOTHESIS: ~similar-or-faster than the 122B's 56 tok/s on the same recipe (3B active vs 10B) — UNVERIFIED, measure on a DGX Spark" }
           provenance:
             asOf: "2026-06-22"
-            source: "Nic (community report, unverified) — same recipe as Qwen3.5-122B; measure before trusting"
+            source: "community report (unverified) — same recipe as Qwen3.5-122B; measure before trusting"
             verification: uncited
             confidence: low
       # self-host #6: Unsloth GGUF via llama.cpp (host-agnostic; ~23GB) — was ap-qwen36-35b-gguf-llamacpp
