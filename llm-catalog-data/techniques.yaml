@@ -171,6 +171,29 @@
         vLLM. Used by the Qwen3.5-122B single-Spark recipe (Intel AutoRound INT4).
       provenance: { asOf: "2026-06-19", source: "Intel AutoRound / NVIDIA forum 365639", verification: cited }
 
+- id: technique-prismaquant
+  kind: technique
+  name: PrismaQuant / PrismaSCOUT (mixed-precision quant)
+  summary: Mixed-precision quant family (e.g. 4.75-bit; PrismaSCOUT = NVFP4 + BF16) seen on Qwen3.6 for Spark
+  visibility: public
+  labels: [quantization, mixed-precision, prisma, nvfp4, stub]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        Community quant family appearing in single-Spark Qwen3.6 recipes:
+        "PrismaQuant 4.75-bit" daily-driven on Qwen3.6-35B-A3B (nangld85, forum
+        374423); "Qwen3.6-27B-PrismaSCOUT-Blackwell-NVFP4-BF16" (mixed NVFP4 body +
+        BF16 sensitive tensors) measured ~32 tg single / 90 tg @4-concurrent
+        (ajvazan #34, forum 367561). Mixed-precision (keeps sensitive tensors at
+        higher bit depth) — kin to Unsloth Dynamic / ASAQ. Exact scheme + repos not
+        documented in-thread; STUB pending the upstream PrismaQuant source.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/single-spark-setups-...-374423 + https://forums.developer.nvidia.com/t/...-367561 (ajvazan #34)"
+        verification: cited
+        confidence: low
+
 - id: technique-spark-auto-round
   kind: technique
   name: spark-auto-round (use-case-calibrated AutoRound)

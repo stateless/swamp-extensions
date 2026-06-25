@@ -1,0 +1,26 @@
+# MiniMax-M2.7-REAP-172B-A10B — REAP expert-pruned derivative of MiniMax-M2.7.
+# STUB created 2026-06-26 from a single-Spark coding thread (forum 374423).
+# Different weights (pruned) → its own model entry; variant-of model-minimax-m27.
+
+- id: model-minimax-m27-reap-172b-a10b
+  kind: model
+  name: MiniMax-M2.7-REAP-172B-A10B
+  summary: "REAP expert-pruned MiniMax-M2.7 (~172B total / ~10B active), open-weights. Community-reported: fast (NVFP4 ~40 tg) but quality-degraded on multistep reasoning. Stub."
+  visibility: public
+  labels: [minimax, moe, reap, expert-pruned, open-weights, stub]
+  relations:
+    - { rel: variant-of, target: model-minimax-m27 }
+  claims:
+    - kind: caveat
+      body: >-
+        COMMUNITY (single-Spark coding, forum 374423, savu_silviu): NVFP4, ~40 tg/s —
+        but criticised as "half brained" for multistep reasoning. Datapoint in the
+        broader pattern that aggressive expert-pruning (REAP) trades capability for
+        fit/speed (cf. the GLM-5.2 15%-pruned caveat). Treat as a speed-over-quality
+        option; verify on a real eval before relying on it for agentic coding.
+        Architecture/exact pruning ratio not confirmed — stub.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"
+        verification: cited
+        confidence: low

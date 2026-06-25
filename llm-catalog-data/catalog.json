@@ -3256,6 +3256,33 @@
       }
     },
     {
+      "id": "model-holo-3-1-35b-a3b",
+      "kind": "model",
+      "name": "Holo-3.1-35B-A3B",
+      "summary": "Agentic MoE (35B total / ~3B active, A3B), open-weights. Community-reported 'best agentic tool-user of its size' (forum 374423). Creator/arch unconfirmed — stub.",
+      "visibility": "public",
+      "labels": [
+        "holo",
+        "moe",
+        "agentic",
+        "open-weights",
+        "stub"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "COMMUNITY (single-Spark coding, forum 374423, nangld85): run as NVFP4 on 1× DGX Spark; \"best agentic tool-user of its size\" alongside Qwen3.6-35B (daily driver) and DeepSeek-V4-Flash. No measured tok/s or eval in-thread; creator (possibly H Company) and architecture NOT confirmed — verify against the vendor HF config.json before recording architecture facets.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ]
+    },
+    {
       "id": "model-hy3-preview",
       "kind": "model",
       "name": "Hy3-preview",
@@ -4877,6 +4904,39 @@
           }
         ]
       }
+    },
+    {
+      "id": "model-minimax-m27-reap-172b-a10b",
+      "kind": "model",
+      "name": "MiniMax-M2.7-REAP-172B-A10B",
+      "summary": "REAP expert-pruned MiniMax-M2.7 (~172B total / ~10B active), open-weights. Community-reported: fast (NVFP4 ~40 tg) but quality-degraded on multistep reasoning. Stub.",
+      "visibility": "public",
+      "labels": [
+        "minimax",
+        "moe",
+        "reap",
+        "expert-pruned",
+        "open-weights",
+        "stub"
+      ],
+      "relations": [
+        {
+          "rel": "variant-of",
+          "target": "model-minimax-m27"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "COMMUNITY (single-Spark coding, forum 374423, savu_silviu): NVFP4, ~40 tg/s — but criticised as \"half brained\" for multistep reasoning. Datapoint in the broader pattern that aggressive expert-pruning (REAP) trades capability for fit/speed (cf. the GLM-5.2 15%-pruned caveat). Treat as a speed-over-quality option; verify on a real eval before relying on it for agentic coding. Architecture/exact pruning ratio not confirmed — stub.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ]
     },
     {
       "id": "model-minimax-m3",
@@ -10698,6 +10758,36 @@
       ],
       "facets": {
         "qualityImpact": "lossless"
+      }
+    },
+    {
+      "id": "technique-prismaquant",
+      "kind": "technique",
+      "name": "PrismaQuant / PrismaSCOUT (mixed-precision quant)",
+      "summary": "Mixed-precision quant family (e.g. 4.75-bit; PrismaSCOUT = NVFP4 + BF16) seen on Qwen3.6 for Spark",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "mixed-precision",
+        "prisma",
+        "nvfp4",
+        "stub"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Community quant family appearing in single-Spark Qwen3.6 recipes: \"PrismaQuant 4.75-bit\" daily-driven on Qwen3.6-35B-A3B (nangld85, forum 374423); \"Qwen3.6-27B-PrismaSCOUT-Blackwell-NVFP4-BF16\" (mixed NVFP4 body + BF16 sensitive tensors) measured ~32 tg single / 90 tg @4-concurrent (ajvazan #34, forum 367561). Mixed-precision (keeps sensitive tensors at higher bit depth) — kin to Unsloth Dynamic / ASAQ. Exact scheme + repos not documented in-thread; STUB pending the upstream PrismaQuant source.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-...-374423 + https://forums.developer.nvidia.com/t/...-367561 (ajvazan #34)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
       }
     },
     {
