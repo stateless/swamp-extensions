@@ -1,0 +1,72 @@
+# MiMo-V2.5-Omni (Xiaomi) — multimodal "omni" variant. Created 2026-06-26 from a
+# self-host recipe (NVIDIA forum 374262); architecture not yet pulled from the
+# vendor config.json (enrich via `ingest`). Distinct from MiMo-V2-Omni-0327 (V2).
+
+- id: model-mimo-v2-5-omni
+  kind: model
+  name: MiMo-V2.5-Omni
+  summary: "Xiaomi MiMo V2.5 Omni (multimodal), open-weights. Entry seeded from a 2× DGX Spark NVFP4 recipe (forum 374262); architecture pending vendor config.json."
+  visibility: public
+  labels: [xiaomi, mimo, omni, multimodal, open-weights]
+  facets:
+    runsOn:
+      # self-host: 2× DGX Spark, TP=2 via Ray over RoCE; NVFP4 weights + NVFP4 KV;
+      # 1M context (forum 374262, tonyd615; measured by karol.spark #19).
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "MiMo-V2.5-Omni · vLLM NVFP4 (weights+KV) TP=2 @ 2× DGX Spark, 1M ctx (forum 374262)"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-tensor-parallel, technique-ray-serve]
+        units: 2 # 2× DGX Spark, TP=2 via Ray over RoCE
+        download:
+          hfRepo: "(packaged in the recipe container — see procedure)"
+          format: safetensors
+          note: "container ghcr.io/tonyd2wild/mimo-v2.5-tp2-1m-nvfp4kv:20260620"
+        config:
+          maxModelLen: 1048576 # 1M; KV pool ~2M tokens
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.84
+          kvCacheDtype: nvfp4 # NVFP4 KV cache (not just weights)
+          env:
+            PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
+            RAY_memory_monitor_refresh_ms: "0"
+            GLOO_SOCKET_IFNAME: "<roce-iface>"
+            NCCL_SOCKET_IFNAME: "<roce-iface>"
+            VLLM_HOST_IP: "<node-roce-ip>"
+          build: { runtime: vLLM, version: "0.21.1rc1.dev85+gd87ee1893", image: "ghcr.io/tonyd2wild/mimo-v2.5-tp2-1m-nvfp4kv:20260620" }
+          note: >-
+            Multi-node Ray over RoCE. REQUIRED fixes (karol.spark #19, not in README):
+            --distributed-executor-backend ray; pin GLOO/NCCL to the RoCE iface AND set
+            VLLM_HOST_IP to the RoCE IP on BOTH nodes (not the default-route NIC);
+            `echo "127.0.0.1 $(hostname)" >> /etc/hosts` (raylet timeout); stop the
+            earlyoom service before launch; cap Ray object store to 1GiB/node. Start
+            order: worker container → Ray head → Ray worker join → vllm serve from head.
+        command: |
+          vllm serve <model> \
+            --distributed-executor-backend ray \
+            --kv-cache-dtype nvfp4 \
+            --tensor-parallel-size 2 \
+            --max-model-len 1048576 \
+            --gpu-memory-utilization 0.84
+        procedure: "https://github.com/tonyd2wild/MiMo-V2.5-TP2-1M-NVFP4-KV-2xDGX-Spark"
+        outcome:
+          context: { tokens: 1048576, note: "1M verified (karol.spark #19); KV pool ~2M tokens" }
+          speed: { genTokS: 29, note: "28–30 tok/s decode (karol.spark #19, gpu-util 0.84)" }
+          quality: { note: "tool/agent eval 97.8, thinking-OFF (tonyd615 #1); karol.spark: NVFP4 weights+KV 'effectively lossless vs AWQ-int4' in tool/agent testing" }
+          provenance:
+            asOf: "2026-06-26"
+            source: "https://forums.developer.nvidia.com/t/mimo-v2-5-omni-tp-2-1m-context-nvfp4-kv-on-2x-dgx-spark/374262 (tonyd615 OP; measured by karol.spark #19)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: vLLM, version: "0.21.1rc1.dev85+gd87ee1893", quant: nvfp4 }
+  claims:
+    - kind: caveat
+      body: >-
+        4-bit quality: karol.spark reports NVFP4 weights+KV "effectively lossless vs
+        AWQ-int4" in tool/agent testing; corbett_korbett raised Q8-vs-4bit concerns
+        but no head-to-head is in-thread. Post #20 (0rand) flags reply #19 as possibly
+        partly AI-generated, though its guidance was validated by deployment attempts.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/mimo-v2-5-omni-tp-2-1m-context-nvfp4-kv-on-2x-dgx-spark/374262 (comments)"
+        confidence: low

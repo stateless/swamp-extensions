@@ -244,6 +244,58 @@
             source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-int4-autoround.yaml"
             verification: cited
 
+      # self-host, SAME endpoint — config #5: DFlash block-diffusion drafter (forum
+      # 374328, Entrpi). Headline: ~80 tok/s on AGENT traffic (high accept-length) on
+      # ONE Spark — beats the MTP-2 path (52) when tool-call density is high.
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.5-122B-A10B · vLLM INT4-AutoRound + DFlash @ 1× DGX Spark (forum 374328)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-dflash]
+        units: 1 # single Spark (GB10/sm121)
+        download:
+          hfRepo: Intel/Qwen3.5-122B-A10B-int4-AutoRound
+          format: safetensors
+          note: >-
+            drafter z-lab/Qwen3.5-122B-A10B-DFlash (0.8B block-diffusion); optional
+            dense levers via bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid (FP8 shared
+            experts + int8 lm-head).
+        config:
+          maxModelLen: 262144
+          gpuMemoryUtilization: 0.82 # higher → swaps/stalls
+          speculative: "dflash, 12 draft tokens"
+          toolCallParser: qwen3_xml
+          reasoningParser: qwen3
+          build: { runtime: vLLM, version: "0.23.0+aeon.sm121a.dflash" }
+          note: >-
+            prefix-caching MUST be disabled for DFlash; scale-block KV unification
+            patch required; fastsafetensors loads 62–71GiB in ~32s; ~3min to READY;
+            KV pool ~426k–456k tokens; ~15GiB free at 3-stream peak.
+        command: |
+          vllm serve Intel/Qwen3.5-122B-A10B-int4-AutoRound \
+            --enable-auto-tool-choice --tool-call-parser qwen3_xml \
+            --reasoning-parser qwen3 \
+            --speculative-model-type dflash --speculative_tokens 12 \
+            --gpu-memory-utilization 0.82 --max-model-len 262144
+        procedure: "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (install.sh --start; profiles dense/dflash/base/mtp)"
+        outcome:
+          context: { tokens: 262144, note: "KV pool ~426k–456k tokens" }
+          speed:
+            genTokS: 81 # agent traffic: 73% tool-calls, accept-length ~8.3
+            note: >-
+              Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7
+              DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent
+              traffic (accept ~8.3). Dense decode-only single-stream: prose 48.8 /
+              code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic
+              66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept
+              agent traffic (dflash ≈ dense there).
+          provenance:
+            asOf: "2026-06-26"
+            source: "https://forums.developer.nvidia.com/t/dflash-for-qwen3-5-122b-a10b-80-tok-s-on-1x-spark/374328 (Entrpi)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: vLLM, version: "0.23.0+aeon.sm121a.dflash", quant: int4-autoround }
+
       # gateway — endpoint-openrouter: carries PRICE, not config
       - endpoint: endpoint-openrouter
         providerModelId: "qwen/qwen3.5-122b-a10b"

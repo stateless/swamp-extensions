@@ -2592,6 +2592,104 @@
                 "verification": "authoritative"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "GLM-5.2 · b12x AWQ-INT4 (15%-pruned) + MTP @ 4× GB10 cluster (forum 374125)",
+            "quant": "awq-int4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-awq",
+              "technique-mtp",
+              "technique-tensor-parallel"
+            ],
+            "units": 4,
+            "download": {
+              "hfRepo": "CosmicRaisins/GLM-5.2-AWQ-INT4-15pct",
+              "format": "safetensors",
+              "note": "data-free 15% expert pruning of cyankiwi/GLM-5.2-AWQ-INT4 (256→218 experts/layer; ~636B total / ~40B active). MTP drafter CosmicRaisins/GLM-5.2-MTP-INT4-aligned."
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "tensorParallel": 4,
+              "cudaGraph": "FULL",
+              "env": {
+                "GLM52_B12X_MLA": "1"
+              },
+              "build": {
+                "runtime": "b12x",
+                "version": "0.23.0"
+              },
+              "note": "MTP gave the biggest uplift; CUDA graph ~+3%; prefill lifted 250→~500 tok/s via b12x (author couldn't exceed 500). Patches at github.com/CosmicRaisins/glm-5.2-gb10 (NFS-specific code flagged for removal)."
+            },
+            "outcome": {
+              "context": {
+                "tokens": 262144,
+                "note": "256K tested; ~21→19 tok/s at 64K depth (prelim)"
+              },
+              "speed": {
+                "genTokS": 21.9,
+                "note": "decode 20.2 (depth 0) / 21.9 (8K) / 21.2 (32K); prefill 535/517/476 tok/s; peak ~22 decode / ~500 prefill. Alt madeby561/GLM-5.2-NVFP4-REAP-504B was slower (~10 tok/s) + unstable."
+              },
+              "measurements": [
+                {
+                  "contextDepth": 0,
+                  "decodeTokS": 20.2,
+                  "prefillTokS": 535
+                },
+                {
+                  "contextDepth": 8192,
+                  "decodeTokS": 21.9,
+                  "prefillTokS": 517
+                },
+                {
+                  "contextDepth": 32768,
+                  "decodeTokS": 21.2,
+                  "prefillTokS": 476
+                }
+              ],
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/glm-5-2-on-a-4x-gb10-cluster-22-tok-s-decode-256k-ctx-recipe/374125 (CosmicRaisins)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "b12x 0.23.0",
+                  "quant": "awq-int4"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "GLM-5.2 · UNPRUNED AWQ-INT4 + MTP @ 8× ASUS GB10 (forum 374125 comment)",
+            "quant": "awq-int4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-awq",
+              "technique-mtp",
+              "technique-tensor-parallel"
+            ],
+            "units": 8,
+            "download": {
+              "hfRepo": "zai-org/GLM-5.2 (unpruned, AWQ-INT4)",
+              "format": "safetensors"
+            },
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "genTokS": 26.5,
+                "note": "26–27 tok/s with MTP across all depths to 256K (unpruned, 8 units)"
+              },
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/glm-5-2-on-a-4x-gb10-cluster-22-tok-s-decode-256k-ctx-recipe/374125 (comment, ciprianveg)",
+                "verification": "cited",
+                "confidence": "low"
+              }
+            }
           }
         ]
       }
@@ -3967,6 +4065,98 @@
             "confidence": "medium"
           }
         }
+      }
+    },
+    {
+      "id": "model-mimo-v2-5-omni",
+      "kind": "model",
+      "name": "MiMo-V2.5-Omni",
+      "summary": "Xiaomi MiMo V2.5 Omni (multimodal), open-weights. Entry seeded from a 2× DGX Spark NVFP4 recipe (forum 374262); architecture pending vendor config.json.",
+      "visibility": "public",
+      "labels": [
+        "xiaomi",
+        "mimo",
+        "omni",
+        "multimodal",
+        "open-weights"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "4-bit quality: karol.spark reports NVFP4 weights+KV \"effectively lossless vs AWQ-int4\" in tool/agent testing; corbett_korbett raised Q8-vs-4bit concerns but no head-to-head is in-thread. Post #20 (0rand) flags reply #19 as possibly partly AI-generated, though its guidance was validated by deployment attempts.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/mimo-v2-5-omni-tp-2-1m-context-nvfp4-kv-on-2x-dgx-spark/374262 (comments)",
+            "confidence": "low"
+          }
+        }
+      ],
+      "facets": {
+        "runsOn": [
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "MiMo-V2.5-Omni · vLLM NVFP4 (weights+KV) TP=2 @ 2× DGX Spark, 1M ctx (forum 374262)",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-tensor-parallel",
+              "technique-ray-serve"
+            ],
+            "units": 2,
+            "download": {
+              "hfRepo": "(packaged in the recipe container — see procedure)",
+              "format": "safetensors",
+              "note": "container ghcr.io/tonyd2wild/mimo-v2.5-tp2-1m-nvfp4kv:20260620"
+            },
+            "config": {
+              "maxModelLen": 1048576,
+              "tensorParallel": 2,
+              "gpuMemoryUtilization": 0.84,
+              "kvCacheDtype": "nvfp4",
+              "env": {
+                "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+                "RAY_memory_monitor_refresh_ms": "0",
+                "GLOO_SOCKET_IFNAME": "<roce-iface>",
+                "NCCL_SOCKET_IFNAME": "<roce-iface>",
+                "VLLM_HOST_IP": "<node-roce-ip>"
+              },
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.21.1rc1.dev85+gd87ee1893",
+                "image": "ghcr.io/tonyd2wild/mimo-v2.5-tp2-1m-nvfp4kv:20260620"
+              },
+              "note": "Multi-node Ray over RoCE. REQUIRED fixes (karol.spark #19, not in README): --distributed-executor-backend ray; pin GLOO/NCCL to the RoCE iface AND set VLLM_HOST_IP to the RoCE IP on BOTH nodes (not the default-route NIC); `echo \"127.0.0.1 $(hostname)\" >> /etc/hosts` (raylet timeout); stop the earlyoom service before launch; cap Ray object store to 1GiB/node. Start order: worker container → Ray head → Ray worker join → vllm serve from head."
+            },
+            "command": "vllm serve <model> \\\n  --distributed-executor-backend ray \\\n  --kv-cache-dtype nvfp4 \\\n  --tensor-parallel-size 2 \\\n  --max-model-len 1048576 \\\n  --gpu-memory-utilization 0.84\n",
+            "procedure": "https://github.com/tonyd2wild/MiMo-V2.5-TP2-1M-NVFP4-KV-2xDGX-Spark",
+            "outcome": {
+              "context": {
+                "tokens": 1048576,
+                "note": "1M verified (karol.spark #19); KV pool ~2M tokens"
+              },
+              "speed": {
+                "genTokS": 29,
+                "note": "28–30 tok/s decode (karol.spark #19, gpu-util 0.84)"
+              },
+              "quality": {
+                "note": "tool/agent eval 97.8, thinking-OFF (tonyd615 #1); karol.spark: NVFP4 weights+KV 'effectively lossless vs AWQ-int4' in tool/agent testing"
+              },
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/mimo-v2-5-omni-tp-2-1m-context-nvfp4-kv-on-2x-dgx-spark/374262 (tonyd615 OP; measured by karol.spark #19)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.21.1rc1.dev85+gd87ee1893",
+                  "quant": "nvfp4"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -7068,6 +7258,57 @@
                 "asOf": "2026-06-20",
                 "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.5-122b-int4-autoround.yaml",
                 "verification": "cited"
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.5-122B-A10B · vLLM INT4-AutoRound + DFlash @ 1× DGX Spark (forum 374328)",
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "techniques": [
+              "technique-autoround",
+              "technique-dflash"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "Intel/Qwen3.5-122B-A10B-int4-AutoRound",
+              "format": "safetensors",
+              "note": "drafter z-lab/Qwen3.5-122B-A10B-DFlash (0.8B block-diffusion); optional dense levers via bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid (FP8 shared experts + int8 lm-head)."
+            },
+            "config": {
+              "maxModelLen": 262144,
+              "gpuMemoryUtilization": 0.82,
+              "speculative": "dflash, 12 draft tokens",
+              "toolCallParser": "qwen3_xml",
+              "reasoningParser": "qwen3",
+              "build": {
+                "runtime": "vLLM",
+                "version": "0.23.0+aeon.sm121a.dflash"
+              },
+              "note": "prefix-caching MUST be disabled for DFlash; scale-block KV unification patch required; fastsafetensors loads 62–71GiB in ~32s; ~3min to READY; KV pool ~426k–456k tokens; ~15GiB free at 3-stream peak."
+            },
+            "command": "vllm serve Intel/Qwen3.5-122B-A10B-int4-AutoRound \\\n  --enable-auto-tool-choice --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\n  --speculative-model-type dflash --speculative_tokens 12 \\\n  --gpu-memory-utilization 0.82 --max-model-len 262144\n",
+            "procedure": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (install.sh --start; profiles dense/dflash/base/mtp)",
+            "outcome": {
+              "context": {
+                "tokens": 262144,
+                "note": "KV pool ~426k–456k tokens"
+              },
+              "speed": {
+                "genTokS": 81,
+                "note": "Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7 DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent traffic (accept ~8.3). Dense decode-only single-stream: prose 48.8 / code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic 66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept agent traffic (dflash ≈ dense there)."
+              },
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/dflash-for-qwen3-5-122b-a10b-80-tok-s-on-1x-spark/374328 (Entrpi)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM",
+                  "version": "0.23.0+aeon.sm121a.dflash",
+                  "quant": "int4-autoround"
+                }
               }
             }
           },
