@@ -9,8 +9,10 @@
   visibility: public
   labels: [ai21, open-weights, stub, aa-leaderboard]
   facets:
-    benchmarks:
-      aaIntelligenceIndex: 4
+    aaIntelligence:
+      index: 4
+      config: reasoning
+      estimated: true
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"

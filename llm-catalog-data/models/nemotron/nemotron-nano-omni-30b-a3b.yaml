@@ -12,6 +12,14 @@
   relations:
     - { rel: variant-of, target: model-nemotron }
   facets:
+    aaIntelligence:
+      index: 15
+      config: reasoning
+      estimated: true
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       attention: nemotron_h # family hybrid Mamba2-Transformer (config.json not independently fetched for this variant)
       params: "30B"

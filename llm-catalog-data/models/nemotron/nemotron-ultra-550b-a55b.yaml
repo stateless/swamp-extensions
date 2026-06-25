@@ -12,6 +12,14 @@
   relations:
     - { rel: variant-of, target: model-nemotron }
   facets:
+    aaIntelligence:
+      index: 38
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       hfRepo: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4
       params: "550B" # from the repo/recipe name (A55B); config.json not separately fetched

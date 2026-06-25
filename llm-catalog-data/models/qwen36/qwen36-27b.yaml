@@ -11,6 +11,14 @@
   relations:
     - { rel: variant-of, target: model-qwen36 }
   facets:
+    aaIntelligence:
+      index: 37
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       params: "27B"
       nativeContext: 196608

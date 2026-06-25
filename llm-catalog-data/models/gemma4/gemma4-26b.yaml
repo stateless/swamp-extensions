@@ -10,6 +10,14 @@
   relations:
     - { rel: variant-of, target: model-gemma4 }
   facets:
+    aaIntelligence:
+      index: 26
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       attention: hybrid-sliding-global
       params: "25.2B"

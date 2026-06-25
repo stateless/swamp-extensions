@@ -11,6 +11,14 @@
     - { rel: variant-of, target: model-gemma4 }
     - { rel: uses-technique, target: technique-preserve-thinking-template }
   facets:
+    aaIntelligence:
+      index: 12
+      config: reasoning
+      estimated: true
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       attention: hybrid-sliding-global
       params: "8B"

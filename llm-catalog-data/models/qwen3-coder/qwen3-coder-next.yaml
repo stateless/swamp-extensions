@@ -14,6 +14,14 @@
   visibility: public
   labels: [qwen, alibaba, coder, moe, open-weights]
   facets:
+    aaIntelligence:
+      index: 21
+      config: reasoning
+      estimated: true
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       attention: MoE # mixture-of-experts; ~3B active of ~80B total
       params: "~80B"

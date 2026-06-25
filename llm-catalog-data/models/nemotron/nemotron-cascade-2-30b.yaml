@@ -11,6 +11,14 @@
     - { rel: variant-of, target: model-nemotron }
     - { rel: finetune-of, target: model-nemotron-nano-30b-a3b } # post-trained from the Nano-30B-A3B base
   facets:
+    aaIntelligence:
+      index: 21
+      config: reasoning
+      estimated: true
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       hfRepo: nvidia/Nemotron-Cascade-2-30B-A3B
       params: "30B"

@@ -10,6 +10,14 @@
   relations:
     - { rel: variant-of, target: model-nemotron }
   facets:
+    aaIntelligence:
+      index: 9
+      config: reasoning
+      estimated: true
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       hfRepo: nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16
       params: "4B"

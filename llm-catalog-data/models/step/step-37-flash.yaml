@@ -17,6 +17,14 @@
   visibility: public
   labels: [stepfun, step, moe, multimodal, vision]
   facets:
+    aaIntelligence:
+      index: 30
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       hfRepo: stepfun-ai/Step-3.7-Flash
       modelType: step3p7 # text backbone step3p5; perception_encoder vision tower

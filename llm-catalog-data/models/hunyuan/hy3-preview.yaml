@@ -9,8 +9,10 @@
   visibility: public
   labels: [tencent, open-weights, stub, aa-leaderboard]
   facets:
-    benchmarks:
-      aaIntelligenceIndex: 34
+    aaIntelligence:
+      index: 34
+      config: reasoning
+      estimated: true
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"

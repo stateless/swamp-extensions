@@ -614,8 +614,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 29,
+        "aaIntelligence": {
+          "index": 29,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -669,6 +671,16 @@
             "asOf": "2026-06-20",
             "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash config.json + model card",
             "verification": "authoritative"
+          }
+        },
+        "aaIntelligence": {
+          "index": 40,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "footprint": {
@@ -1104,6 +1116,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 44,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -1208,8 +1230,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 15,
+        "aaIntelligence": {
+          "index": 15,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -1243,8 +1267,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -1278,8 +1304,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 11,
+        "aaIntelligence": {
+          "index": 11,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -1313,8 +1341,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 23,
+        "aaIntelligence": {
+          "index": 23,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -1348,8 +1378,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 10,
+        "aaIntelligence": {
+          "index": 10,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -1514,6 +1546,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 22,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -1625,6 +1667,16 @@
           "slidingWindow": 1024,
           "experts": "8 active / 128 total",
           "visionEncoderParams": "~550M"
+        },
+        "aaIntelligence": {
+          "index": 26,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
         },
         "footprint": {
           "basis": "weights-only",
@@ -1808,6 +1860,16 @@
           "slidingWindow": 1024,
           "visionEncoderParams": "~550M"
         },
+        "aaIntelligence": {
+          "index": 29,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -1959,6 +2021,16 @@
           "visionEncoderParams": "~150M",
           "audioEncoderParams": "~300M"
         },
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -2057,6 +2129,16 @@
           "slidingWindow": 512,
           "visionEncoderParams": "~150M",
           "audioEncoderParams": "~300M"
+        },
+        "aaIntelligence": {
+          "index": 12,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
         },
         "footprint": {
           "basis": "weights-only",
@@ -2359,8 +2441,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 40,
+        "aaIntelligence": {
+          "index": 40,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -2447,6 +2531,16 @@
             "asOf": "2026-06-19",
             "source": "https://huggingface.co/zai-org/GLM-5.2",
             "verification": "authoritative"
+          }
+        },
+        "aaIntelligence": {
+          "index": 51,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "license": {
@@ -2664,6 +2758,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 24,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -2820,6 +2924,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 15,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -2918,8 +3032,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 5,
+        "aaIntelligence": {
+          "index": 5,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -2953,8 +3069,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -2988,8 +3106,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 7,
+        "aaIntelligence": {
+          "index": 7,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3023,8 +3143,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 34,
+        "aaIntelligence": {
+          "index": 34,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3058,8 +3180,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 22,
+        "aaIntelligence": {
+          "index": 22,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3093,8 +3217,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 16,
+        "aaIntelligence": {
+          "index": 16,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3128,8 +3254,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 5,
+        "aaIntelligence": {
+          "index": 5,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3163,8 +3291,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 4,
+        "aaIntelligence": {
+          "index": 4,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3198,8 +3328,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 28,
+        "aaIntelligence": {
+          "index": 28,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3233,8 +3365,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 19,
+        "aaIntelligence": {
+          "index": 19,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3268,8 +3402,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 25,
+        "aaIntelligence": {
+          "index": 25,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3303,8 +3439,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 43,
+        "aaIntelligence": {
+          "index": 43,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3338,8 +3476,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 42,
+        "aaIntelligence": {
+          "index": 42,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3373,8 +3513,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3408,8 +3550,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 5,
+        "aaIntelligence": {
+          "index": 5,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3443,8 +3587,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 8,
+        "aaIntelligence": {
+          "index": 8,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3478,8 +3624,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 26,
+        "aaIntelligence": {
+          "index": 26,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3513,8 +3661,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 19,
+        "aaIntelligence": {
+          "index": 19,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3548,8 +3698,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3583,8 +3735,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 8,
+        "aaIntelligence": {
+          "index": 8,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3618,8 +3772,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 6,
+        "aaIntelligence": {
+          "index": 6,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3653,8 +3809,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3688,8 +3846,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 14,
+        "aaIntelligence": {
+          "index": 14,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3723,8 +3883,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 10,
+        "aaIntelligence": {
+          "index": 10,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3758,8 +3920,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 17,
+        "aaIntelligence": {
+          "index": 17,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3793,8 +3957,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 40,
+        "aaIntelligence": {
+          "index": 40,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3828,8 +3994,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 42,
+        "aaIntelligence": {
+          "index": 42,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3863,8 +4031,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 36,
+        "aaIntelligence": {
+          "index": 36,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3898,8 +4068,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 4,
+        "aaIntelligence": {
+          "index": 4,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -3933,8 +4105,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 12,
+        "aaIntelligence": {
+          "index": 12,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4348,6 +4522,16 @@
             "confidence": "medium"
           }
         },
+        "aaIntelligence": {
+          "index": 38,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "runsOn": [
           {
             "endpoint": "endpoint-vllm-dgx-spark",
@@ -4462,8 +4646,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 44,
+        "aaIntelligence": {
+          "index": 44,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4497,8 +4683,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 10,
+        "aaIntelligence": {
+          "index": 10,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4532,8 +4720,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4577,6 +4767,16 @@
             "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
             "verification": "cited",
             "confidence": "low"
+          }
+        },
+        "aaIntelligence": {
+          "index": 21,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "footprint": {
@@ -4654,8 +4854,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 13,
+        "aaIntelligence": {
+          "index": 13,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4689,8 +4891,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 43,
+        "aaIntelligence": {
+          "index": 43,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4724,8 +4928,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 10,
+        "aaIntelligence": {
+          "index": 10,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -4878,6 +5084,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 21,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "q4": "~24 GB",
           "provenance": {
@@ -4940,6 +5156,16 @@
             "asOf": "2026-06-19",
             "source": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 config.json",
             "verification": "authoritative"
+          }
+        },
+        "aaIntelligence": {
+          "index": 18,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "footprint": {
@@ -5126,6 +5352,16 @@
             "verification": "authoritative"
           }
         },
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "q4": "~3 GB",
           "q8": "~5 GB",
@@ -5200,6 +5436,16 @@
             "asOf": "2026-06-20",
             "source": "https://unsloth.ai/docs/models/nemotron-3-nano-omni + family nemotron_h config",
             "verification": "cited",
+            "confidence": "medium"
+          }
+        },
+        "aaIntelligence": {
+          "index": 15,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
         },
@@ -5321,6 +5567,16 @@
             "asOf": "2026-06-19",
             "source": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json",
             "verification": "authoritative"
+          }
+        },
+        "aaIntelligence": {
+          "index": 25,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "footprint": {
@@ -5520,6 +5776,16 @@
             "confidence": "medium"
           }
         },
+        "aaIntelligence": {
+          "index": 38,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "benchmarks": {
           "mmluPro": 86.8,
           "gpqaDiamond": 87,
@@ -5616,8 +5882,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 41,
+        "aaIntelligence": {
+          "index": 41,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -5651,8 +5919,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 21,
+        "aaIntelligence": {
+          "index": 21,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -5686,8 +5956,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 5,
+        "aaIntelligence": {
+          "index": 5,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -5721,8 +5993,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 20,
+        "aaIntelligence": {
+          "index": 20,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -5756,8 +6030,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 19,
+        "aaIntelligence": {
+          "index": 19,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -5862,6 +6138,16 @@
             "asOf": "2026-06-19",
             "source": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
             "verification": "cited"
+          }
+        },
+        "aaIntelligence": {
+          "index": 21,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "license": {
@@ -6097,6 +6383,16 @@
             "source": "https://github.com/Avarok-Cybersecurity/atlas (supported-models table)",
             "verification": "cited",
             "confidence": "low"
+          }
+        },
+        "aaIntelligence": {
+          "index": 20,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "footprint": {
@@ -6465,6 +6761,16 @@
             "image",
             "video"
           ]
+        },
+        "aaIntelligence": {
+          "index": 32,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
         },
         "footprint": {
           "basis": "weights-only",
@@ -6925,6 +7231,16 @@
           "experts": "8/token of 256 routed + 1 shared",
           "hidden": 2048
         },
+        "aaIntelligence": {
+          "index": 23,
+          "config": "non-reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -7150,6 +7466,16 @@
           "layers": 60,
           "experts": "10/token of 512 routed + 1 shared",
           "hidden": 4096
+        },
+        "aaIntelligence": {
+          "index": 34,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
         },
         "runsOn": [
           {
@@ -7398,6 +7724,16 @@
           "layers": 32,
           "hidden": 4096
         },
+        "aaIntelligence": {
+          "index": 25,
+          "config": "reasoning",
+          "estimated": true,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "footprint": {
           "basis": "weights-only",
           "quants": [
@@ -7620,6 +7956,16 @@
             "confidence": "low"
           }
         },
+        "aaIntelligence": {
+          "index": 37,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        },
         "runsOn": [
           {
             "endpoint": "endpoint-vllm-dgx-spark",
@@ -7748,6 +8094,16 @@
           "experts": "8 routed + 1 shared / 256 total",
           "hiddenDim": 2048,
           "mtp": true
+        },
+        "aaIntelligence": {
+          "index": 32,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
         },
         "benchmarks": {
           "sweBenchVerified": 73.4,
@@ -8342,8 +8698,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 6,
+        "aaIntelligence": {
+          "index": 6,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8377,8 +8735,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 31,
+        "aaIntelligence": {
+          "index": 31,
+          "config": "reasoning",
+          "estimated": false,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8412,8 +8772,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 8,
+        "aaIntelligence": {
+          "index": 8,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8447,8 +8809,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 12,
+        "aaIntelligence": {
+          "index": 12,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8482,8 +8846,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 7,
+        "aaIntelligence": {
+          "index": 7,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8517,8 +8883,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 15,
+        "aaIntelligence": {
+          "index": 15,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8572,6 +8940,16 @@
             "asOf": "2026-06-20",
             "source": "https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/config.json",
             "verification": "authoritative"
+          }
+        },
+        "aaIntelligence": {
+          "index": 30,
+          "config": "reasoning",
+          "estimated": false,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
           }
         },
         "license": {
@@ -8717,8 +9095,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 9,
+        "aaIntelligence": {
+          "index": 9,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
@@ -8752,8 +9132,10 @@
         }
       ],
       "facets": {
-        "benchmarks": {
-          "aaIntelligenceIndex": 24,
+        "aaIntelligence": {
+          "index": 24,
+          "config": "reasoning",
+          "estimated": true,
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",

@@ -12,6 +12,14 @@
   visibility: public
   labels: [glm, moe, sparse-attention, long-context, agentic]
   facets:
+    aaIntelligence:
+      index: 51
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       modelType: glm_moe_dsa # MLA + DSA sparse-attention indexer (DeepSeek-V3.2 style)
       params: "753B"

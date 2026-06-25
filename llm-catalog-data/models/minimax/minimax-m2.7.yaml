@@ -10,6 +10,14 @@
   relations:
     - { rel: variant-of, target: model-minimax-m2 }
   facets:
+    aaIntelligence:
+      index: 38
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       hfRepo: MiniMaxAI/MiniMax-M2.7
       modelType: minimax_m2

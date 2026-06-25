@@ -15,6 +15,14 @@
   relations:
     - { rel: variant-of, target: model-qwen35 }
   facets:
+    aaIntelligence:
+      index: 32
+      config: reasoning
+      estimated: false
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
     architecture:
       attention: hybrid-deltanet
       params: "122B"

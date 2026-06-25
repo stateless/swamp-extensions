@@ -9,8 +9,10 @@
   visibility: public
   labels: [nex-agi, open-weights, stub, aa-leaderboard]
   facets:
-    benchmarks:
-      aaIntelligenceIndex: 41
+    aaIntelligence:
+      index: 41
+      config: reasoning
+      estimated: false
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
