@@ -11,6 +11,7 @@
   facets:
     aaIntelligence:
       index: 25
+      basis: reference-precision # AA serves ~reference precision (provider-blended); NOT the local runsOn quant. Upper bound — read runsOn.outcome.quality for the deployed quant.
       config: reasoning
       estimated: true
       provenance:

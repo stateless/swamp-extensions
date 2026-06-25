@@ -14,6 +14,7 @@
   facets:
     aaIntelligence:
       index: 51
+      basis: reference-precision # AA serves ~reference precision (provider-blended); NOT the local runsOn quant. Upper bound — read runsOn.outcome.quality for the deployed quant.
       config: reasoning
       estimated: false
       provenance:
@@ -143,6 +144,19 @@
             verification: cited
             confidence: low
   claims:
+    - kind: caveat
+      body: >-
+        AA-vs-local-quant GAP (largest in the catalog): the AA Intelligence Index 51
+        is reference precision (full model). The ONLY self-host recipe here runs
+        AWQ-INT4 with data-free 15% expert pruning (256→218 experts/layer) — a real
+        capability cut with NO local eval published. Effective self-host quality is
+        materially below 51; AA-51-class quality is realizable only via the
+        full-precision cloud gateway, not the 4× cluster recipe. Do not read the
+        aaIntelligence facet as the self-host number.
+      provenance:
+        asOf: "2026-06-26"
+        source: "facets.aaIntelligence (reference precision) vs runsOn AWQ-INT4-15%-pruned recipe (forum 374125, no local eval)"
+        confidence: medium
     - kind: note
       body: >-
         IndexShare: the DSA sparse-attention indexer is reused across every four

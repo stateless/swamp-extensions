@@ -11,6 +11,7 @@
   facets:
     aaIntelligence:
       index: 40
+      basis: reference-precision # AA serves ~reference precision (provider-blended); NOT the local runsOn quant. Upper bound — read runsOn.outcome.quality for the deployed quant.
       config: reasoning
       estimated: false
       provenance:
@@ -301,6 +302,18 @@
             source: "https://docs.digitalocean.com/products/inference/details/pricing/"
             verification: authoritative # authoritative AT asOf — re-check (volatile)
   claims:
+    - kind: note
+      body: >-
+        COMMUNITY (single-Spark coding, forum 374423): a "strong coder" / "very hard
+        worker" even at Q2 GGUF on llama.cpp (nangld85, keving3) — Q2 is the only
+        quant that fits 1 Spark. CAVEAT: aggressive Q2 degrades multistep reasoning;
+        the FP8 2× recipe (toolEvalBench 89/100) is the quality-preserving path.
+        Q2-on-1-box trades quality for fit.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"
+        verification: cited
+        confidence: low # subjective community verdicts
     - kind: note
       body: >-
         VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active,

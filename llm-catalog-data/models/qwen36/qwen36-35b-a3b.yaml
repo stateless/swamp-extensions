@@ -15,6 +15,7 @@
   facets:
     aaIntelligence:
       index: 32
+      basis: reference-precision # AA serves ~reference precision (provider-blended); NOT the local runsOn quant. Upper bound — read runsOn.outcome.quality for the deployed quant.
       config: reasoning
       estimated: false
       provenance:
@@ -413,7 +414,47 @@
             asOf: "2026-06-20"
             source: "https://unsloth.ai/docs/models/qwen3.6"
             verification: cited
+      # spark-auto-round: OpenCode-calibrated INT4-AutoRound (whpthomas tool, forum 373475)
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "Qwen3.6-35B-A3B · vLLM INT4-AutoRound (OpenCode-calibrated, spark-auto-round)"
+        quant: int4-autoround
+        format: safetensors
+        techniques: [technique-autoround, technique-spark-auto-round, technique-prefix-caching]
+        units: 1
+        download: { hfRepo: azampatti/Qwen3.6-35B-A3B-int4-AutoRound-OC, format: safetensors, packager: spark-auto-round, note: "OpenCode-Instruct calibration" }
+        config: { maxModelLen: 262144 }
+        procedure: "https://github.com/whpthomas/spark-auto-round"
+        outcome:
+          context: { tokens: 262144 }
+          speed: { note: "tok/s not separately published for the 35B-OC build — measure (cf. 27B-OC 26.4; this model's NVFP4+MTP path hits 126)" }
+          quality:
+            note: >-
+              OpenCode-calibrated INT4; per-build tool-eval not separately published
+              (cf. 27B-OC 92/100). Community consensus (forum 374423): Qwen3.6-35B is
+              the single-Spark coding daily-driver pick.
+          provenance:
+            asOf: "2026-06-26"
+            source: "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 + github.com/whpthomas/spark-auto-round"
+            verification: cited
+            confidence: medium
+            versionPins: { quant: int4-autoround, packager: spark-auto-round }
   claims:
+    - kind: note
+      body: >-
+        COMMUNITY (single-Spark coding, forum 374423): Qwen3.6-35B-A3B is the
+        daily-driver consensus / "single-Spark coding sweet spot" — "fastest and
+        most capable small model" (nangld85, PrismaQuant 4.75-bit), also run FP8
+        with Opus fallback for hard tasks (door.blu). Cross-cutting findings:
+        "vLLM beats llama.cpp every day with a proper quant (NVFP4 / int4-autoround)"
+        (0rand); set `repetition_penalty: 1.02` to break digit/output loops without
+        harming normal tokens (nangld85). Shared test probe: "write a C99 program
+        computing 100 digits of Pi (no hardcoding), compile with w64devkit" — needs
+        real algorithm planning + independent build-debugging + persistence.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"
+        verification: cited
+        confidence: low # subjective community verdicts
     - kind: note
       body: >-
         262K native context, extensible to ~1M via YaRN. Approximate memory

@@ -616,6 +616,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 29,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -640,6 +641,16 @@
       ],
       "relations": [],
       "claims": [
+        {
+          "kind": "note",
+          "body": "COMMUNITY (single-Spark coding, forum 374423): a \"strong coder\" / \"very hard worker\" even at Q2 GGUF on llama.cpp (nangld85, keving3) — Q2 is the only quant that fits 1 Spark. CAVEAT: aggressive Q2 degrades multistep reasoning; the FP8 2× recipe (toolEvalBench 89/100) is the quality-preserving path. Q2-on-1-box trades quality for fit.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
         {
           "kind": "note",
           "body": "VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active, 43 layers, 256 routed experts + 1 shared, 6/token, MLA attention, native 65536 extended to 1M via YaRN (factor 16), MIT. Published weights are FP4 (MoE experts) + FP8 mixed. Replaces the earlier UNVERIFIED placeholder.",
@@ -675,6 +686,7 @@
         },
         "aaIntelligence": {
           "index": 40,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -1118,6 +1130,7 @@
         },
         "aaIntelligence": {
           "index": 44,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -1232,6 +1245,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 15,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1269,6 +1283,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1306,6 +1321,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 11,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1343,6 +1359,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 23,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1380,6 +1397,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 10,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1548,6 +1566,7 @@
         },
         "aaIntelligence": {
           "index": 22,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -1670,6 +1689,7 @@
         },
         "aaIntelligence": {
           "index": 26,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -1862,6 +1882,7 @@
         },
         "aaIntelligence": {
           "index": 29,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -2023,6 +2044,7 @@
         },
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -2132,6 +2154,7 @@
         },
         "aaIntelligence": {
           "index": 12,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -2443,6 +2466,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 40,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -2468,6 +2492,15 @@
       ],
       "relations": [],
       "claims": [
+        {
+          "kind": "caveat",
+          "body": "AA-vs-local-quant GAP (largest in the catalog): the AA Intelligence Index 51 is reference precision (full model). The ONLY self-host recipe here runs AWQ-INT4 with data-free 15% expert pruning (256→218 experts/layer) — a real capability cut with NO local eval published. Effective self-host quality is materially below 51; AA-51-class quality is realizable only via the full-precision cloud gateway, not the 4× cluster recipe. Do not read the aaIntelligence facet as the self-host number.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "facets.aaIntelligence (reference precision) vs runsOn AWQ-INT4-15%-pruned recipe (forum 374125, no local eval)",
+            "confidence": "medium"
+          }
+        },
         {
           "kind": "note",
           "body": "IndexShare: the DSA sparse-attention indexer is reused across every four sparse-attention layers (index_topk 2048), cutting per-token FLOPs ~2.9× at 1M context.",
@@ -2535,6 +2568,7 @@
         },
         "aaIntelligence": {
           "index": 51,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -2858,6 +2892,7 @@
         },
         "aaIntelligence": {
           "index": 24,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3024,6 +3059,7 @@
         },
         "aaIntelligence": {
           "index": 15,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3132,6 +3168,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 5,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3169,6 +3206,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3206,6 +3244,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 7,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3243,6 +3282,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 34,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3280,6 +3320,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 22,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3317,6 +3358,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 16,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3354,6 +3396,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 5,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3391,6 +3434,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 4,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3428,6 +3472,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 28,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3465,6 +3510,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 19,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3502,6 +3548,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 25,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3539,6 +3586,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 43,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3576,6 +3624,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 42,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3613,6 +3662,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3650,6 +3700,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 5,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3687,6 +3738,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 8,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3724,6 +3776,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 26,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3761,6 +3814,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 19,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3798,6 +3852,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3835,6 +3890,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 8,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3872,6 +3928,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 6,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3909,6 +3966,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -3946,6 +4004,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 14,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -3983,6 +4042,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 10,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -4020,6 +4080,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 17,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4057,6 +4118,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 40,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4186,6 +4248,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 42,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -4223,6 +4286,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 36,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4260,6 +4324,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 4,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -4297,6 +4362,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 12,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4714,6 +4780,7 @@
         },
         "aaIntelligence": {
           "index": 38,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -4838,6 +4905,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 44,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -4875,6 +4943,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 10,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4912,6 +4981,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -4961,6 +5031,7 @@
         },
         "aaIntelligence": {
           "index": 21,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5046,6 +5117,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 13,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5083,6 +5155,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 43,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -5120,6 +5193,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 10,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5276,6 +5350,7 @@
         },
         "aaIntelligence": {
           "index": 21,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5350,6 +5425,7 @@
         },
         "aaIntelligence": {
           "index": 18,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5544,6 +5620,7 @@
         },
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5631,6 +5708,7 @@
         },
         "aaIntelligence": {
           "index": 15,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -5761,6 +5839,7 @@
         },
         "aaIntelligence": {
           "index": 25,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -5968,6 +6047,7 @@
         },
         "aaIntelligence": {
           "index": 38,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -6074,6 +6154,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 41,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -6111,6 +6192,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 21,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6148,6 +6230,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 5,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6185,6 +6268,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 20,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6222,6 +6306,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 19,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6332,6 +6417,7 @@
         },
         "aaIntelligence": {
           "index": 21,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6577,6 +6663,7 @@
         },
         "aaIntelligence": {
           "index": 20,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -6842,6 +6929,25 @@
       "claims": [
         {
           "kind": "note",
+          "body": "COMMUNITY (single-Spark coding, forum 374423): \"extremely good\" in Agent Zero (keving3) and a common home/work pick on int4-autoround via eugr/spark-vllm-docker (engineering68), but at ~26 t/s \"can't work unattended\" (nangld85) — corroborates the privacy-bound-but-interactive framing of decision f3b9a4 (not an autonomous-agent host).",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "AA-vs-local-quant GAP: the AA Intelligence Index 32 is reference precision. The local self-host recipes run INT4-AutoRound, whose weights quality is explicitly UNCERTIFIED (tool-eval-bench 60–87/100 across same-config repeats, too noisy at N=15 — see runsOn[].outcome.quality). So the privacy-bound 122B-local exception bets on unmeasured INT4 degradation from 32; the OpenCode-calibrated AutoRound path (technique-spark-auto-round) is the candidate fix for closing that gap. Read runsOn quality, not aaIntelligence, for the deployed number.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "facets.aaIntelligence (reference) vs runsOn INT4-AutoRound quality (forum 365639, uncertified)",
+            "confidence": "medium"
+          }
+        },
+        {
+          "kind": "note",
           "body": "Config progression (forum 365639): 28.3 (AutoRound INT4) → 38.4 (+FP8 shared-experts + MTP-1, Albond) → 44 (+INT8 LM head, +15%, post 71) → 51 (+MTP-2, +33%, post 71) → 52 (v2.4 backports, FINAL, post 398). Only the current-best (v2.4) is a live entry; the full progression is in git history.",
           "provenance": {
             "asOf": "2026-06-20",
@@ -6954,6 +7060,7 @@
         },
         "aaIntelligence": {
           "index": 32,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -7474,6 +7581,7 @@
         },
         "aaIntelligence": {
           "index": 23,
+          "basis": "reference-precision",
           "config": "non-reasoning",
           "estimated": true,
           "provenance": {
@@ -7710,6 +7818,7 @@
         },
         "aaIntelligence": {
           "index": 34,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -7967,6 +8076,7 @@
         },
         "aaIntelligence": {
           "index": 25,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -8199,6 +8309,7 @@
         },
         "aaIntelligence": {
           "index": 37,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -8270,6 +8381,51 @@
                 }
               }
             }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-27B · vLLM INT4-AutoRound (OpenCode-calibrated, spark-auto-round)",
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "techniques": [
+              "technique-autoround",
+              "technique-spark-auto-round",
+              "technique-prefix-caching"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "coder3101/Qwen3.6-27B-int4-AutoRound",
+              "format": "safetensors",
+              "packager": "spark-auto-round",
+              "note": "OpenCode-Instruct calibration (default dataset)"
+            },
+            "config": {
+              "maxModelLen": 196608
+            },
+            "procedure": "https://github.com/whpthomas/spark-auto-round (`spark-auto-round <model>`; auto_round output)",
+            "outcome": {
+              "context": {
+                "tokens": 196608
+              },
+              "speed": {
+                "genTokS": 26.4,
+                "note": "26.4 tok/s (whpthomas); community 0rand 20–21 t/s — 'better at writing code but lacks knowledge'"
+              },
+              "quality": {
+                "toolEvalBench": "92/100",
+                "note": "OpenCode-calibrated INT4 — use-case-matched calibration lifts tool-eval (whpthomas, forum 373475). The concrete close-the-AA-gap path vs generic AutoRound (see technique-spark-auto-round)."
+              },
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 + github.com/whpthomas/spark-auto-round",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "quant": "int4-autoround",
+                  "packager": "spark-auto-round"
+                }
+              }
+            }
           }
         ]
       }
@@ -8292,6 +8448,16 @@
         }
       ],
       "claims": [
+        {
+          "kind": "note",
+          "body": "COMMUNITY (single-Spark coding, forum 374423): Qwen3.6-35B-A3B is the daily-driver consensus / \"single-Spark coding sweet spot\" — \"fastest and most capable small model\" (nangld85, PrismaQuant 4.75-bit), also run FP8 with Opus fallback for hard tasks (door.blu). Cross-cutting findings: \"vLLM beats llama.cpp every day with a proper quant (NVFP4 / int4-autoround)\" (0rand); set `repetition_penalty: 1.02` to break digit/output loops without harming normal tokens (nangld85). Shared test probe: \"write a C99 program computing 100 digits of Pi (no hardcoding), compile with w64devkit\" — needs real algorithm planning + independent build-debugging + persistence.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
         {
           "kind": "note",
           "body": "262K native context, extensible to ~1M via YaRN. Approximate memory footprint by quant (vendor/community estimate): 3-bit ~17 GB, 4-bit ~23 GB, 6-bit ~30 GB, 8-bit ~38 GB, BF16 ~70 GB.",
@@ -8338,6 +8504,7 @@
         },
         "aaIntelligence": {
           "index": 32,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -8910,6 +9077,49 @@
                 "verification": "cited"
               }
             }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "Qwen3.6-35B-A3B · vLLM INT4-AutoRound (OpenCode-calibrated, spark-auto-round)",
+            "quant": "int4-autoround",
+            "format": "safetensors",
+            "techniques": [
+              "technique-autoround",
+              "technique-spark-auto-round",
+              "technique-prefix-caching"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "azampatti/Qwen3.6-35B-A3B-int4-AutoRound-OC",
+              "format": "safetensors",
+              "packager": "spark-auto-round",
+              "note": "OpenCode-Instruct calibration"
+            },
+            "config": {
+              "maxModelLen": 262144
+            },
+            "procedure": "https://github.com/whpthomas/spark-auto-round",
+            "outcome": {
+              "context": {
+                "tokens": 262144
+              },
+              "speed": {
+                "note": "tok/s not separately published for the 35B-OC build — measure (cf. 27B-OC 26.4; this model's NVFP4+MTP path hits 126)"
+              },
+              "quality": {
+                "note": "OpenCode-calibrated INT4; per-build tool-eval not separately published (cf. 27B-OC 92/100). Community consensus (forum 374423): Qwen3.6-35B is the single-Spark coding daily-driver pick."
+              },
+              "provenance": {
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 + github.com/whpthomas/spark-auto-round",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "quant": "int4-autoround",
+                  "packager": "spark-auto-round"
+                }
+              }
+            }
           }
         ]
       }
@@ -8941,6 +9151,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 6,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -8978,6 +9189,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 31,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -9015,6 +9227,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 8,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -9052,6 +9265,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 12,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -9089,6 +9303,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 7,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -9126,6 +9341,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 15,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -9185,6 +9401,7 @@
         },
         "aaIntelligence": {
           "index": 30,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": false,
           "provenance": {
@@ -9338,6 +9555,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 9,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -9375,6 +9593,7 @@
       "facets": {
         "aaIntelligence": {
           "index": 24,
+          "basis": "reference-precision",
           "config": "reasoning",
           "estimated": true,
           "provenance": {
@@ -10487,6 +10706,61 @@
       ],
       "facets": {
         "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-spark-auto-round",
+      "kind": "technique",
+      "name": "spark-auto-round (use-case-calibrated AutoRound)",
+      "summary": "AutoRound INT4 on GB10 calibrated on a task-matched dataset (OpenCode-Instruct) + ASAQ sensitivity-aware FP16 layers",
+      "visibility": "public",
+      "labels": [
+        "quantization",
+        "autoround",
+        "int4",
+        "calibration",
+        "dgx-spark",
+        "gb10",
+        "tooling"
+      ],
+      "relations": [
+        {
+          "rel": "refines",
+          "target": "technique-autoround"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "Calibrating AutoRound INT4 on a dataset that MATCHES the deployment task (default OpenCode-Instruct for coding models) lifts task eval vs generic calibration: \"quantization smooths out knowledge/emergent-behaviour noise; a use-case-matched dataset effectively re-filters the model toward that use case, improving test scores.\" Measured: Qwen3.6-27B int4-AutoRound-OC scored 92/100 tool-eval-bench @ 26.4 tok/s. This is the concrete lever for closing the AA-reference-vs-local-quant gap on a target task.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 + github.com/whpthomas/spark-auto-round (whpthomas)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "CLI `spark-auto-round <model>`: memory-aware auto-tuner (drops batch/seq/ sample-count to fit a 128GB-unified budget), stateful resume (survives OOM / interruption, resumes from last block), torch.compile by default. Companion ASAQ (Adaptive Sensitivity-Aware Quantization) keeps sensitive layers at FP16. Output: `auto_round` format (HF-compatible, auto_gptq backend). Datasets: OpenCode-Instruct (default), github-code-clean, pile-10k. Tested on Qwen3.5 0.8B, Qwen3.6 27B/35B, Gemma 4 12B.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://github.com/whpthomas/spark-auto-round",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Author's production philosophy CORROBORATES the prefix-caching finding: \"recipes that test well but with prefix-caching disabled have terrible real-world end-to-end performance\" — independent of the DFlash×APC caveat on Qwen3.5-122B. Optimise for prefix-caching-on, multi-turn throughput, not single-thread benchmark tok/s.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 (whpthomas)",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
       }
     },
     {

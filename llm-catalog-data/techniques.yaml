@@ -171,6 +171,55 @@
         vLLM. Used by the Qwen3.5-122B single-Spark recipe (Intel AutoRound INT4).
       provenance: { asOf: "2026-06-19", source: "Intel AutoRound / NVIDIA forum 365639", verification: cited }
 
+- id: technique-spark-auto-round
+  kind: technique
+  name: spark-auto-round (use-case-calibrated AutoRound)
+  summary: AutoRound INT4 on GB10 calibrated on a task-matched dataset (OpenCode-Instruct) + ASAQ sensitivity-aware FP16 layers
+  visibility: public
+  labels: [quantization, autoround, int4, calibration, dgx-spark, gb10, tooling]
+  facets: { qualityImpact: lossy }
+  relations:
+    - { rel: refines, target: technique-autoround }
+  claims:
+    - kind: finding
+      body: >-
+        Calibrating AutoRound INT4 on a dataset that MATCHES the deployment task
+        (default OpenCode-Instruct for coding models) lifts task eval vs generic
+        calibration: "quantization smooths out knowledge/emergent-behaviour noise;
+        a use-case-matched dataset effectively re-filters the model toward that use
+        case, improving test scores." Measured: Qwen3.6-27B int4-AutoRound-OC scored
+        92/100 tool-eval-bench @ 26.4 tok/s. This is the concrete lever for closing
+        the AA-reference-vs-local-quant gap on a target task.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 + github.com/whpthomas/spark-auto-round (whpthomas)"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        CLI `spark-auto-round <model>`: memory-aware auto-tuner (drops batch/seq/
+        sample-count to fit a 128GB-unified budget), stateful resume (survives OOM /
+        interruption, resumes from last block), torch.compile by default. Companion
+        ASAQ (Adaptive Sensitivity-Aware Quantization) keeps sensitive layers at FP16.
+        Output: `auto_round` format (HF-compatible, auto_gptq backend). Datasets:
+        OpenCode-Instruct (default), github-code-clean, pile-10k. Tested on Qwen3.5
+        0.8B, Qwen3.6 27B/35B, Gemma 4 12B.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://github.com/whpthomas/spark-auto-round"
+        verification: cited
+    - kind: note
+      body: >-
+        Author's production philosophy CORROBORATES the prefix-caching finding:
+        "recipes that test well but with prefix-caching disabled have terrible
+        real-world end-to-end performance" — independent of the DFlash×APC caveat on
+        Qwen3.5-122B. Optimise for prefix-caching-on, multi-turn throughput, not
+        single-thread benchmark tok/s.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/introducing-spark-auto-round-w-opencode-instruct-dataset/373475 (whpthomas)"
+        verification: cited
+
 - id: technique-fp8
   kind: technique
   name: FP8 (8-bit float)

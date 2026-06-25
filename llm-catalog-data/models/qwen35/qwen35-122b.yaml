@@ -17,6 +17,7 @@
   facets:
     aaIntelligence:
       index: 32
+      basis: reference-precision # AA serves ~reference precision (provider-blended); NOT the local runsOn quant. Upper bound — read runsOn.outcome.quality for the deployed quant.
       config: reasoning
       estimated: false
       provenance:
@@ -307,6 +308,32 @@
             source: "https://openrouter.ai/api/v1/models"
             verification: authoritative
   claims:
+    - kind: note
+      body: >-
+        COMMUNITY (single-Spark coding, forum 374423): "extremely good" in Agent
+        Zero (keving3) and a common home/work pick on int4-autoround via
+        eugr/spark-vllm-docker (engineering68), but at ~26 t/s "can't work
+        unattended" (nangld85) — corroborates the privacy-bound-but-interactive
+        framing of decision f3b9a4 (not an autonomous-agent host).
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"
+        verification: cited
+        confidence: low # subjective community verdicts
+    - kind: caveat
+      body: >-
+        AA-vs-local-quant GAP: the AA Intelligence Index 32 is reference precision.
+        The local self-host recipes run INT4-AutoRound, whose weights quality is
+        explicitly UNCERTIFIED (tool-eval-bench 60–87/100 across same-config repeats,
+        too noisy at N=15 — see runsOn[].outcome.quality). So the privacy-bound
+        122B-local exception bets on unmeasured INT4 degradation from 32; the
+        OpenCode-calibrated AutoRound path (technique-spark-auto-round) is the
+        candidate fix for closing that gap. Read runsOn quality, not aaIntelligence,
+        for the deployed number.
+      provenance:
+        asOf: "2026-06-26"
+        source: "facets.aaIntelligence (reference) vs runsOn INT4-AutoRound quality (forum 365639, uncertified)"
+        confidence: medium
     - kind: note
       body: >-
         Config progression (forum 365639): 28.3 (AutoRound INT4) → 38.4 (+FP8
