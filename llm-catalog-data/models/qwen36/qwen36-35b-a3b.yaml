@@ -133,17 +133,28 @@
         outcome:
           context: { tokens: 262144 }
           speed:
-            genTokS: 77.7 # tg128 decode (serapis); a speculative-MTP config DEGRADED this, removed
-            note: "decode 77.7 tg128 (serapis, MTP removed); prefill ~7.8-8.5k tok/s pp2048; cosinus saw 52.7 tg32 on a modified recipe"
+            genTokS: 70.8 # single-Spark FP8, recent optimized (Digital_David post 94: 69.9-70.8 tg128)
+            note: >-
+              CORRECTION (refreshed to post ~280): the earlier 77.74 tg128 (serapis
+              post 5) was measured on DUAL Spark with TP — NOT single-Spark. True
+              single-Spark FP8 is ~52-77 depending on flags; recent optimized
+              69.9-70.8 tg128 (Digital_David post 94, vLLM-node-tf5). FP8 + MTP-3 =
+              63.9 tg single (timhbl post 27, MTP acceptance ~2.77 from c1 to c32).
+              INT4-AutoRound ~70.6 tg128 (post 99) with faster prefill (~6.1-6.7k pp).
+              Requires `--default-chat-template-kwargs '{"preserve_thinking":true}'`
+              (see technique-preserve-thinking-template) + `--tool-call-parser
+              qwen3_xml` (not the deprecated qwen3_coder).
+          quality: { note: "FP8: 100% successful completion at ToolCall-15 (cosinus post 9)" }
           measurements:
-            - { promptTokens: 2048, prefillTokS: 7824, decodeTokS: 77.7, ttftMs: 264 }
-            - { promptTokens: 2048, contextDepth: 8192, prefillTokS: 8352, ttftMs: 1228 }
+            - { promptTokens: 2048, prefillTokS: 7824, decodeTokS: 77.7, ttftMs: 264, note: "serapis post 5 — DUAL-Spark TP, NOT single (corrected ~post 280)" }
+            - { promptTokens: 2048, contextDepth: 8192, prefillTokS: 8352, ttftMs: 1228, note: "serapis — dual-Spark" }
+            - { decodeTokS: 70.8, note: "single-Spark FP8, optimized (Digital_David post 94, tf5 build)" }
           provenance:
-            asOf: "2026-06-22"
-            source: "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822"
+            asOf: "2026-06-26"
+            source: "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822 (to ~post 280: Digital_David, timhbl, cosinus, pnivek)"
             verification: cited
             confidence: medium
-            versionPins: { runtime: vLLM, version: "0.19.1rc1.dev337+g17d87168d" }
+            versionPins: { runtime: vLLM, version: "0.19.2rc1.dev4+gb5f6c5f83 (vllm-node-tf5)" }
       # MEASURED single-Spark NVFP4 + DFlash-11 (AEON-7 recipe) — note: serves the
       # "heretic" abliterated weights, but a clean datapoint for 35B-A3B NVFP4+DFlash.
       - endpoint: endpoint-vllm-dgx-spark

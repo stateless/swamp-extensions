@@ -8335,7 +8335,7 @@
               "maxModelLen": 196608,
               "tensorParallel": 1,
               "gpuMemoryUtilization": 0.65,
-              "speculative": "dflash (10 tokens)",
+              "speculative": "dflash (10 tokens; ajvazan #34 recommends reducing to ~6)",
               "attentionBackend": "flashinfer",
               "kvCacheDtype": "auto",
               "build": {
@@ -8706,31 +8706,40 @@
                 "tokens": 262144
               },
               "speed": {
-                "genTokS": 77.7,
-                "note": "decode 77.7 tg128 (serapis, MTP removed); prefill ~7.8-8.5k tok/s pp2048; cosinus saw 52.7 tg32 on a modified recipe"
+                "genTokS": 70.8,
+                "note": "CORRECTION (refreshed to post ~280): the earlier 77.74 tg128 (serapis post 5) was measured on DUAL Spark with TP — NOT single-Spark. True single-Spark FP8 is ~52-77 depending on flags; recent optimized 69.9-70.8 tg128 (Digital_David post 94, vLLM-node-tf5). FP8 + MTP-3 = 63.9 tg single (timhbl post 27, MTP acceptance ~2.77 from c1 to c32). INT4-AutoRound ~70.6 tg128 (post 99) with faster prefill (~6.1-6.7k pp). Requires `--default-chat-template-kwargs '{\"preserve_thinking\":true}'` (see technique-preserve-thinking-template) + `--tool-call-parser qwen3_xml` (not the deprecated qwen3_coder)."
+              },
+              "quality": {
+                "note": "FP8: 100% successful completion at ToolCall-15 (cosinus post 9)"
               },
               "measurements": [
                 {
                   "promptTokens": 2048,
                   "prefillTokS": 7824,
                   "decodeTokS": 77.7,
-                  "ttftMs": 264
+                  "ttftMs": 264,
+                  "note": "serapis post 5 — DUAL-Spark TP, NOT single (corrected ~post 280)"
                 },
                 {
                   "promptTokens": 2048,
                   "contextDepth": 8192,
                   "prefillTokS": 8352,
-                  "ttftMs": 1228
+                  "ttftMs": 1228,
+                  "note": "serapis — dual-Spark"
+                },
+                {
+                  "decodeTokS": 70.8,
+                  "note": "single-Spark FP8, optimized (Digital_David post 94, tf5 build)"
                 }
               ],
               "provenance": {
-                "asOf": "2026-06-22",
-                "source": "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822",
+                "asOf": "2026-06-26",
+                "source": "https://forums.developer.nvidia.com/t/qwen-qwen3-6-35b-a3b-and-fp8-has-landed/366822 (to ~post 280: Digital_David, timhbl, cosinus, pnivek)",
                 "verification": "cited",
                 "confidence": "medium",
                 "versionPins": {
                   "runtime": "vLLM",
-                  "version": "0.19.1rc1.dev337+g17d87168d"
+                  "version": "0.19.2rc1.dev4+gb5f6c5f83 (vllm-node-tf5)"
                 }
               }
             }
@@ -10233,6 +10242,16 @@
           "provenance": {
             "asOf": "2026-06-20",
             "source": "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "DFlash vs MTP for AGENTS at long context — prefer MTP. DFlash \"eats memory like crazy\"; MTP saves ~2.5–3× KV on a 256K window, and the throughput difference between DFlash and MTP at medium/high context is too small to justify it — \"if you work with them [high contexts] most of the time, use MTP.\" DFlash's edge is on FRESH / short-context, high-acceptance bursts (cf. the Qwen3.5-122B DFlash agent-burst recipe, forum 374328, ~80 tok/s on tool-heavy traffic). prefix-caching also favours MTP — DFlash often needs APC OFF (Qwen3.5-122B recipe), which collides with the cache-read-heavy agent workload (decision f3b9a4). So: DFlash for short-burst agentic; MTP for sustained long-context.",
+          "provenance": {
+            "asOf": "2026-06-26",
+            "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561 post 32 (ajvazan)",
+            "confidence": "medium",
             "verification": "cited"
           }
         }

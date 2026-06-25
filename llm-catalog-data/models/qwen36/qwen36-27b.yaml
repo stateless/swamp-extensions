@@ -42,7 +42,7 @@
           maxModelLen: 196608
           tensorParallel: 1
           gpuMemoryUtilization: 0.65
-          speculative: "dflash (10 tokens)"
+          speculative: "dflash (10 tokens; ajvazan #34 recommends reducing to ~6)"
           attentionBackend: flashinfer
           kvCacheDtype: auto
           build: { runtime: vLLM, version: "0.22.1+pr44389.aeon" }

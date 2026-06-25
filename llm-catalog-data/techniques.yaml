@@ -309,6 +309,23 @@
         win. vLLM `--speculative-config '{"method":"dflash","model":...,"num_speculative_tokens":15}'`.
         Used by the Qwen3.6-35B-A3B-FP8 dflash recipe.
       provenance: { asOf: "2026-06-20", source: "https://github.com/eugr/spark-vllm-docker/blob/main/recipes/qwen3.6-35b-a3b-fp8-dflash.yaml", verification: cited }
+    - kind: caveat
+      body: >-
+        DFlash vs MTP for AGENTS at long context — prefer MTP. DFlash "eats memory
+        like crazy"; MTP saves ~2.5–3× KV on a 256K window, and the throughput
+        difference between DFlash and MTP at medium/high context is too small to
+        justify it — "if you work with them [high contexts] most of the time, use
+        MTP." DFlash's edge is on FRESH / short-context, high-acceptance bursts (cf.
+        the Qwen3.5-122B DFlash agent-burst recipe, forum 374328, ~80 tok/s on
+        tool-heavy traffic). prefix-caching also favours MTP — DFlash often needs APC
+        OFF (Qwen3.5-122B recipe), which collides with the cache-read-heavy agent
+        workload (decision f3b9a4). So: DFlash for short-burst agentic; MTP for
+        sustained long-context.
+      provenance:
+        asOf: "2026-06-26"
+        source: "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561 post 32 (ajvazan)"
+        verification: cited
+        confidence: medium
 
 # KV-cache / attention OPTIMISATIONS. The decisive axis is qualityImpact:
 #   neutral = mathematically exact (pure speed/memory win — never changes output)
