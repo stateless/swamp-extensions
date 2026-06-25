@@ -1,0 +1,27 @@
+# MiniMax-M3 — catalog STUB seeded from the Artificial Analysis leaderboard
+# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
+# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+
+- id: model-minimax-m3
+  kind: model
+  name: MiniMax-M3
+  summary: "Open-weights LLM by MiniMax; catalog stub (AA-leaderboard-seeded, 44 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  visibility: public
+  labels: [minimax, open-weights, stub, aa-leaderboard]
+  facets:
+    benchmarks:
+      aaIntelligenceIndex: 44
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
+  claims:
+    - kind: note
+      body: >-
+        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
+        architecture): context 1M, hosted price ~$0.22/1M blended; AA Intelligence Index 44.
+        Stub pending enrichment from the vendor config.json.
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium

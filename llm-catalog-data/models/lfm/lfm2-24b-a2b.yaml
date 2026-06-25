@@ -1,0 +1,27 @@
+# LFM2 24B A2B — catalog STUB seeded from the Artificial Analysis leaderboard
+# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
+# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+
+- id: model-lfm2-24b-a2b
+  kind: model
+  name: LFM2 24B A2B
+  summary: "Open-weights LLM by Liquid AI; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  visibility: public
+  labels: [liquid-ai, open-weights, stub, aa-leaderboard]
+  facets:
+    benchmarks:
+      aaIntelligenceIndex: 5
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
+  claims:
+    - kind: note
+      body: >-
+        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
+        architecture): context 32.8k, hosted price ~$0.04/1M blended; AA Intelligence Index 5.
+        Stub pending enrichment from the vendor config.json.
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium

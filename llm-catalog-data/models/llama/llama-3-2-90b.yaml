@@ -1,0 +1,27 @@
+# Llama 3.2 90B (Vision) — catalog STUB seeded from the Artificial Analysis leaderboard
+# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
+# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+
+- id: model-llama-3-2-90b
+  kind: model
+  name: Llama 3.2 90B (Vision)
+  summary: "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 6 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  visibility: public
+  labels: [meta, open-weights, stub, aa-leaderboard]
+  facets:
+    benchmarks:
+      aaIntelligenceIndex: 6
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium
+  claims:
+    - kind: note
+      body: >-
+        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
+        architecture): context 128k, hosted price ~$1.38/1M blended; AA Intelligence Index 6.
+        Stub pending enrichment from the vendor config.json.
+      provenance:
+        asOf: "2026-06-25"
+        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        confidence: medium

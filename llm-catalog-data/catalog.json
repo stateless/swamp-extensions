@@ -590,6 +590,41 @@
       }
     },
     {
+      "id": "model-command-a",
+      "kind": "model",
+      "name": "Command A+",
+      "summary": "Open-weights LLM by Cohere; catalog stub (AA-leaderboard-seeded, 29 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "cohere",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 192k, hosted price ~$0.00/1M blended; AA Intelligence Index 29. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 29,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-deepseek-v4-flash",
       "kind": "model",
       "name": "DeepSeek-v4-Flash",
@@ -1146,6 +1181,181 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "id": "model-devstral-2",
+      "kind": "model",
+      "name": "Devstral 2",
+      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 15 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "mistral",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 15. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 15,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ernie-4-5-300b-a47b",
+      "kind": "model",
+      "name": "ERNIE 4.5 300B A47B",
+      "summary": "Open-weights LLM by Baidu; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "baidu",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.36/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-exaone-4-0-32b",
+      "kind": "model",
+      "name": "EXAONE 4.0 32B",
+      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 11 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "lg-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 11. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 11,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-exaone-4-5-33b",
+      "kind": "model",
+      "name": "EXAONE 4.5 33B",
+      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 23 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "lg-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 23. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 23,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-falcon-h1r-7b",
+      "kind": "model",
+      "name": "Falcon-H1R-7B",
+      "summary": "Open-weights LLM by TII UAE; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "tii",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 10,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
       }
     },
     {
@@ -2125,6 +2335,41 @@
       }
     },
     {
+      "id": "model-glm-5-1",
+      "kind": "model",
+      "name": "GLM-5.1",
+      "summary": "Open-weights LLM by Z AI; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "z-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 200k, hosted price ~$0.90/1M blended; AA Intelligence Index 40. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 40,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-glm-52",
       "kind": "model",
       "name": "GLM-5.2",
@@ -2649,6 +2894,1056 @@
       }
     },
     {
+      "id": "model-granite-4-0-h-small",
+      "kind": "model",
+      "name": "Granite 4.0 H Small",
+      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "ibm",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.08/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 5,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-granite-4-1-30b",
+      "kind": "model",
+      "name": "Granite 4.1 30B",
+      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "ibm",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-granite-4-1-8b",
+      "kind": "model",
+      "name": "Granite 4.1 8B",
+      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "ibm",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.06/1M blended; AA Intelligence Index 7. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 7,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-hy3-preview",
+      "kind": "model",
+      "name": "Hy3-preview",
+      "summary": "Open-weights LLM by Tencent; catalog stub (AA-leaderboard-seeded, 34 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "tencent",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.10/1M blended; AA Intelligence Index 34. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 34,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-hypernova-60b-2605",
+      "kind": "model",
+      "name": "HyperNova 60B 2605",
+      "summary": "Open-weights LLM by Multiverse Computing; catalog stub (AA-leaderboard-seeded, 22 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "multiverse",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.05/1M blended; AA Intelligence Index 22. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 22,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-intellect-3",
+      "kind": "model",
+      "name": "INTELLECT-3",
+      "summary": "Open-weights LLM by Prime Intellect; catalog stub (AA-leaderboard-seeded, 16 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "prime-intellect",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 16. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 16,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-jamba-1-7-large",
+      "kind": "model",
+      "name": "Jamba 1.7 Large",
+      "summary": "Open-weights LLM by AI21 Labs; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "ai21",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$2.60/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 5,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-jamba-reasoning-3b",
+      "kind": "model",
+      "name": "Jamba Reasoning 3B",
+      "summary": "Open-weights LLM by AI21 Labs; catalog stub (AA-leaderboard-seeded, 4 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "ai21",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 4. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 4,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-jt-35b-flash",
+      "kind": "model",
+      "name": "JT-35B-Flash",
+      "summary": "Open-weights LLM by China Mobile; catalog stub (AA-leaderboard-seeded, 28 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "china-mobile",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 28. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 28,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-jt-mini",
+      "kind": "model",
+      "name": "JT-MINI",
+      "summary": "Open-weights LLM by China Mobile; catalog stub (AA-leaderboard-seeded, 19 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "china-mobile",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 19,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-k-exaone",
+      "kind": "model",
+      "name": "K-EXAONE",
+      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 25 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "lg-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 25. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 25,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-kimi-k2-6",
+      "kind": "model",
+      "name": "Kimi K2.6",
+      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 43 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "moonshot",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.70/1M blended; AA Intelligence Index 43. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 43,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-kimi-k2-7-code",
+      "kind": "model",
+      "name": "Kimi K2.7 Code",
+      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "moonshot",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.70/1M blended; AA Intelligence Index 42. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 42,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-kimi-linear-48b-a3b-instruct",
+      "kind": "model",
+      "name": "Kimi Linear 48B A3B Instruct",
+      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "moonshot",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-lfm2-24b-a2b",
+      "kind": "model",
+      "name": "LFM2 24B A2B",
+      "summary": "Open-weights LLM by Liquid AI; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "liquid-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 32.8k, hosted price ~$0.04/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 5,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-lfm2-5-8b-a1b",
+      "kind": "model",
+      "name": "LFM2.5-8B-A1B",
+      "summary": "Open-weights LLM by Liquid AI; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "liquid-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 32.8k, hosted price ~$0.00/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 8,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ling-2-6-1t",
+      "kind": "model",
+      "name": "Ling-2.6-1T",
+      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 26 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "inclusion-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.52/1M blended; AA Intelligence Index 26. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 26,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ling-2-6-flash",
+      "kind": "model",
+      "name": "Ling 2.6 Flash",
+      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 19 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "inclusion-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.06/1M blended; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 19,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-3-1-405b",
+      "kind": "model",
+      "name": "Llama 3.1 405B",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$3.13/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-3-1-nemotron-70b",
+      "kind": "model",
+      "name": "Llama 3.1 Nemotron 70B",
+      "summary": "Open-weights LLM by NVIDIA; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "nvidia",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$1.20/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 8,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-3-2-90b",
+      "kind": "model",
+      "name": "Llama 3.2 90B (Vision)",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 6 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$1.38/1M blended; AA Intelligence Index 6. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 6,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-3-3-70b",
+      "kind": "model",
+      "name": "Llama 3.3 70B",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.59/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-4-maverick",
+      "kind": "model",
+      "name": "Llama 4 Maverick",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 14 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.34/1M blended; AA Intelligence Index 14. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 14,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-llama-4-scout",
+      "kind": "model",
+      "name": "Llama 4 Scout",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 10M, hosted price ~$0.22/1M blended; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 10,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-longcat-flash-lite",
+      "kind": "model",
+      "name": "LongCat Flash Lite",
+      "summary": "Open-weights LLM by LongCat; catalog stub (AA-leaderboard-seeded, 17 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "longcat",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 17. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 17,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-mimo-v2-5",
+      "kind": "model",
+      "name": "MiMo-V2.5",
+      "summary": "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "xiaomi",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.06/1M blended; AA Intelligence Index 40. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 40,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-mimo-v2-5-pro",
+      "kind": "model",
+      "name": "MiMo-V2.5-Pro",
+      "summary": "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "xiaomi",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.18/1M blended; AA Intelligence Index 42. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 42,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-mimo-v2-omni-0327",
+      "kind": "model",
+      "name": "MiMo-V2-Omni-0327",
+      "summary": "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 36 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "xiaomi",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.34/1M blended; AA Intelligence Index 36. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 36,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-minicpm-v-4-6-1-3b",
+      "kind": "model",
+      "name": "MiniCPM-V 4.6 1.3B",
+      "summary": "Open-weights LLM by OpenBMB; catalog stub (AA-leaderboard-seeded, 4 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "openbmb",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 4. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 4,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-minicpm5-1b",
+      "kind": "model",
+      "name": "MiniCPM5-1B",
+      "summary": "Open-weights LLM by OpenBMB; catalog stub (AA-leaderboard-seeded, 12 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "openbmb",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 12. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 12,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-minimax-m2",
       "kind": "model",
       "name": "MiniMax-M2 (family)",
@@ -3143,6 +4438,111 @@
       }
     },
     {
+      "id": "model-minimax-m3",
+      "kind": "model",
+      "name": "MiniMax-M3",
+      "summary": "Open-weights LLM by MiniMax; catalog stub (AA-leaderboard-seeded, 44 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "minimax",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.22/1M blended; AA Intelligence Index 44. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 44,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ministral-3-14b",
+      "kind": "model",
+      "name": "Ministral 3 14B",
+      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "mistral",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.20/1M blended; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 10,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ministral-3-8b",
+      "kind": "model",
+      "name": "Ministral 3 8B",
+      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "mistral",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.15/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-mistral-small-4-119b",
       "kind": "model",
       "name": "Mistral-Small-4-119B",
@@ -3227,6 +4627,111 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "model-motif-2-12-7b",
+      "kind": "model",
+      "name": "Motif-2-12.7B",
+      "summary": "Open-weights LLM by Motif Technologies; catalog stub (AA-leaderboard-seeded, 13 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "motif",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 13. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 13,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-muse-spark",
+      "kind": "model",
+      "name": "Muse Spark",
+      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 43 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "meta",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 43. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 43,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-nanbeige4-1-3b",
+      "kind": "model",
+      "name": "Nanbeige4.1-3B",
+      "summary": "Open-weights LLM by Nanbeige; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "nanbeige",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 10,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
       }
     },
     {
@@ -4084,6 +5589,181 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "model-nex-n2-pro",
+      "kind": "model",
+      "name": "Nex-N2-Pro",
+      "summary": "Open-weights LLM by Nex AGI; catalog stub (AA-leaderboard-seeded, 41 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "nex-agi",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.53/1M blended; AA Intelligence Index 41. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 41,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-north-mini-code",
+      "kind": "model",
+      "name": "North Mini Code",
+      "summary": "Open-weights LLM by Cohere; catalog stub (AA-leaderboard-seeded, 21 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "cohere",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 21. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 21,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-phi-4",
+      "kind": "model",
+      "name": "Phi-4",
+      "summary": "Open-weights LLM by Microsoft; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "microsoft",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 16k, hosted price ~$0.16/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 5,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen3-5-4b",
+      "kind": "model",
+      "name": "Qwen3.5 4B",
+      "summary": "Open-weights LLM by Alibaba; catalog stub (AA-leaderboard-seeded, 20 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "alibaba",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.04/1M blended; AA Intelligence Index 20. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 20,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-qwen3-5-omni-flash",
+      "kind": "model",
+      "name": "Qwen3.5 Omni Flash",
+      "summary": "Open-weights LLM by Alibaba; catalog stub (AA-leaderboard-seeded, 19 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "alibaba",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.17/1M blended; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 19,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
       }
     },
     {
@@ -6638,6 +8318,216 @@
       }
     },
     {
+      "id": "model-r1-1776",
+      "kind": "model",
+      "name": "R1 1776",
+      "summary": "Open-weights LLM by Perplexity; catalog stub (AA-leaderboard-seeded, 6 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "perplexity",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 6. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 6,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ring-2-6-1t",
+      "kind": "model",
+      "name": "Ring-2.6-1T",
+      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 31 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "inclusion-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.52/1M blended; AA Intelligence Index 31. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 31,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-ring-flash-2-0",
+      "kind": "model",
+      "name": "Ring-flash-2.0",
+      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "inclusion-ai",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.18/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 8,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-sarvam-105b",
+      "kind": "model",
+      "name": "Sarvam 105B",
+      "summary": "Open-weights LLM by Sarvam; catalog stub (AA-leaderboard-seeded, 12 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "sarvam",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.04/1M blended; AA Intelligence Index 12. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 12,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-sarvam-30b",
+      "kind": "model",
+      "name": "Sarvam 30B",
+      "summary": "Open-weights LLM by Sarvam; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "sarvam",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 65.5k, hosted price ~$0.03/1M blended; AA Intelligence Index 7. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 7,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-solar-open-100b",
+      "kind": "model",
+      "name": "Solar Open 100B",
+      "summary": "Open-weights LLM by Upstage; catalog stub (AA-leaderboard-seeded, 15 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "upstage",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 15. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 15,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
       "id": "model-step-37-flash",
       "kind": "model",
       "name": "Step-3.7-Flash",
@@ -6800,6 +8690,76 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "model-step3-vl-10b",
+      "kind": "model",
+      "name": "Step3 VL 10B",
+      "summary": "Open-weights LLM by StepFun; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "stepfun",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 65.5k; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 9,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      }
+    },
+    {
+      "id": "model-trinity-large-thinking",
+      "kind": "model",
+      "name": "Trinity Large Thinking",
+      "summary": "Open-weights LLM by Arcee AI; catalog stub (AA-leaderboard-seeded, 24 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "visibility": "public",
+      "labels": [
+        "arcee",
+        "open-weights",
+        "stub",
+        "aa-leaderboard"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 512k, hosted price ~$0.24/1M blended; AA Intelligence Index 24. Stub pending enrichment from the vendor config.json.",
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
+      ],
+      "facets": {
+        "benchmarks": {
+          "aaIntelligenceIndex": 24,
+          "provenance": {
+            "asOf": "2026-06-25",
+            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "confidence": "medium"
+          }
+        }
       }
     },
     {
