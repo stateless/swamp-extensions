@@ -22,16 +22,19 @@
         confidence: medium
     architecture:
       hfRepo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
+      modelType: latent-moe # LatentMoE: Mamba-2 + Attention + MoE HYBRID, with built-in Multi-Token Prediction (MTP)
       params: "120B"
       activeParams: "12B"
       layers: 88
       experts: "22/token of 512 routed"
+      # hybrid Mamba-2 (constant SSM state) + periodic full-attention (only these grow KV) + MTP head — see the qwen-122b comparison claim; family attention=nemotron_h
       nativeContext: 262144
+      extendedContext: 1048576 # up to 1M (default 256K in HF config); RULER@1M 91.75
       vocab: 131072
       modality: [text]
       provenance:
-        asOf: "2026-06-19"
-        source: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json"
+        asOf: "2026-06-28"
+        source: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json + model card (LatentMoE / Mamba-2 hybrid + MTP)"
         verification: authoritative
     footprint: # Unsloth-published per-quant memory (weights-only)
       basis: weights-only
@@ -118,7 +121,16 @@
         command: |
           ./llama.cpp/llama-cli -hf unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF:UD-Q4_K_XL \
             --ctx-size 16384 --temp 1.0 --top-p 1.0
-        note: "Unsloth recommends UD-Q2_K_XL minimum. general chat: temp 1.0/top_p 1.0; tool-calling: temp 0.6/top_p 0.95. Thinking always-on. Unsloth GGUF (~64-72GB 4-bit / UD-Q2_K_XL minimum); single-Spark-class."
+        note: >-
+          Unsloth recommends UD-Q2_K_XL minimum; Unsloth GGUF (~64-72GB 4-bit);
+          single-Spark-class; thinking always-on. TOOL-CALL FIX (Unsloth GGUF card):
+          coding agents MUST pass `extra_body={"chat_template_kwargs":
+          {"force_nonempty_content": True}}` — else the `content` field returns EMPTY
+          when the model emits a tool call (same failure mode as QUEST). Tool-call
+          parser = qwen3_coder (same as the NVFP4 recipe). SAMPLING DISCREPANCY between
+          Unsloth's own pages: the GGUF card says temp 1.0/top_p 0.95 for ALL tasks;
+          the unsloth.ai docs say tool-calling temp 0.6/top_p 0.95, chat 1.0/1.0 —
+          the card (all-tasks 1.0/0.95) is the later/authoritative one."
         procedure: "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super"
         outcome:
           context: { tokens: 262144 }
@@ -145,3 +157,62 @@
             verification: cited
             confidence: medium
             versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: fp8 }
+  claims:
+    - kind: note
+      body: >-
+        VS QWEN3.5-122B ON SPARK (can it run the same way?): SAME SIZE CLASS
+        (120B/12B-active vs 122B/10B-active) → at 4-bit/NVFP4 ~60–68GB it's
+        single-Spark-class, like Qwen 122B (model-qwen35-122b), and BOTH ship MTP
+        (APC-safe speculative decoding). BUT the serving path is NOT identical:
+        Nemotron is a LatentMoE **Mamba-2 + Attention hybrid**, not a pure-transformer
+        MoE, so it needs a HYBRID-AWARE runtime — note this recipe's
+        `--moe-backend cutlass`, `--mamba_ssm_cache_dtype float32`,
+        `--reasoning-parser nemotron_v3`, TRITON attention — you cannot just reuse the
+        Qwen NVFP4/AutoRound recipe. Upside: the Mamba-2 layers carry CONSTANT state
+        (no growing KV); only the periodic attention layers grow KV → a SMALLER KV
+        footprint at long context than pure-attention Qwen 122B → BETTER single-Spark
+        long-context fit (eases the weights-vs-KV budget — see
+        llm-spark-moe-streaming-investigation). Net: same fit + same MTP story,
+        different (hybrid) runtime, and friendlier at 1M context.
+      provenance:
+        asOf: "2026-06-28"
+        source: "architecture (LatentMoE Mamba-2 hybrid) vs model-qwen35-122b; runsOn recipe flags; KV-budget reasoning (hardware-dgx-spark)"
+        verification: estimated
+        confidence: medium
+    - kind: note
+      body: >-
+        BENCHMARK COMPARISON vs Qwen3.5-122B-A10B (model-qwen35-122b): on nearly every
+        COMPARABLE benchmark Qwen is ahead — MMLU-Pro 86.7 vs 83.73, GPQA-Diamond 86.6
+        vs 79.23(no-tools), IFBench 76.1 vs 72.56, and notably the AGENTIC/CODING axis:
+        SWE-bench-Verified 72.0 vs 60.47, τ²-agentic 79.5 vs 64.36. The blended AA
+        Intelligence Index (the one same-methodology cross-model number) agrees: Qwen
+        32 vs Nemotron 25. The ONLY place Nemotron looks ahead is LiveCodeBench
+        (81.19 vs 78.9) but that's NON-COMPARABLE — Nemotron reports v5, Qwen v6
+        (v5 is the easier set). CAVEATS: both are vendor-self-reported (NVIDIA card
+        vs Qwen blog, different harnesses — not a neutral head-to-head); Nemotron's
+        are reasoning-on/no-tools (its with-tools column is higher on some); both are
+        reference precision (local INT4/NVFP4 degrades both, uncertified). NET: Qwen
+        3.5-122B is the stronger model AND the more mature Spark recipe; Nemotron's
+        edge over Qwen is ARCHITECTURAL (hybrid → smaller KV → better long-context
+        single-Spark fit), not benchmark quality.
+      provenance:
+        asOf: "2026-06-28"
+        source: "this entry's benchmarks facet (NVIDIA card) vs model-qwen35-122b benchmarks (Qwen blog) + aaIntelligence (AA leaderboard)"
+        verification: cited
+        confidence: medium
+    - kind: caveat
+      body: >-
+        TOOL-CALL CONTENT GOTCHA (Unsloth GGUF card): for coding agents pass
+        `extra_body={"chat_template_kwargs": {"force_nonempty_content": True}}` — without
+        it the `content` field returns EMPTY when the model emits a tool call, so a
+        harness reading content sees an unresponsive agent. This is the SAME failure
+        class as QUEST-35B-RL (text-emitted tool calls vs OpenAI content/tool_calls
+        split) — a recurring serving gotcha for tool-trained models: plan the serving
+        layer to preserve tool-call-turn content. Parser = qwen3_coder (same NVIDIA +
+        Unsloth). NB sampling discrepancy across Unsloth's pages — the GGUF card's
+        all-tasks temp 1.0/top_p 0.95 is the authoritative one.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF (card) + unsloth.ai/docs/models/nemotron-3"
+        verification: cited
+        confidence: medium

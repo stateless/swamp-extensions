@@ -49,6 +49,21 @@
     pricing: { basis: owned-amortized }
     serves: { rule: fits-hardware }
 
+# ── self-host: mlx-lm on Apple Silicon (generic MLX serve, not ds4) ──────────
+- id: endpoint-mlx-mac
+  kind: endpoint
+  name: mlx-lm @ Apple Silicon
+  summary: OpenAI-compatible mlx_lm.server (or a fork, e.g. community "oMLX") on Apple-silicon unified memory; serves MLX-format weights that fit
+  visibility: public
+  labels: [self-host, mlx, mlx-lm, apple-silicon]
+  relations:
+    - { rel: served-by, target: runtime-mlx-lm }
+    - { rel: runs-on, target: hardware-apple-silicon }
+  facets:
+    endpoint: { transport: openai-compat, kind: self-host }
+    pricing: { basis: owned-amortized }
+    serves: { rule: fits-hardware, note: "MLX-format weights; fit computed vs unified memory. Community forks (e.g. 'oMLX') add per-request model loading + tiered SSD cache + 4-bit KV — unverified projects, treated as mlx-lm here." }
+
 # ── self-host: DwarfStar (ds4) on a DGX Spark (CUDA — UNVERIFIED on GB10) ─────
 - id: endpoint-ds4-dgx-spark
   kind: endpoint

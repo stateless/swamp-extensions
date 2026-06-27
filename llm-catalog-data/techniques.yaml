@@ -125,6 +125,23 @@
         asOf: "2026-06-20"
         source: "https://github.com/antirez/ds4 (README)"
         verification: cited
+    - kind: note
+      body: >-
+        COLD-START LOAD = the RESIDENT CACHE BUDGET, not the model/quant size. At
+        startup only the dense/non-routed weights + the configured expert cache are
+        read in; the remaining experts page in lazily on first miss. So Q4/Q6/Q8
+        streaming all cold-start in ~the same time (set by the cache budget) — the
+        quant changes per-token MISS BANDWIDTH and quality at decode, NOT the load
+        time. Contrast full-resident serving, which must read ALL weights before the
+        first token. Planning rule: streaming cold-start ≈ budget ÷ disk-BW (e.g. a
+        32GB cache + ~7GB dense ÷ ~7–13 GB/s ≈ 3–6s pure-read), independent of how
+        big the full checkpoint is; full-resident ≈ full-size ÷ disk-BW. Add
+        engine/CUDA-init + KV-alloc + graph-capture overhead on top of the read.
+      provenance:
+        asOf: "2026-06-27"
+        source: "derived: footprint sizes + hardware-dgx-spark.storage (measured NVMe) + ds4 cache-budget model"
+        verification: estimated
+        confidence: medium
 
 # Quant METHODS (algorithms) — distinct from the FORMAT (gguf/safetensors/mlx).
 # Each method usually ships in a specific format and is supported by specific

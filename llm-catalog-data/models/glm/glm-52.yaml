@@ -127,6 +127,43 @@
             verification: cited
             confidence: medium
             versionPins: { runtime: "b12x 0.23.0", quant: awq-int4 }
+      # self-host: NVIDIA official NVFP4 — UNPRUNED, near-lossless, datacenter-Blackwell
+      # (nvidia/GLM-5.2-NVFP4). The quality-preserving self-host alternative to the
+      # 15%-pruned AWQ recipe above: full 753B at 4-bit float, <1pt off the FP8 baseline.
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "GLM-5.2 · NVIDIA NVFP4 (UNPRUNED, near-lossless) — validated on B200/B300"
+        quant: nvfp4
+        format: safetensors
+        techniques: [technique-nvfp4, technique-tensor-parallel]
+        units: 4 # ~381GB weights (753B × ~0.5B/param) → needs ~512GB (4× GB10) OR 1× B200/B300
+        download:
+          hfRepo: nvidia/GLM-5.2-NVFP4
+          format: safetensors
+          note: >-
+            NVFP4 via TensorRT Model Optimizer v0.46.0; MoE-expert linear weights+acts
+            quantized, SHARED expert left unquantized. Full 753B/40B — NOT pruned. ~381GB.
+        config:
+          maxModelLen: 1048576 # up to 1M
+          kvCacheDtype: fp8_e4m3
+          build: { runtime: vllm, version: "0.23.0" } # also SGLang w/ transformers>=5.3.0
+          note: >-
+            NVIDIA's validated targets are B200/B300 (sm_100). GB10/sm_121 NVFP4 of THIS
+            checkpoint is untested here — the units:4 GB10 placement is a footprint-fit
+            estimate, not a measured recipe. Confirm the GB10 MoE-NVFP4 backend before relying on it.
+        outcome:
+          quality:
+            # NVFP4 vs the model's own FP8 baseline (NVIDIA model card) — essentially lossless:
+            gpqaDiamond: 89.39   # baseline 89.52
+            sciCode: 49.04       # baseline 49.85
+            ifBench: 75.81       # baseline 74.95 (NVFP4 > baseline)
+            aaLcr: 70.13         # baseline 69.38 (NVFP4 > baseline)
+            tau2BenchTelecom: 98.25 # baseline 97.9
+          provenance:
+            asOf: "2026-06-27"
+            source: "https://huggingface.co/nvidia/GLM-5.2-NVFP4 (model card)"
+            verification: authoritative
+            confidence: medium # benchmarks authoritative; GB10 placement is an estimate
+            versionPins: { runtime: "vLLM 0.23.0 / SGLang", quant: nvfp4, optimizer: "ModelOpt 0.46.0" }
       # self-host comment datapoint — UNPRUNED on 8× ASUS GB10 (forum 374125, ciprianveg)
       - endpoint: endpoint-vllm-dgx-spark
         name: "GLM-5.2 · UNPRUNED AWQ-INT4 + MTP @ 8× ASUS GB10 (forum 374125 comment)"
@@ -146,16 +183,21 @@
   claims:
     - kind: caveat
       body: >-
-        AA-vs-local-quant GAP (largest in the catalog): the AA Intelligence Index 51
-        is reference precision (full model). The ONLY self-host recipe here runs
-        AWQ-INT4 with data-free 15% expert pruning (256→218 experts/layer) — a real
-        capability cut with NO local eval published. Effective self-host quality is
-        materially below 51; AA-51-class quality is realizable only via the
-        full-precision cloud gateway, not the 4× cluster recipe. Do not read the
-        aaIntelligence facet as the self-host number.
+        AA-vs-local-quant GAP: the AA Intelligence Index 51 is reference precision
+        (full model). Two self-host paths now exist with very different quality:
+        (a) the community AWQ-INT4 + data-free 15%-pruning recipe (256→218
+        experts/layer) — a real capability cut, NO local eval published, quality
+        materially below 51; (b) NVIDIA's official NVFP4 (UNPRUNED, full 753B) —
+        near-lossless (<1pt off FP8 on GPQA/SciCode/IFBench/AA-LCR/τ²), so
+        reference-class self-host quality IS now achievable WITHOUT the cloud
+        gateway — but at ~381GB (≈4× GB10 / 512GB or a B200/B300) and NVIDIA
+        validated it on B200/B300, not GB10. Net: prefer NVFP4-unpruned over the
+        pruned AWQ recipe for quality; the pruned recipe's only edge is it's a
+        proven GB10 cluster path today. Do not read the aaIntelligence facet as the
+        pruned-recipe number.
       provenance:
-        asOf: "2026-06-26"
-        source: "facets.aaIntelligence (reference precision) vs runsOn AWQ-INT4-15%-pruned recipe (forum 374125, no local eval)"
+        asOf: "2026-06-27"
+        source: "facets.aaIntelligence (reference) vs AWQ-INT4-15%-pruned (forum 374125, no eval) vs nvidia/GLM-5.2-NVFP4 (near-lossless card benchmarks)"
         confidence: medium
     - kind: note
       body: >-

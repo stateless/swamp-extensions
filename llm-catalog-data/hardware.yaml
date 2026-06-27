@@ -24,6 +24,23 @@
       memBandwidthGBs: 273 # LPDDR5x unified — decode is bandwidth-bound; tok/s ≈ bw ÷ (activeParams × bytes/quant). Roofline aligns with optimised serving: 122B-A10B int4 ≈51, dense-27B int4 ≈19.
       powerW: 70
       clusterable: true
+      storage: # internal NVMe — relevant to SSD expert-streaming (technique-ssd-expert-streaming)
+        device: "Samsung 4TB NVMe, M.2 2242, PCIe Gen5-class"
+        seqReadGBs: 14.9         # fio qd32 peak
+        randRead1mQd16GBs: 14.9  # random 1MB reads at depth hit the SAME peak → prefetched expert streaming is NOT disk-bound
+        randRead1mQd1GBs: 5.7    # serial (one expert at a time) random 1MB — the penalty appears only WITHOUT prefetch
+        randRead4kIops: 1690000  # 1.69M IOPS, ~75µs avg latency — not a bottleneck
+        note: >-
+          On par with a 4TB M5 Max MacBook Pro SSD (~13.6 GB/s read), NOT slower —
+          the "2242 short-stick is I/O-limited" concern did not materialise. For MoE
+          expert streaming the lever is QUEUE DEPTH: prefetched (qd16) random reads
+          get the full 14.9 GB/s; naive serial (qd1) reads drop to 5.7. A
+          single-stream dd test misleads (qd1-bound ~6.8) — measure at depth.
+        provenance:
+          asOf: "2026-06-27"
+          source: "measured on a DGX Spark unit — fio 3.36, --direct=1 (O_DIRECT), 16GB non-sparse file, ext4"
+          verification: authoritative
+          confidence: high
   claims:
     - kind: recommendation
       body: >-

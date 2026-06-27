@@ -306,6 +306,43 @@
       }
     },
     {
+      "id": "endpoint-mlx-mac",
+      "kind": "endpoint",
+      "name": "mlx-lm @ Apple Silicon",
+      "summary": "OpenAI-compatible mlx_lm.server (or a fork, e.g. community \"oMLX\") on Apple-silicon unified memory; serves MLX-format weights that fit",
+      "visibility": "public",
+      "labels": [
+        "self-host",
+        "mlx",
+        "mlx-lm",
+        "apple-silicon"
+      ],
+      "relations": [
+        {
+          "rel": "served-by",
+          "target": "runtime-mlx-lm"
+        },
+        {
+          "rel": "runs-on",
+          "target": "hardware-apple-silicon"
+        }
+      ],
+      "claims": [],
+      "facets": {
+        "endpoint": {
+          "transport": "openai-compat",
+          "kind": "self-host"
+        },
+        "pricing": {
+          "basis": "owned-amortized"
+        },
+        "serves": {
+          "rule": "fits-hardware",
+          "note": "MLX-format weights; fit computed vs unified memory. Community forks (e.g. 'oMLX') add per-request model loading + tiered SSD cache + 4-bit KV — unverified projects, treated as mlx-lm here."
+        }
+      }
+    },
+    {
       "id": "endpoint-openrouter",
       "kind": "endpoint",
       "name": "OpenRouter (gateway)",
@@ -567,7 +604,21 @@
           "driverReservedGB": 22,
           "memBandwidthGBs": 273,
           "powerW": 70,
-          "clusterable": true
+          "clusterable": true,
+          "storage": {
+            "device": "Samsung 4TB NVMe, M.2 2242, PCIe Gen5-class",
+            "seqReadGBs": 14.9,
+            "randRead1mQd16GBs": 14.9,
+            "randRead1mQd1GBs": 5.7,
+            "randRead4kIops": 1690000,
+            "note": "On par with a 4TB M5 Max MacBook Pro SSD (~13.6 GB/s read), NOT slower — the \"2242 short-stick is I/O-limited\" concern did not materialise. For MoE expert streaming the lever is QUEUE DEPTH: prefetched (qd16) random reads get the full 14.9 GB/s; naive serial (qd1) reads drop to 5.7. A single-stream dd test misleads (qd1-bound ~6.8) — measure at depth.",
+            "provenance": {
+              "asOf": "2026-06-27",
+              "source": "measured on a DGX Spark unit — fio 3.36, --direct=1 (O_DIRECT), 16GB non-sparse file, ext4",
+              "verification": "authoritative",
+              "confidence": "high"
+            }
+          }
         }
       }
     },
@@ -641,6 +692,16 @@
       ],
       "relations": [],
       "claims": [
+        {
+          "kind": "caveat",
+          "body": "SINGLE-SPARK WEIGHTS-vs-KV BUDGET (why \"q2 fits\" is misleading): ~106GB usable (128 − ~22 CUDA reserve). q2 weights ~99GB all-resident leave only ~7GB for KV+activations → context starves to ~tens-of-K. MLA KV ≈ ~24KB/tok at fp8 (~3GB@128K, ~6GB@256K, ~24GB@1M). So a GOOD context on ONE box requires NOT keeping all experts resident — stream them (resident budget ~32–50GB, `--ssd-streaming-cache-experts`) to free ~50GB for KV. The decision variable is target CONTEXT LENGTH, not quant: small ctx → weights-resident (fastest); large ctx → stream (disk-bound, needs prefetch at depth — the GB10 NVMe sustains 14.9 GB/s @ qd16, see hardware-dgx-spark.storage). This is what ds4 is built for.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "footprint facet (q2 ~99GB) + hardware-dgx-spark (106GB usable, NVMe measured) + MLA KV estimate",
+            "confidence": "medium",
+            "verification": "estimated"
+          }
+        },
         {
           "kind": "note",
           "body": "COMMUNITY (single-Spark coding, forum 374423): a \"strong coder\" / \"very hard worker\" even at Q2 GGUF on llama.cpp (nangld85, keving3) — Q2 is the only quant that fits 1 Spark. CAVEAT: aggressive Q2 degrades multistep reasoning; the FP8 2× recipe (toolEvalBench 89/100) is the quality-preserving path. Q2-on-1-box trades quality for fit.",
@@ -935,6 +996,16 @@
                 "provenance": {
                   "asOf": "2026-06-20",
                   "source": "https://github.com/antirez/ds4 (README, Speed table)",
+                  "verification": "cited",
+                  "confidence": "low"
+                }
+              },
+              {
+                "kind": "note",
+                "body": "REAL-WORLD 1M-CONTEXT datapoint (community, r/LocalLLM, M5 Max 128GB, ds4 as a multi-agent orchestrator head): ~13.6 tok/s decode at 1M context with SSD expert streaming, ~17s cold start, KV quantized 4-bit. MUCH lower than the repo's 32K-ctx M5 Max rows (25.9 tok/s) — the gap is the streaming + 1M-context regime, not the hardware. The poster notes the ds4 manual claims ~25 tok/s for M5 Max, so ~13.6 is below spec (attributed to the SSD-streaming bottleneck at 1M ctx). Single-source, contested thread — treat as indicative.",
+                "provenance": {
+                  "asOf": "2026-06-27",
+                  "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)",
                   "verification": "cited",
                   "confidence": "low"
                 }
@@ -1653,6 +1724,116 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "model-gemma4-12b-agentic-tau2",
+      "kind": "model",
+      "name": "Gemma-4-12B Agentic (yuxinlu1, fable5/Opus-distilled)",
+      "summary": "Community finetune of Gemma-4-12B-it for coding/terminal/agentic tool-use, distilled from rebuilt Fable-5 (re-traced with Opus 4.8) + verified Python CoT + tool-use trajectories. Self-reported τ²-bench-telecom ~15%→~55% (~3.5×) vs base. Small (~7GB Q4) — co-resident-friendly. Apache-2.0. STUB, claims unverified.",
+      "visibility": "public",
+      "labels": [
+        "gemma",
+        "gemma4",
+        "agentic",
+        "tool-use",
+        "finetune",
+        "distilled",
+        "frontier-distill",
+        "gguf",
+        "stub"
+      ],
+      "relations": [
+        {
+          "rel": "finetune-of",
+          "target": "model-gemma4-12b"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "FRONTIER-DISTILLED: finetuned on rebuilt Fable-5 reasoning traces (re-generated with Claude Opus 4.8 after Fable-5's retirement) + verified Python CoT + agentic tool-use trajectories (diagnose→fix→verify loops). A concrete instance of the \"distill frontier behaviour into a small local model\" pattern (the going-local thesis).",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "PROVENANCE + SAFETY (eval gates): (1) trained on Claude (Opus/Fable) output traces — frontier-distillation; note the teacher's terms on training competing models + that distilled-trace fidelity is unmeasured. (2) Author states REDUCED safety alignment / minimal refusals — add guardrails. (3) Single-author hobby project, v1 issues acknowledged, v3 in development; English-centric; \"not a generalist — double-check facts/numbers.\" Verify the τ² claim on a real harness before relying on it.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (author caveats)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "12B",
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+          "note": "inherits Gemma-4-12B-it; agentic CoT/tool-use finetune. Card example uses 16K ctx — base native likely higher; confirm. Ships MTP draft variants for spec-decode.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (card)",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+            "verification": "cited"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "Q3_K_M",
+              "memGB": 5.9,
+              "note": "5.7–6.09GB"
+            },
+            {
+              "quant": "Q4_K_M",
+              "memGB": 7.1,
+              "note": "6.87–7.38GB — author-recommended"
+            },
+            {
+              "quant": "Q6_K",
+              "memGB": 9.4,
+              "note": "9.11–9.79GB"
+            },
+            {
+              "quant": "Q8_0",
+              "memGB": 12.3,
+              "note": "11.8–12.7GB"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+            "verification": "cited"
+          }
+        },
+        "benchmarks": {
+          "tau2BenchTelecom": 55,
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (author claim)",
+            "verification": "cited",
+            "confidence": "low",
+            "note": "Single-author self-report, N=20 tasks, one quant (Q8_0). MMLU-Pro slightly REGRESSES vs base (specialization trade-off). Treat the 3.5× as a hypothesis to test, not a result."
+          }
+        }
       }
     },
     {
@@ -2494,10 +2675,10 @@
       "claims": [
         {
           "kind": "caveat",
-          "body": "AA-vs-local-quant GAP (largest in the catalog): the AA Intelligence Index 51 is reference precision (full model). The ONLY self-host recipe here runs AWQ-INT4 with data-free 15% expert pruning (256→218 experts/layer) — a real capability cut with NO local eval published. Effective self-host quality is materially below 51; AA-51-class quality is realizable only via the full-precision cloud gateway, not the 4× cluster recipe. Do not read the aaIntelligence facet as the self-host number.",
+          "body": "AA-vs-local-quant GAP: the AA Intelligence Index 51 is reference precision (full model). Two self-host paths now exist with very different quality: (a) the community AWQ-INT4 + data-free 15%-pruning recipe (256→218 experts/layer) — a real capability cut, NO local eval published, quality materially below 51; (b) NVIDIA's official NVFP4 (UNPRUNED, full 753B) — near-lossless (<1pt off FP8 on GPQA/SciCode/IFBench/AA-LCR/τ²), so reference-class self-host quality IS now achievable WITHOUT the cloud gateway — but at ~381GB (≈4× GB10 / 512GB or a B200/B300) and NVIDIA validated it on B200/B300, not GB10. Net: prefer NVFP4-unpruned over the pruned AWQ recipe for quality; the pruned recipe's only edge is it's a proven GB10 cluster path today. Do not read the aaIntelligence facet as the pruned-recipe number.",
           "provenance": {
-            "asOf": "2026-06-26",
-            "source": "facets.aaIntelligence (reference precision) vs runsOn AWQ-INT4-15%-pruned recipe (forum 374125, no local eval)",
+            "asOf": "2026-06-27",
+            "source": "facets.aaIntelligence (reference) vs AWQ-INT4-15%-pruned (forum 374125, no eval) vs nvidia/GLM-5.2-NVFP4 (near-lossless card benchmarks)",
             "confidence": "medium"
           }
         },
@@ -2690,6 +2871,51 @@
                 "versionPins": {
                   "runtime": "b12x 0.23.0",
                   "quant": "awq-int4"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "GLM-5.2 · NVIDIA NVFP4 (UNPRUNED, near-lossless) — validated on B200/B300",
+            "quant": "nvfp4",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-tensor-parallel"
+            ],
+            "units": 4,
+            "download": {
+              "hfRepo": "nvidia/GLM-5.2-NVFP4",
+              "format": "safetensors",
+              "note": "NVFP4 via TensorRT Model Optimizer v0.46.0; MoE-expert linear weights+acts quantized, SHARED expert left unquantized. Full 753B/40B — NOT pruned. ~381GB."
+            },
+            "config": {
+              "maxModelLen": 1048576,
+              "kvCacheDtype": "fp8_e4m3",
+              "build": {
+                "runtime": "vllm",
+                "version": "0.23.0"
+              },
+              "note": "NVIDIA's validated targets are B200/B300 (sm_100). GB10/sm_121 NVFP4 of THIS checkpoint is untested here — the units:4 GB10 placement is a footprint-fit estimate, not a measured recipe. Confirm the GB10 MoE-NVFP4 backend before relying on it."
+            },
+            "outcome": {
+              "quality": {
+                "gpqaDiamond": 89.39,
+                "sciCode": 49.04,
+                "ifBench": 75.81,
+                "aaLcr": 70.13,
+                "tau2BenchTelecom": 98.25
+              },
+              "provenance": {
+                "asOf": "2026-06-27",
+                "source": "https://huggingface.co/nvidia/GLM-5.2-NVFP4 (model card)",
+                "verification": "authoritative",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "vLLM 0.23.0 / SGLang",
+                  "quant": "nvfp4",
+                  "optimizer": "ModelOpt 0.46.0"
                 }
               }
             }
@@ -5878,7 +6104,38 @@
           "target": "model-nemotron"
         }
       ],
-      "claims": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "VS QWEN3.5-122B ON SPARK (can it run the same way?): SAME SIZE CLASS (120B/12B-active vs 122B/10B-active) → at 4-bit/NVFP4 ~60–68GB it's single-Spark-class, like Qwen 122B (model-qwen35-122b), and BOTH ship MTP (APC-safe speculative decoding). BUT the serving path is NOT identical: Nemotron is a LatentMoE **Mamba-2 + Attention hybrid**, not a pure-transformer MoE, so it needs a HYBRID-AWARE runtime — note this recipe's `--moe-backend cutlass`, `--mamba_ssm_cache_dtype float32`, `--reasoning-parser nemotron_v3`, TRITON attention — you cannot just reuse the Qwen NVFP4/AutoRound recipe. Upside: the Mamba-2 layers carry CONSTANT state (no growing KV); only the periodic attention layers grow KV → a SMALLER KV footprint at long context than pure-attention Qwen 122B → BETTER single-Spark long-context fit (eases the weights-vs-KV budget — see llm-spark-moe-streaming-investigation). Net: same fit + same MTP story, different (hybrid) runtime, and friendlier at 1M context.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "architecture (LatentMoE Mamba-2 hybrid) vs model-qwen35-122b; runsOn recipe flags; KV-budget reasoning (hardware-dgx-spark)",
+            "confidence": "medium",
+            "verification": "estimated"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "BENCHMARK COMPARISON vs Qwen3.5-122B-A10B (model-qwen35-122b): on nearly every COMPARABLE benchmark Qwen is ahead — MMLU-Pro 86.7 vs 83.73, GPQA-Diamond 86.6 vs 79.23(no-tools), IFBench 76.1 vs 72.56, and notably the AGENTIC/CODING axis: SWE-bench-Verified 72.0 vs 60.47, τ²-agentic 79.5 vs 64.36. The blended AA Intelligence Index (the one same-methodology cross-model number) agrees: Qwen 32 vs Nemotron 25. The ONLY place Nemotron looks ahead is LiveCodeBench (81.19 vs 78.9) but that's NON-COMPARABLE — Nemotron reports v5, Qwen v6 (v5 is the easier set). CAVEATS: both are vendor-self-reported (NVIDIA card vs Qwen blog, different harnesses — not a neutral head-to-head); Nemotron's are reasoning-on/no-tools (its with-tools column is higher on some); both are reference precision (local INT4/NVFP4 degrades both, uncertified). NET: Qwen 3.5-122B is the stronger model AND the more mature Spark recipe; Nemotron's edge over Qwen is ARCHITECTURAL (hybrid → smaller KV → better long-context single-Spark fit), not benchmark quality.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "this entry's benchmarks facet (NVIDIA card) vs model-qwen35-122b benchmarks (Qwen blog) + aaIntelligence (AA leaderboard)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "TOOL-CALL CONTENT GOTCHA (Unsloth GGUF card): for coding agents pass `extra_body={\"chat_template_kwargs\": {\"force_nonempty_content\": True}}` — without it the `content` field returns EMPTY when the model emits a tool call, so a harness reading content sees an unresponsive agent. This is the SAME failure class as QUEST-35B-RL (text-emitted tool calls vs OpenAI content/tool_calls split) — a recurring serving gotcha for tool-trained models: plan the serving layer to preserve tool-call-turn content. Parser = qwen3_coder (same NVIDIA + Unsloth). NB sampling discrepancy across Unsloth's pages — the GGUF card's all-tasks temp 1.0/top_p 0.95 is the authoritative one.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF (card) + unsloth.ai/docs/models/nemotron-3",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        }
+      ],
       "facets": {
         "architecture": {
           "params": "120B",
@@ -5888,12 +6145,14 @@
             "text"
           ],
           "hfRepo": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+          "modelType": "latent-moe",
           "layers": 88,
           "experts": "22/token of 512 routed",
+          "extendedContext": 1048576,
           "vocab": 131072,
           "provenance": {
-            "asOf": "2026-06-19",
-            "source": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json",
+            "asOf": "2026-06-28",
+            "source": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 config.json + model card (LatentMoE / Mamba-2 hybrid + MTP)",
             "verification": "authoritative"
           }
         },
@@ -6012,7 +6271,7 @@
               "maxModelLen": 262144
             },
             "command": "./llama.cpp/llama-cli -hf unsloth/NVIDIA-Nemotron-3-Super-120B-A12B-GGUF:UD-Q4_K_XL \\\n  --ctx-size 16384 --temp 1.0 --top-p 1.0\n",
-            "note": "Unsloth recommends UD-Q2_K_XL minimum. general chat: temp 1.0/top_p 1.0; tool-calling: temp 0.6/top_p 0.95. Thinking always-on. Unsloth GGUF (~64-72GB 4-bit / UD-Q2_K_XL minimum); single-Spark-class.",
+            "note": "Unsloth recommends UD-Q2_K_XL minimum; Unsloth GGUF (~64-72GB 4-bit); single-Spark-class; thinking always-on. TOOL-CALL FIX (Unsloth GGUF card): coding agents MUST pass `extra_body={\"chat_template_kwargs\": {\"force_nonempty_content\": True}}` — else the `content` field returns EMPTY when the model emits a tool call (same failure mode as QUEST). Tool-call parser = qwen3_coder (same as the NVFP4 recipe). SAMPLING DISCREPANCY between Unsloth's own pages: the GGUF card says temp 1.0/top_p 0.95 for ALL tasks; the unsloth.ai docs say tool-calling temp 0.6/top_p 0.95, chat 1.0/1.0 — the card (all-tasks 1.0/0.95) is the later/authoritative one.\"",
             "procedure": "https://unsloth.ai/docs/models/nemotron-3/nemotron-3-super",
             "outcome": {
               "context": {
@@ -6302,6 +6561,115 @@
       }
     },
     {
+      "id": "model-quest-35b-rl",
+      "kind": "model",
+      "name": "QUEST-35B-RL",
+      "summary": "Deep-research agent (tool-using web research) RL-trained on Qwen3.5-35B-A3B by OSU-NLP; flagship of the QUEST family (mid-training → SFT → RL on fully synthetic tasks). 35B-class MoE, Apache-2.0. Strong on agentic browse/research benchmarks (GAIA 80.8, LiveResearchBench 68.2).",
+      "visibility": "public",
+      "labels": [
+        "quest",
+        "qwen35",
+        "moe",
+        "deep-research",
+        "agent",
+        "tool-use",
+        "rl",
+        "open-weights"
+      ],
+      "relations": [
+        {
+          "rel": "finetune-of",
+          "target": "model-qwen35-35b"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "Training: mid-training → SFT → RL on FULLY SYNTHETIC research tasks (paper \"QUEST: Training Frontier Deep Research Agents with Fully Synthetic Tasks\", arXiv:2605.24218, OSU NLP). Flagship of the QUEST family; RL/SFT/mid-training datasets published separately on HF. Purpose-built as a tool-using research agent, not a general coder — pair it with a coder/planner in a squad.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/osunlp/QUEST-35B-RL + arXiv:2605.24218",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "COMMUNITY USE (r/LocalLLM, fully-local multi-agent coding squad on one M5 Max 128GB): runs as the read-only \"researcher\" seat at 4-bit, ~18GB, web + local file reads. Served via oMLX (MLX serving fork) alongside a Qwen3-Coder-30B coder and a Qwen3.6-27B planner/verifier, loaded per-turn (not co-resident). Indicative single-source datapoint that it deploys cleanly at 4-bit on a 128GB unified-memory box.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "TOOL-CALL FORMAT GOTCHA (serving): QUEST emits its tool calls as TEXT in the content stream (the way it was RL-trained), NOT as native OpenAI tool_calls. An OpenAI-compatible server that \"helpfully\" parses them into the structured tool_calls field (and splits thinking into a separate reasoning field) leaves the plain `content` field EMPTY — a harness reading content then sees an unresponsive agent. Fix (mycelium impl): reverse the server transform — reconstruct QUEST's native thinking+tool-call text from the split pieces, or disable server-side tool-call parsing. They also hit ~a dozen related integration bugs (tokenizer load, chat-template mismatch, reasoning-tensor handling). Plan the serving layer around text-emitted tool calls.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://mycelium.fyi/notes/2026-06-26-the-tool-calls-we-were-throwing-away/",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "Paired in the mycelium deployment with \"Archimedes,\" a tiny companion model that folds QUEST's context down as it runs (context compaction for the long-horizon research loop) — the research agent runs as a two-model stack, not solo.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://mycelium.fyi/notes/2026-06-26-the-tool-calls-we-were-throwing-away/",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "STUB: context length, exact active-param count, and tool-calling format not stated on the card — base Qwen3.5-35B-A3B is 256K-native (community-reported), unconfirmed for QUEST. ingest architecture from HF config.json to promote.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/osunlp/QUEST-35B-RL (card gaps)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "35B",
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "osunlp/QUEST-35B-RL",
+          "modelType": "Qwen3_5MoeForConditionalGeneration",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/osunlp/QUEST-35B-RL (model card)",
+            "verification": "authoritative"
+          }
+        },
+        "license": {
+          "spdx": "Apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/osunlp/QUEST-35B-RL",
+            "verification": "authoritative"
+          }
+        },
+        "benchmarks": {
+          "gaia": 80.8,
+          "browseCompPlus": 61,
+          "liveResearchBench": 68.2,
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/osunlp/QUEST-35B-RL (model card)",
+            "verification": "authoritative",
+            "note": "agentic deep-research / web-browse benchmarks (avg@3); NOT general coding/reasoning indices — do not compare directly to aaIntelligence."
+          }
+        }
+      }
+    },
+    {
       "id": "model-qwen3-5-4b",
       "kind": "model",
       "name": "Qwen3.5 4B",
@@ -6375,6 +6743,93 @@
             "confidence": "medium"
           }
         }
+      }
+    },
+    {
+      "id": "model-qwen3-coder-30b-a3b",
+      "kind": "model",
+      "name": "Qwen3-Coder-30B-A3B-Instruct",
+      "summary": "Alibaba/Qwen coding-optimised MoE — ~30B total / ~3B active, non-reasoning instruct, 256K context. Qwen3 generation (older than 3.5/3.6). Community-favoured as a co-resident coder seat on 128GB unified memory: ~3B active recovers quality while leaving RAM for other models. Apache-2.0. Stub.",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "alibaba",
+        "coder",
+        "moe",
+        "open-weights",
+        "stub"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "WHY AN OLDER MODEL IN A MODERN STACK (community, r/LocalLLM): a fully-local multi-agent coding squad deliberately RIGHTSIZED DOWN to this older Qwen3 coder from the newer Qwen3-Coder-Next-80B (model-qwen3-coder-next) — the 80B \"starved everything else\" on a 128GB box, while the 30B-A3B (MoE, ~3B active, ~30GB at 8-bit) \"recovers the quality and leaves room for other models co-resident.\" Datapoint: on a fixed memory budget, a smaller older MoE coder can beat a newer larger one because CO-RESIDENCY + active-param efficiency matter more than raw model recency. Paired with newer RL models (a Qwen3.6-27B planner/verifier, a QUEST-35B-RL researcher) — the coder seat is the one place the squad chose an older, coding-specialised model over a newer general one.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "STUB: distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same Qwen3-Coder line, smaller size class. Exact params/layers, context, and license not HF-verified here. ingest config.json from Qwen/Qwen3-Coder-30B-A3B-Instruct to promote.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct (to ingest)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "MoE",
+          "params": "~30B",
+          "activeParams": "~3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+          "notes": "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models. Architecture not yet HF-verified — stub.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (community) — HF repo Qwen/Qwen3-Coder-30B-A3B-Instruct",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "Qwen3-Coder line (Apache-2.0) — confirm on the HF card",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-mlx-mac",
+            "name": "Qwen3-Coder-30B-A3B 8-bit · MLX @ MacBook Pro M5 Max 128GB (community, UNVERIFIED)",
+            "quant": "8-bit (MLX)",
+            "format": "mlx",
+            "units": 1,
+            "outcome": {
+              "speed": {
+                "genTokS": 65,
+                "note": "~60–70 tok/s, 8-bit, ~30GB resident, M5 Max 128GB via an MLX serve (community 'oMLX' fork). UNVERIFIED single-source — measure to confirm."
+              },
+              "provenance": {
+                "asOf": "2026-06-27",
+                "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)",
+                "verification": "cited",
+                "confidence": "low"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -7496,6 +7951,115 @@
       }
     },
     {
+      "id": "model-qwen35-122b-opus-reasoning",
+      "kind": "model",
+      "name": "Qwen3.5-122B-A10B Opus-Reasoning (timteh673)",
+      "summary": "Community LoRA finetune of Qwen3.5-122B-A10B on ~12.8k Claude Opus 4.6 reasoning traces, for enhanced multi-step reasoning (<think> mode). Same size class → single-Spark at Q4_K_M (~70GB). Apache-2.0 base. STUB — NO benchmarks published, uncensored; eval before trusting.",
+      "visibility": "public",
+      "labels": [
+        "qwen",
+        "qwen35",
+        "moe",
+        "reasoning",
+        "finetune",
+        "lora",
+        "distilled",
+        "frontier-distill",
+        "gguf",
+        "stub"
+      ],
+      "relations": [
+        {
+          "rel": "finetune-of",
+          "target": "model-qwen35-122b"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "FRONTIER-DISTILLED: LoRA finetuned on 12,840 Claude Opus 4.6 reasoning traces (9,633 + 2,326 filtered + 250 curated + 633 native Qwen3.5 samples) for analytical depth. An instance of the \"distill frontier reasoning into a local model\" pattern, on the privacy-bound 122B (cf. model-qwen35-122b's f3b9a4 exception). Whether 12.8k LoRA traces meaningfully shift a 122B is exactly what an eval must show.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "NO BENCHMARKS + PROVENANCE/SAFETY (eval gates): (1) the card publishes ZERO quantitative results — reasoning uplift is an unmeasured author claim. (2) Trained on Claude Opus output traces — frontier-distillation; note the teacher's terms on training competing models. (3) Explicitly UNCENSORED / no refusal training, \"research/testing/controlled environments,\" may emit harmful content — add guardrails. Single-author LoRA. Measure reasoning (and any regression vs base) before trusting.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF (author disclaimers)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "params": "122B",
+          "activeParams": "10B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF",
+          "extendedContext": 262144,
+          "note": "inherits Qwen3.5-122B-A10B; LoRA (r=64, alpha=128, dropout=0.05) reasoning finetune. <think>-tag thinking mode.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF (card)",
+            "verification": "cited",
+            "confidence": "low"
+          }
+        },
+        "license": {
+          "spdx": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF (base Qwen3.5 license)",
+            "verification": "cited"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "Q2_K",
+              "memGB": 42
+            },
+            {
+              "quant": "Q3_K_M",
+              "memGB": 55
+            },
+            {
+              "quant": "Q4_K_M",
+              "memGB": 70,
+              "note": "author-recommended; single-Spark-class (cf. base ~71GB INT4)"
+            },
+            {
+              "quant": "Q5_K_M",
+              "memGB": 81
+            },
+            {
+              "quant": "Q6_K",
+              "memGB": 94
+            },
+            {
+              "quant": "Q8_0",
+              "memGB": 121
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/timteh673/Qwen3.5-122B-A10B-Opus-Reasoning-GGUF",
+            "verification": "cited"
+          }
+        }
+      }
+    },
+    {
       "id": "model-qwen35-27b",
       "kind": "model",
       "name": "Qwen3.5-27B (dense)",
@@ -8346,6 +8910,16 @@
           "provenance": {
             "asOf": "2026-06-22",
             "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "APPLE-SILICON/MLX TOOL-CALLING (community consensus, r/LocalLLM — two independent voices including a critic): rated the best tool-caller of the local MLX-served models, BUT tool calling is UNRELIABLE out-of-the-box on MLX — no quant found reliably stable raw. Mitigation that worked: a server-side normalizer that recovers the malformed call from XML drift (format-hint in, normalize out) rather than trusting the model to emit clean OpenAI tool_calls. Scope = MLX/Apple Silicon serving; the kb's vLLM NVFP4 recipe above is a different stack. Budget for call-recovery if using 27B as an MLX agent host.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522 + diabloman8890)",
             "confidence": "low",
             "verification": "cited"
           }
@@ -10893,6 +11467,16 @@
             "asOf": "2026-06-20",
             "source": "https://github.com/antirez/ds4 (README)",
             "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "COLD-START LOAD = the RESIDENT CACHE BUDGET, not the model/quant size. At startup only the dense/non-routed weights + the configured expert cache are read in; the remaining experts page in lazily on first miss. So Q4/Q6/Q8 streaming all cold-start in ~the same time (set by the cache budget) — the quant changes per-token MISS BANDWIDTH and quality at decode, NOT the load time. Contrast full-resident serving, which must read ALL weights before the first token. Planning rule: streaming cold-start ≈ budget ÷ disk-BW (e.g. a 32GB cache + ~7GB dense ÷ ~7–13 GB/s ≈ 3–6s pure-read), independent of how big the full checkpoint is; full-resident ≈ full-size ÷ disk-BW. Add engine/CUDA-init + KV-alloc + graph-capture overhead on top of the read.",
+          "provenance": {
+            "asOf": "2026-06-27",
+            "source": "derived: footprint sizes + hardware-dgx-spark.storage (measured NVMe) + ds4 cache-budget model",
+            "confidence": "medium",
+            "verification": "estimated"
           }
         }
       ],

@@ -194,6 +194,21 @@
               source: "https://github.com/antirez/ds4 (README, Speed table)"
               verification: cited
               confidence: low
+          - kind: note
+            body: >-
+              REAL-WORLD 1M-CONTEXT datapoint (community, r/LocalLLM, M5 Max 128GB,
+              ds4 as a multi-agent orchestrator head): ~13.6 tok/s decode at 1M
+              context with SSD expert streaming, ~17s cold start, KV quantized 4-bit.
+              MUCH lower than the repo's 32K-ctx M5 Max rows (25.9 tok/s) — the gap is
+              the streaming + 1M-context regime, not the hardware. The poster notes
+              the ds4 manual claims ~25 tok/s for M5 Max, so ~13.6 is below spec
+              (attributed to the SSD-streaming bottleneck at 1M ctx). Single-source,
+              contested thread — treat as indicative.
+            provenance:
+              asOf: "2026-06-27"
+              source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)"
+              verification: cited
+              confidence: low
       # ── DwarfStar (ds4) @ Mac Studio M3 Ultra (512GB, q4) ────────────────
       # was ap-deepseek-v4-flash-ds4-mac-q4
       - endpoint: endpoint-ds4-mac
@@ -302,6 +317,23 @@
             source: "https://docs.digitalocean.com/products/inference/details/pricing/"
             verification: authoritative # authoritative AT asOf — re-check (volatile)
   claims:
+    - kind: caveat
+      body: >-
+        SINGLE-SPARK WEIGHTS-vs-KV BUDGET (why "q2 fits" is misleading): ~106GB
+        usable (128 − ~22 CUDA reserve). q2 weights ~99GB all-resident leave only
+        ~7GB for KV+activations → context starves to ~tens-of-K. MLA KV ≈ ~24KB/tok
+        at fp8 (~3GB@128K, ~6GB@256K, ~24GB@1M). So a GOOD context on ONE box
+        requires NOT keeping all experts resident — stream them (resident budget
+        ~32–50GB, `--ssd-streaming-cache-experts`) to free ~50GB for KV. The
+        decision variable is target CONTEXT LENGTH, not quant: small ctx →
+        weights-resident (fastest); large ctx → stream (disk-bound, needs prefetch
+        at depth — the GB10 NVMe sustains 14.9 GB/s @ qd16, see
+        hardware-dgx-spark.storage). This is what ds4 is built for.
+      provenance:
+        asOf: "2026-06-27"
+        source: "footprint facet (q2 ~99GB) + hardware-dgx-spark (106GB usable, NVMe measured) + MLA KV estimate"
+        verification: estimated
+        confidence: medium
     - kind: note
       body: >-
         COMMUNITY (single-Spark coding, forum 374423): a "strong coder" / "very hard

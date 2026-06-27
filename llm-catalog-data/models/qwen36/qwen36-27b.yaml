@@ -98,3 +98,19 @@
         source: "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561"
         verification: cited
         confidence: low
+    - kind: caveat
+      body: >-
+        APPLE-SILICON/MLX TOOL-CALLING (community consensus, r/LocalLLM — two
+        independent voices including a critic): rated the best tool-caller of the
+        local MLX-served models, BUT tool calling is UNRELIABLE out-of-the-box on
+        MLX — no quant found reliably stable raw. Mitigation that worked: a
+        server-side normalizer that recovers the malformed call from XML drift
+        (format-hint in, normalize out) rather than trusting the model to emit clean
+        OpenAI tool_calls. Scope = MLX/Apple Silicon serving; the kb's vLLM NVFP4
+        recipe above is a different stack. Budget for call-recovery if using 27B as
+        an MLX agent host.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522 + diabloman8890)"
+        verification: cited
+        confidence: low

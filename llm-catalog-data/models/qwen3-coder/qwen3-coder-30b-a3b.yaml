@@ -1,0 +1,82 @@
+# Qwen3-Coder-30B-A3B-Instruct (Alibaba/Qwen). The SMALLER, OLDER sibling of
+# Qwen3-Coder-Next (80B). Qwen3 generation (not 3.5/3.6). STUB created 2026-06-27
+# from a community multi-agent-squad post — notable as the one OLDER, non-RL model
+# deliberately kept in a stack of newer RL-trained models (rightsized for fit).
+# ONE model per file; run-options in facets.runsOn[] keyed by endpoint.
+
+- id: model-qwen3-coder-30b-a3b
+  kind: model
+  name: Qwen3-Coder-30B-A3B-Instruct
+  summary: >-
+    Alibaba/Qwen coding-optimised MoE — ~30B total / ~3B active, non-reasoning
+    instruct, 256K context. Qwen3 generation (older than 3.5/3.6). Community-favoured
+    as a co-resident coder seat on 128GB unified memory: ~3B active recovers quality
+    while leaving RAM for other models. Apache-2.0. Stub.
+  visibility: public
+  labels: [qwen, alibaba, coder, moe, open-weights, stub]
+  facets:
+    architecture:
+      hfRepo: Qwen/Qwen3-Coder-30B-A3B-Instruct
+      attention: MoE
+      params: "~30B"
+      activeParams: "~3B"
+      nativeContext: 262144 # 256K (community; confirm vs config.json)
+      modality: [text]
+      notes: "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models. Architecture not yet HF-verified — stub."
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (community) — HF repo Qwen/Qwen3-Coder-30B-A3B-Instruct"
+        verification: cited
+        confidence: low
+    license:
+      spdx: apache-2.0
+      provenance:
+        asOf: "2026-06-27"
+        source: "Qwen3-Coder line (Apache-2.0) — confirm on the HF card"
+        verification: cited
+        confidence: low
+    runsOn:
+      # community datapoint — 8-bit MLX on M5 Max 128GB (UNVERIFIED, single-source)
+      - endpoint: endpoint-mlx-mac
+        name: "Qwen3-Coder-30B-A3B 8-bit · MLX @ MacBook Pro M5 Max 128GB (community, UNVERIFIED)"
+        quant: "8-bit (MLX)"
+        format: mlx
+        units: 1
+        outcome:
+          speed:
+            genTokS: 65 # ~60–70 tok/s reported range, midpoint
+            note: "~60–70 tok/s, 8-bit, ~30GB resident, M5 Max 128GB via an MLX serve (community 'oMLX' fork). UNVERIFIED single-source — measure to confirm."
+          provenance:
+            asOf: "2026-06-27"
+            source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)"
+            verification: cited
+            confidence: low # single-source, contested thread; speed unverified
+  claims:
+    - kind: note
+      body: >-
+        WHY AN OLDER MODEL IN A MODERN STACK (community, r/LocalLLM): a fully-local
+        multi-agent coding squad deliberately RIGHTSIZED DOWN to this older Qwen3
+        coder from the newer Qwen3-Coder-Next-80B (model-qwen3-coder-next) — the 80B
+        "starved everything else" on a 128GB box, while the 30B-A3B (MoE, ~3B active,
+        ~30GB at 8-bit) "recovers the quality and leaves room for other models
+        co-resident." Datapoint: on a fixed memory budget, a smaller older MoE coder
+        can beat a newer larger one because CO-RESIDENCY + active-param efficiency
+        matter more than raw model recency. Paired with newer RL models (a Qwen3.6-27B
+        planner/verifier, a QUEST-35B-RL researcher) — the coder seat is the one place
+        the squad chose an older, coding-specialised model over a newer general one.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)"
+        verification: cited
+        confidence: low
+    - kind: note
+      body: >-
+        STUB: distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same
+        Qwen3-Coder line, smaller size class. Exact params/layers, context, and
+        license not HF-verified here. ingest config.json from
+        Qwen/Qwen3-Coder-30B-A3B-Instruct to promote.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct (to ingest)"
+        verification: cited
+        confidence: low

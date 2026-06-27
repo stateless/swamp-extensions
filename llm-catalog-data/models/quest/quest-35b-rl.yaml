@@ -1,0 +1,106 @@
+# QUEST-35B-RL — OSU-NLP deep-research agent, RL-trained on Qwen3.5-35B-A3B.
+# Created 2026-06-27 from the HF model card (osunlp/QUEST-35B-RL) + a community
+# multi-agent-squad post (r/LocalLLM) where it serves the "researcher" seat.
+# Finetune (different weights) → its own model entry; finetune-of model-qwen35-35b.
+
+- id: model-quest-35b-rl
+  kind: model
+  name: QUEST-35B-RL
+  summary: >-
+    Deep-research agent (tool-using web research) RL-trained on Qwen3.5-35B-A3B by
+    OSU-NLP; flagship of the QUEST family (mid-training → SFT → RL on fully
+    synthetic tasks). 35B-class MoE, Apache-2.0. Strong on agentic browse/research
+    benchmarks (GAIA 80.8, LiveResearchBench 68.2).
+  visibility: public
+  labels: [quest, qwen35, moe, deep-research, agent, tool-use, rl, open-weights]
+  relations:
+    - { rel: finetune-of, target: model-qwen35-35b }
+  facets:
+    architecture:
+      hfRepo: osunlp/QUEST-35B-RL
+      modelType: Qwen3_5MoeForConditionalGeneration
+      params: "35B"        # 35B-class MoE; A3B active inherited from base (unconfirmed for QUEST)
+      modality: [text]
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/osunlp/QUEST-35B-RL (model card)"
+        verification: authoritative
+    license:
+      spdx: Apache-2.0
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/osunlp/QUEST-35B-RL"
+        verification: authoritative
+    benchmarks:
+      gaia: 80.8              # avg@3
+      browseCompPlus: 61.0    # avg@3
+      liveResearchBench: 68.2 # avg@3
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/osunlp/QUEST-35B-RL (model card)"
+        verification: authoritative
+        note: "agentic deep-research / web-browse benchmarks (avg@3); NOT general coding/reasoning indices — do not compare directly to aaIntelligence."
+  claims:
+    - kind: note
+      body: >-
+        Training: mid-training → SFT → RL on FULLY SYNTHETIC research tasks (paper
+        "QUEST: Training Frontier Deep Research Agents with Fully Synthetic Tasks",
+        arXiv:2605.24218, OSU NLP). Flagship of the QUEST family; RL/SFT/mid-training
+        datasets published separately on HF. Purpose-built as a tool-using research
+        agent, not a general coder — pair it with a coder/planner in a squad.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/osunlp/QUEST-35B-RL + arXiv:2605.24218"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        COMMUNITY USE (r/LocalLLM, fully-local multi-agent coding squad on one M5 Max
+        128GB): runs as the read-only "researcher" seat at 4-bit, ~18GB, web + local
+        file reads. Served via oMLX (MLX serving fork) alongside a Qwen3-Coder-30B
+        coder and a Qwen3.6-27B planner/verifier, loaded per-turn (not co-resident).
+        Indicative single-source datapoint that it deploys cleanly at 4-bit on a
+        128GB unified-memory box.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (Guilty_Dinner4522)"
+        verification: cited
+        confidence: low
+    - kind: caveat
+      body: >-
+        TOOL-CALL FORMAT GOTCHA (serving): QUEST emits its tool calls as TEXT in the
+        content stream (the way it was RL-trained), NOT as native OpenAI tool_calls.
+        An OpenAI-compatible server that "helpfully" parses them into the structured
+        tool_calls field (and splits thinking into a separate reasoning field) leaves
+        the plain `content` field EMPTY — a harness reading content then sees an
+        unresponsive agent. Fix (mycelium impl): reverse the server transform —
+        reconstruct QUEST's native thinking+tool-call text from the split pieces, or
+        disable server-side tool-call parsing. They also hit ~a dozen related
+        integration bugs (tokenizer load, chat-template mismatch, reasoning-tensor
+        handling). Plan the serving layer around text-emitted tool calls.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://mycelium.fyi/notes/2026-06-26-the-tool-calls-we-were-throwing-away/"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        Paired in the mycelium deployment with "Archimedes," a tiny companion model
+        that folds QUEST's context down as it runs (context compaction for the
+        long-horizon research loop) — the research agent runs as a two-model stack,
+        not solo.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://mycelium.fyi/notes/2026-06-26-the-tool-calls-we-were-throwing-away/"
+        verification: cited
+        confidence: low
+    - kind: note
+      body: >-
+        STUB: context length, exact active-param count, and tool-calling format not
+        stated on the card — base Qwen3.5-35B-A3B is 256K-native (community-reported),
+        unconfirmed for QUEST. ingest architecture from HF config.json to promote.
+      provenance:
+        asOf: "2026-06-27"
+        source: "https://huggingface.co/osunlp/QUEST-35B-RL (card gaps)"
+        verification: cited
+        confidence: low

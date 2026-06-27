@@ -1,0 +1,79 @@
+# Gemma-4-12B agentic finetune (yuxinlu1) — frontier-DISTILLED for agentic tool-use.
+# Community single-author finetune of google/gemma-4-12B-it. STUB created 2026-06-28
+# for eval. Different weights → its own entry; finetune-of model-gemma4-12b.
+# CLAIMS ARE SELF-REPORTED — eval before trusting.
+
+- id: model-gemma4-12b-agentic-tau2
+  kind: model
+  name: Gemma-4-12B Agentic (yuxinlu1, fable5/Opus-distilled)
+  summary: >-
+    Community finetune of Gemma-4-12B-it for coding/terminal/agentic tool-use,
+    distilled from rebuilt Fable-5 (re-traced with Opus 4.8) + verified Python CoT +
+    tool-use trajectories. Self-reported τ²-bench-telecom ~15%→~55% (~3.5×) vs base.
+    Small (~7GB Q4) — co-resident-friendly. Apache-2.0. STUB, claims unverified.
+  visibility: public
+  labels: [gemma, gemma4, agentic, tool-use, finetune, distilled, frontier-distill, gguf, stub]
+  relations:
+    - { rel: finetune-of, target: model-gemma4-12b }
+  facets:
+    architecture:
+      hfRepo: yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF
+      params: "12B"
+      modality: [text]
+      note: "inherits Gemma-4-12B-it; agentic CoT/tool-use finetune. Card example uses 16K ctx — base native likely higher; confirm. Ships MTP draft variants for spec-decode."
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (card)"
+        verification: cited
+        confidence: low
+    license:
+      spdx: apache-2.0
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF"
+        verification: cited
+    footprint:
+      basis: weights-only
+      quants:
+        - { quant: Q3_K_M, memGB: 5.9, note: "5.7–6.09GB" }
+        - { quant: Q4_K_M, memGB: 7.1, note: "6.87–7.38GB — author-recommended" }
+        - { quant: Q6_K,   memGB: 9.4, note: "9.11–9.79GB" }
+        - { quant: Q8_0,   memGB: 12.3, note: "11.8–12.7GB" }
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF"
+        verification: cited
+    benchmarks:
+      tau2BenchTelecom: 55 # SELF-REPORTED, 20 tasks, Q8_0 — base ~15%, this ~55% (~3.5×). UNVERIFIED.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (author claim)"
+        verification: cited
+        confidence: low
+        note: "Single-author self-report, N=20 tasks, one quant (Q8_0). MMLU-Pro slightly REGRESSES vs base (specialization trade-off). Treat the 3.5× as a hypothesis to test, not a result."
+  claims:
+    - kind: note
+      body: >-
+        FRONTIER-DISTILLED: finetuned on rebuilt Fable-5 reasoning traces (re-generated
+        with Claude Opus 4.8 after Fable-5's retirement) + verified Python CoT + agentic
+        tool-use trajectories (diagnose→fix→verify loops). A concrete instance of the
+        "distill frontier behaviour into a small local model" pattern (the going-local thesis).
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF"
+        verification: cited
+        confidence: low
+    - kind: caveat
+      body: >-
+        PROVENANCE + SAFETY (eval gates): (1) trained on Claude (Opus/Fable) output
+        traces — frontier-distillation; note the teacher's terms on training competing
+        models + that distilled-trace fidelity is unmeasured. (2) Author states REDUCED
+        safety alignment / minimal refusals — add guardrails. (3) Single-author hobby
+        project, v1 issues acknowledged, v3 in development; English-centric; "not a
+        generalist — double-check facts/numbers." Verify the τ² claim on a real harness
+        before relying on it.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF (author caveats)"
+        verification: cited
+        confidence: low
