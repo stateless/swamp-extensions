@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# pre-push — git hook: scan the working tree before it leaves the machine.
+# Install in the PUBLIC mirror repo via a tracked hooks dir:
+#   git config core.hooksPath .githooks   (and copy this file to .githooks/pre-push)
+# Catches any pusher — human OR agent, any tool. Bypassable with --no-verify
+# (which is why CI is still the floor). Exits non-zero → git aborts the push.
+#
+# The denylist defaults to the source repo's private file (same-machine setup);
+# absent → generic recognizers only (correct for a clean community checkout).
+
+set -euo pipefail
+DENO="${REDACTION_DENO:-/home/swamp/.deno/bin/deno}"
+CLI="${REDACTION_CLI:-/home/swamp/SWAMP/extensions/models/redaction/cli.ts}"
+DENY="${REDACTION_DENYLIST:-/home/swamp/SWAMP/llm-catalog-data.private/forbidden-identifiers.txt}"
+
+# FAIL-OPEN on missing tooling (don't block a push because the guard is broken).
+{ [ -x "$DENO" ] && [ -f "$CLI" ]; } || { echo "pre-push: redaction tooling missing, skipping" >&2; exit 0; }
+
+exec "$DENO" run --allow-read "$CLI" --deny "$DENY" .

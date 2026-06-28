@@ -1,0 +1,38 @@
+name: redaction-gate
+
+# Published-surface hygiene floor: scan for private fleet identifiers
+# (private-range IPv4, *.ts.net) before they reach the public mirror. Generic tier
+# only — the public repo carries no denylist, which is correct (outsiders have no
+# fleet names to leak). Powered by the @stateless/redaction extension in this repo.
+# Baselines via each dir's `.redactionignore` (e.g. a scanner's own test corpus).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: redaction scan
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR: HARD-FAIL on a NEW leak introduced by this PR (diff-scoped).
+            base="${{ github.event.pull_request.base.sha }}"
+            mapfile -t files < <(git diff --name-only "$base"...HEAD)
+            if [ "${#files[@]}" -eq 0 ]; then echo "no changed files"; exit 0; fi
+            deno run --allow-read redaction/cli.ts "${files[@]}"
+          else
+            # push to main: whole-tree sweep. Reports backlog without failing the
+            # build (flip to a hard fail once the backlog is clean).
+            deno run --allow-read redaction/cli.ts . \
+              || echo "::warning::redaction: published-surface backlog present (whole-tree) — see hits above"
+          fi

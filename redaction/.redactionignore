@@ -1,0 +1,5 @@
+# Baseline (the "self-corrects" tier). A scanner's own test corpus must legitimately
+# contain the patterns it detects (private-range IPv4, *.ts.net) AS INPUTS. Those are
+# arbitrary, not real fleet identifiers — the REAL ones are sanitised to synthetic
+# values in the test. This exemption silences the alarm on the demo literals only.
+redaction_test.ts

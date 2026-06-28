@@ -1,0 +1,34 @@
+manifestVersion: 1
+name: "@stateless/redaction"
+version: "2026.06.28.1"
+description: >-
+  A deterministic published-surface hygiene gate — a CLASSIFIER, not an LLM eval.
+  It answers "does this artifact contain a forbidden identifier?" with rule-based
+  recognizers (private-range IPv4 full-quad, *.ts.net) plus a fleet-aware DENYLIST
+  (owned hostnames / FQDNs / people, matched case-sensitively on word boundaries)
+  and any custom recognizers an instance adds. The flagship `scan` is a HARD GATE:
+  it walks files/dirs and/or inline text and THROWS on a hit by default, so it can
+  back a publish-workflow step, a git pre-push hook, or a Claude Code PreToolUse
+  hook; pass failOnHit=false for an advisory report. `redact` remaps detected
+  identifiers to the swamp-blessed documentation placeholders (RFC 5737 IPs, RFC
+  2606 example.com). The denylist is the private part — an instance typically
+  derives it via a CEL view over @stateless/inventory, so it grows with the fleet
+  model and is never hand-maintained; the generic recognizers carry no fleet
+  knowledge, so a community checkout with no denylist still runs them. This is the
+  enforced version of the published-surface-hygiene check swamp-club Lab 508
+  shipped only as advisory.
+repository: "https://github.com/stateless/swamp-extensions/tree/main/redaction"
+paths:
+  base: manifest
+labels:
+  - security
+  - anonymization
+  - redaction
+  - classifier
+  - publish-gate
+  - hygiene
+models:
+  - redaction.ts
+additionalFiles:
+  - README.md
+  - LICENSE.txt
