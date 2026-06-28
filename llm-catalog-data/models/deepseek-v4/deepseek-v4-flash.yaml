@@ -426,15 +426,36 @@
           # ds4 runs on a SINGLE DGX Spark via its CUDA backend; the repo's Speed table
           # is Mac-only, so no single-Spark tok/s is published — recorded as a gap.
           speed: { note: "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure" }
+          quality: # agentic/coding pass-rates (DanTup/spark-evals, inspect_evals; NOT knowledge benches)
+            bfcl: "70.0%"
+            bigcodebench: "n/a (did not complete)"
+            ifEvalCode: "0.0%"
+            theAgentCompany: "0.0%"
+            overall: "16.7% (sample-weighted)"
           provenance:
-            asOf: "2026-06-20"
-            source: "https://github.com/antirez/ds4 (README, Speed table)"
+            asOf: "2026-06-28"
+            source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
             verification: cited
             confidence: low
             versionPins:
               runtime: DwarfStar (ds4)
               version: "beta (2026-06)"
         claims:
+          - kind: finding
+            body: >-
+              MEASURED single-Spark QUALITY (DanTup/spark-evals, ds4 Q2): Overall 16.7%
+              — bfcl 70% but IfEvalCode 0% and TheAgentCompany 0%, on a tiny token budget
+              (5.3M in / 0.23M out over 37h50m). DIRECT corroboration of the Q2-on-1-box
+              caveat: the model loads and answers simple function-calls but COLLAPSES on
+              multistep/agentic coding. The quality-preserving path is the FP8 2xSpark
+              cluster (toolEvalBench 89/100). The single-box fit is real; the quality is
+              not. (params:158 in the eval card = the same FP4/Q2-packed element undercount,
+              not true 284B.)
+            provenance:
+              asOf: "2026-06-28"
+              source: "github.com/DanTup/spark-evals/results/deepseek-v4-flash + artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+              verification: cited
+              confidence: low
           - kind: note
             body: >-
               A single DGX Spark runs V4-Flash via ds4's CUDA backend — a cheaper

@@ -1301,9 +1301,16 @@
               "speed": {
                 "note": "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure"
               },
+              "quality": {
+                "bfcl": "70.0%",
+                "bigcodebench": "n/a (did not complete)",
+                "ifEvalCode": "0.0%",
+                "theAgentCompany": "0.0%",
+                "overall": "16.7% (sample-weighted)"
+              },
               "provenance": {
-                "asOf": "2026-06-20",
-                "source": "https://github.com/antirez/ds4 (README, Speed table)",
+                "asOf": "2026-06-28",
+                "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
                 "verification": "cited",
                 "confidence": "low",
                 "versionPins": {
@@ -1313,6 +1320,16 @@
               }
             },
             "claims": [
+              {
+                "kind": "finding",
+                "body": "MEASURED single-Spark QUALITY (DanTup/spark-evals, ds4 Q2): Overall 16.7% — bfcl 70% but IfEvalCode 0% and TheAgentCompany 0%, on a tiny token budget (5.3M in / 0.23M out over 37h50m). DIRECT corroboration of the Q2-on-1-box caveat: the model loads and answers simple function-calls but COLLAPSES on multistep/agentic coding. The quality-preserving path is the FP8 2xSpark cluster (toolEvalBench 89/100). The single-box fit is real; the quality is not. (params:158 in the eval card = the same FP4/Q2-packed element undercount, not true 284B.)",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "github.com/DanTup/spark-evals/results/deepseek-v4-flash + artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+                  "verification": "cited",
+                  "confidence": "low"
+                }
+              },
               {
                 "kind": "note",
                 "body": "A single DGX Spark runs V4-Flash via ds4's CUDA backend — a cheaper single-box alternative to the 2-unit vLLM cluster recipe (ap-deepseek-v4-flash-2spark-vllm) on the same hardware class. SSD expert streaming lets one unit hold the model when unified memory is tight.",
@@ -11284,6 +11301,43 @@
       "facets": {
         "qualityImpact": "neutral"
       }
+    },
+    {
+      "id": "technique-finetune-chat-personality",
+      "kind": "technique",
+      "name": "Fine-tuning a chat personality (data-mix + slow LR)",
+      "summary": "Make a fine-tune ADOPT a new persona AND still generalize — mix in natural data, vary the ratio, go slow on LR/epochs; start with a small DENSE model",
+      "visibility": "public",
+      "labels": [
+        "fine-tuning",
+        "training",
+        "sft",
+        "chat",
+        "data-mix"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "guideline",
+          "body": "\"Fine-tuning for chat is the final boss of fine-tuning.\" Practitioner recipe for getting a fine-tune to adopt a new personality WITHOUT overfitting (so it still answers questions not in the training set): (1) START with a small DENSE model, not an MoE — Llama 1B recommended as the first target; Gemma 4 is \"a good start\" but try dense first. (2) MIX your fine-tuning data with some \"natural\" data — the kind likely already in the base model's training distribution — to anchor general ability. (3) VARY the natural:fine-tune ratio across runs; there is a SWEET SPOT where the model takes on the new persona and still generalizes. (4) Be VERY SLOW with learning rate and number of epochs. Surprisingly tricky — generalization, not memorization, is the goal.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://www.reddit.com/r/LocalLLaMA/comments/1ugg1dm/comment/ou1fu1b/",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "EASIER first project to learn the mechanics (same author): download the Google product taxonomy and train an LLM to predict the PARENT category of any given child category — a constrained, well-defined target with abundant natural structure. Useful to taxonomists growing taxonomies, and a gentler on-ramp than chat-persona tuning.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://www.reddit.com/r/LocalLLaMA/comments/1ugg1dm/comment/ou1fu1b/ (edit)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ]
     },
     {
       "id": "technique-flashattention",

@@ -592,3 +592,44 @@
         source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B + github.com/0xSero/deepseek-spark"
         verification: cited
         confidence: low
+
+# FINE-TUNING / training-side methods — how to ADAPT weights, distinct from the
+# inference techniques above (which deploy fixed weights). Recorded so recipes
+# can reference training caveats the same way they reference quant/KV methods.
+- id: technique-finetune-chat-personality
+  kind: technique
+  name: Fine-tuning a chat personality (data-mix + slow LR)
+  summary: Make a fine-tune ADOPT a new persona AND still generalize — mix in natural data, vary the ratio, go slow on LR/epochs; start with a small DENSE model
+  visibility: public
+  labels: [fine-tuning, training, sft, chat, data-mix]
+  claims:
+    - kind: guideline
+      body: >-
+        "Fine-tuning for chat is the final boss of fine-tuning." Practitioner
+        recipe for getting a fine-tune to adopt a new personality WITHOUT
+        overfitting (so it still answers questions not in the training set):
+        (1) START with a small DENSE model, not an MoE — Llama 1B recommended as
+        the first target; Gemma 4 is "a good start" but try dense first.
+        (2) MIX your fine-tuning data with some "natural" data — the kind likely
+        already in the base model's training distribution — to anchor general
+        ability. (3) VARY the natural:fine-tune ratio across runs; there is a
+        SWEET SPOT where the model takes on the new persona and still
+        generalizes. (4) Be VERY SLOW with learning rate and number of epochs.
+        Surprisingly tricky — generalization, not memorization, is the goal.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://www.reddit.com/r/LocalLLaMA/comments/1ugg1dm/comment/ou1fu1b/"
+        verification: cited
+        confidence: low # single practitioner comment; promised fuller writeup pending
+    - kind: note
+      body: >-
+        EASIER first project to learn the mechanics (same author): download the
+        Google product taxonomy and train an LLM to predict the PARENT category of
+        any given child category — a constrained, well-defined target with abundant
+        natural structure. Useful to taxonomists growing taxonomies, and a gentler
+        on-ramp than chat-persona tuning.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://www.reddit.com/r/LocalLLaMA/comments/1ugg1dm/comment/ou1fu1b/ (edit)"
+        verification: cited
+        confidence: low
