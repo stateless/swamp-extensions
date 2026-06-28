@@ -517,6 +517,16 @@
             "source": "https://github.com/antirez/ds4 (README)",
             "confidence": "low"
           }
+        },
+        {
+          "kind": "finding",
+          "body": "M5 Max (40-core GPU) measured as a strong single-box DECODE engine vs the DGX Spark: ~612 GB/s LPDDR memory bandwidth vs GB10's ~275 GB/s drives a decode win on dense / lower-context models — Qwen3.5-122B mxfp4 (OptiQuant + TurboQuant staggered cache) 49.7 tok/s decode / 1005.7 prefill / 68.7GB; Qwen3.6-27B 35.0 decode / 778.5 prefill / 15.3GB. The Spark's counter-edge is PREFILL compute (kb-measured Spark 27B prefill ~2117 > M5's 778.5) and EXTREME (1M operational) context (M5 practical ~80-100K). Conclusion: a heterogeneous M5+Spark split (M5 = fast denser-model generation at lower context; Spark = million-token orchestrator) beat scaling to 4 Sparks here — \"moving past two Sparks is diminishing returns\".",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
         }
       ],
       "facets": {
@@ -1299,7 +1309,8 @@
             "procedure": "https://github.com/antirez/ds4",
             "outcome": {
               "speed": {
-                "note": "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure"
+                "genTokS": 30,
+                "note": "ds4 OpenAI endpoint via llama-benchy; <=7K-tok prompts; single-stream; GB10 CUDA-13, ~94% GPU util — see finding"
               },
               "quality": {
                 "bfcl": "70.0%",
@@ -1320,6 +1331,16 @@
               }
             },
             "claims": [
+              {
+                "kind": "finding",
+                "body": "MEASURED single-Spark THROUGHPUT (community, forum 369791 post 83): ds4's OpenAI-compatible endpoint benchmarked with llama-benchy gives ~27-30 tok/s generation single-stream, peaks >34 tok/s, on prompts up to ~7K tokens. CUDA 13 active; ds4-server runs as a GB10 compute process at ~94% GPU utilisation during generation — the runtime saturates the hardware, reported as \"genuinely usable for real work\". Fills the prior tok/s gap for the 1xSpark ds4 path. CAVEAT: single-stream only; MTP/speculative decoding is NOT yet the main speedup path; multi-user serving needs a different architecture. Single community source (GB10 class), not reproduced.",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://forums.developer.nvidia.com/t/369791 (post 83)",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              },
               {
                 "kind": "finding",
                 "body": "MEASURED single-Spark QUALITY (DanTup/spark-evals, ds4 Q2): Overall 16.7% — bfcl 70% but IfEvalCode 0% and TheAgentCompany 0%, on a tiny token budget (5.3M in / 0.23M out over 37h50m). DIRECT corroboration of the Q2-on-1-box caveat: the model loads and answers simple function-calls but COLLAPSES on multistep/agentic coding. The quality-preserving path is the FP8 2xSpark cluster (toolEvalBench 89/100). The single-box fit is real; the quality is not. (params:158 in the eval card = the same FP4/Q2-packed element undercount, not true 284B.)",
@@ -7940,6 +7961,16 @@
             "source": "https://github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public",
             "verification": "cited"
           }
+        },
+        {
+          "kind": "note",
+          "body": "CORROBORATION (forum 365639 post 447) of the DFlash single-Spark recipe (runsOn config #5, forum 374328): independently confirmed at ~80+ tok/s real-world agent usage / 59 tok/s on the e2e benchmark, ported to vLLM 0.23 on AEON-7's sm121 DFlash image (ghcr.io/aeon-7/aeon-vllm-ultimate) via the Entrpi/qwen3.5-122B-A10B-on-spark one-shot installer (`./install.sh --start`). NOTE: Modal's DFlash-MTP speculative-decoding work is REFERENCED as research but is NOT the integrated drafter — that remains z-lab/Qwen3.5-122B-A10B-DFlash (0.8B block-diffusion). The 80-vs-59 split is a real-world-vs-benchmark gap, not a new config. This is the agent-burst counterpart to the MTP-2 (52) sustained path.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://forums.developer.nvidia.com/t/365639 (post 447) + https://forums.developer.nvidia.com/t/374328",
+            "confidence": "medium",
+            "verification": "cited"
+          }
         }
       ],
       "facets": {
@@ -8287,7 +8318,8 @@
               "reasoningParser": "qwen3",
               "build": {
                 "runtime": "vLLM",
-                "version": "0.23.0+aeon.sm121a.dflash"
+                "version": "0.23.0+aeon.sm121a.dflash",
+                "image": "ghcr.io/aeon-7/aeon-vllm-ultimate"
               },
               "note": "prefix-caching MUST be disabled for DFlash; scale-block KV unification patch required; fastsafetensors loads 62–71GiB in ~32s; ~3min to READY; KV pool ~426k–456k tokens; ~15GiB free at 3-stream peak."
             },
@@ -8300,7 +8332,7 @@
               },
               "speed": {
                 "genTokS": 81,
-                "note": "Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7 DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent traffic (accept ~8.3). Dense decode-only single-stream: prose 48.8 / code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic 66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept agent traffic (dflash ≈ dense there)."
+                "note": "Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7 DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent traffic (accept ~8.3). The 59.0 is the Albond e2e BENCHMARK harness; the ~81 is REAL-WORLD agent turns (Hermes, 73% tool-calls, 100k ctx) — a benchmark-vs-real-world gap, NOT two configs (corroborated forum 365639 post 447). Dense decode-only single-stream: prose 48.8 / code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic 66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept agent traffic (dflash ≈ dense there)."
               },
               "provenance": {
                 "asOf": "2026-06-26",
@@ -8311,6 +8343,42 @@
                   "runtime": "vLLM",
                   "version": "0.23.0+aeon.sm121a.dflash",
                   "quant": "int4-autoround"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-mlx-mac",
+            "name": "Qwen3.5-122B-A10B · MLX OptiQuant mxfp4 (TurboQuant staggered cache) @ M5 Max",
+            "quant": "OptiQuant mxfp4 + TurboQuant staggered KV cache",
+            "format": "mlx",
+            "techniques": [
+              "technique-mxfp4",
+              "technique-kv-quant-fp4"
+            ],
+            "units": 1,
+            "config": {
+              "maxModelLen": 262144
+            },
+            "procedure": "https://forums.developer.nvidia.com/t/373482 (post 38)",
+            "outcome": {
+              "context": {
+                "tokens": 262144,
+                "note": "256K max; practical ~80-100K"
+              },
+              "speed": {
+                "prefillTokS": 1005.7,
+                "genTokS": 49.7,
+                "note": "M5 Max 40-core GPU; 68.7GB peak. mxfp4 + TurboQuant staggered cache. M5 DOMINATES decode here vs the 2x DGX Spark same-model path (~26 t/s decode) — driven by M5's ~612 GB/s LPDDR bandwidth vs GB10's ~275 GB/s. Spark's counter-advantage is 1M OPERATIONAL context (M5 practical ~80-100K)."
+              },
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "mlx-lm",
+                  "quant": "OptiQuant mxfp4"
                 }
               }
             }
@@ -9438,6 +9506,39 @@
                 "versionPins": {
                   "quant": "int4-autoround",
                   "packager": "spark-auto-round"
+                }
+              }
+            }
+          },
+          {
+            "endpoint": "endpoint-mlx-mac",
+            "name": "Qwen3.6-27B · MLX base mxfp4 (TurboQuant staggered cache) @ M5 Max",
+            "quant": "base mxfp4 + TurboQuant staggered KV cache",
+            "format": "mlx",
+            "techniques": [
+              "technique-mxfp4",
+              "technique-kv-quant-fp4"
+            ],
+            "units": 1,
+            "procedure": "https://forums.developer.nvidia.com/t/373482 (post 38)",
+            "outcome": {
+              "context": {
+                "tokens": 196608,
+                "note": "M5 reports 256K max; model native 196K"
+              },
+              "speed": {
+                "prefillTokS": 778.5,
+                "genTokS": 35,
+                "note": "M5 Max 40-core GPU; 15.3GB peak. CROSS-CHECK: the kb's MEASURED Spark 27B (NVFP4+DFlash) does prefill 2117 / decode 33.2 (c1) — so Spark PREFILL actually EXCEEDS the M5's 778.5; the M5 edge is decode + tiny footprint (bandwidth-bound), not prefill. The forum's \"M5 faster on both\" holds only vs a weaker Spark config — winner is config-dependent."
+              },
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)",
+                "verification": "cited",
+                "confidence": "medium",
+                "versionPins": {
+                  "runtime": "mlx-lm",
+                  "quant": "base mxfp4"
                 }
               }
             }
@@ -11551,6 +11652,16 @@
             "asOf": "2026-06-28",
             "source": "https://forums.developer.nvidia.com/t/deepseek-v4-flash-aiden-recipe-...-372268/196",
             "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "PRODUCTION datapoint (upgrades the anecdote above): the TurboQuant \"staggered cache\" runs in real M5 Max single-box MLX serving (OptiQuant mxfp4) with measured numbers — Qwen3.5-122B at 49.7 tok/s decode / 68.7GB, Qwen3.6-27B at 35.0 tok/s / 15.3GB (forum 373482 post 38; see those models' MLX runsOn). So the staggered fp4 cache is no longer just a Mac forum claim — it's a daily-driver deployment. STILL MLX-only; not yet vLLM/CUDA.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)",
+            "confidence": "medium",
             "verification": "cited"
           }
         },

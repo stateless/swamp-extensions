@@ -424,8 +424,10 @@
         procedure: "https://github.com/antirez/ds4"
         outcome:
           # ds4 runs on a SINGLE DGX Spark via its CUDA backend; the repo's Speed table
-          # is Mac-only, so no single-Spark tok/s is published — recorded as a gap.
-          speed: { note: "single-Spark ds4 supported (CUDA backend); tok/s unbenchmarked in repo — measure" }
+          # is Mac-only — single-Spark tok/s now filled from a community forum benchmark.
+          speed:
+            genTokS: 30 # 27-30 single-stream, peaks >34 (forum 369791 post 83)
+            note: "ds4 OpenAI endpoint via llama-benchy; <=7K-tok prompts; single-stream; GB10 CUDA-13, ~94% GPU util — see finding"
           quality: # agentic/coding pass-rates (DanTup/spark-evals, inspect_evals; NOT knowledge benches)
             bfcl: "70.0%"
             bigcodebench: "n/a (did not complete)"
@@ -441,6 +443,22 @@
               runtime: DwarfStar (ds4)
               version: "beta (2026-06)"
         claims:
+          - kind: finding
+            body: >-
+              MEASURED single-Spark THROUGHPUT (community, forum 369791 post 83): ds4's
+              OpenAI-compatible endpoint benchmarked with llama-benchy gives ~27-30 tok/s
+              generation single-stream, peaks >34 tok/s, on prompts up to ~7K tokens. CUDA
+              13 active; ds4-server runs as a GB10 compute process at ~94% GPU utilisation
+              during generation — the runtime saturates the hardware, reported as "genuinely
+              usable for real work". Fills the prior tok/s gap for the 1xSpark ds4 path.
+              CAVEAT: single-stream only; MTP/speculative decoding is NOT yet the main
+              speedup path; multi-user serving needs a different architecture. Single
+              community source (GB10 class), not reproduced.
+            provenance:
+              asOf: "2026-06-28"
+              source: "https://forums.developer.nvidia.com/t/369791 (post 83)"
+              verification: cited
+              confidence: medium
           - kind: finding
             body: >-
               MEASURED single-Spark QUALITY (DanTup/spark-evals, ds4 Q2): Overall 16.7%

@@ -86,6 +86,31 @@
             verification: cited
             confidence: medium
             versionPins: { quant: int4-autoround, packager: spark-auto-round }
+      # M5 Max (Apple, MLX) — base mxfp4 + TurboQuant staggered cache (forum 373482)
+      - endpoint: endpoint-mlx-mac
+        name: "Qwen3.6-27B · MLX base mxfp4 (TurboQuant staggered cache) @ M5 Max"
+        quant: "base mxfp4 + TurboQuant staggered KV cache"
+        format: mlx
+        techniques: [technique-mxfp4, technique-kv-quant-fp4]
+        units: 1
+        procedure: "https://forums.developer.nvidia.com/t/373482 (post 38)"
+        outcome:
+          context: { tokens: 196608, note: "M5 reports 256K max; model native 196K" }
+          speed:
+            prefillTokS: 778.5
+            genTokS: 35.0
+            note: >-
+              M5 Max 40-core GPU; 15.3GB peak. CROSS-CHECK: the kb's MEASURED Spark 27B
+              (NVFP4+DFlash) does prefill 2117 / decode 33.2 (c1) — so Spark PREFILL
+              actually EXCEEDS the M5's 778.5; the M5 edge is decode + tiny footprint
+              (bandwidth-bound), not prefill. The forum's "M5 faster on both" holds only
+              vs a weaker Spark config — winner is config-dependent.
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: mlx-lm, quant: "base mxfp4" }
   claims:
     - kind: note
       body: >-

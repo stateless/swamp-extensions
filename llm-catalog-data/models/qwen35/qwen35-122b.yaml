@@ -267,7 +267,7 @@
           speculative: "dflash, 12 draft tokens"
           toolCallParser: qwen3_xml
           reasoningParser: qwen3
-          build: { runtime: vLLM, version: "0.23.0+aeon.sm121a.dflash" }
+          build: { runtime: vLLM, version: "0.23.0+aeon.sm121a.dflash", image: "ghcr.io/aeon-7/aeon-vllm-ultimate" } # AEON-7 sm121 DFlash image (the "latest vLLM" port)
           note: >-
             prefix-caching MUST be disabled for DFlash; scale-block KV unification
             patch required; fastsafetensors loads 62–71GiB in ~32s; ~3min to READY;
@@ -286,10 +286,13 @@
             note: >-
               Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7
               DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent
-              traffic (accept ~8.3). Dense decode-only single-stream: prose 48.8 /
-              code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic
-              66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept
-              agent traffic (dflash ≈ dense there).
+              traffic (accept ~8.3). The 59.0 is the Albond e2e BENCHMARK harness; the
+              ~81 is REAL-WORLD agent turns (Hermes, 73% tool-calls, 100k ctx) — a
+              benchmark-vs-real-world gap, NOT two configs (corroborated forum 365639
+              post 447). Dense decode-only single-stream: prose 48.8 / code 66.9 /
+              agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic 66.7. Dense
+              levers' ~28% baseline gain amortizes to ~0 on high-accept agent traffic
+              (dflash ≈ dense there).
           provenance:
             asOf: "2026-06-26"
             source: "https://forums.developer.nvidia.com/t/dflash-for-qwen3-5-122b-a10b-80-tok-s-on-1x-spark/374328 (Entrpi)"
@@ -297,6 +300,31 @@
             confidence: medium
             versionPins: { runtime: vLLM, version: "0.23.0+aeon.sm121a.dflash", quant: int4-autoround }
 
+      # M5 Max (Apple, MLX) — OptiQuant mxfp4 + TurboQuant staggered cache (forum 373482)
+      - endpoint: endpoint-mlx-mac
+        name: "Qwen3.5-122B-A10B · MLX OptiQuant mxfp4 (TurboQuant staggered cache) @ M5 Max"
+        quant: "OptiQuant mxfp4 + TurboQuant staggered KV cache"
+        format: mlx
+        techniques: [technique-mxfp4, technique-kv-quant-fp4]
+        units: 1
+        config: { maxModelLen: 262144 } # practical ~80-100K
+        procedure: "https://forums.developer.nvidia.com/t/373482 (post 38)"
+        outcome:
+          context: { tokens: 262144, note: "256K max; practical ~80-100K" }
+          speed:
+            prefillTokS: 1005.7 # 1024-token prompt
+            genTokS: 49.7
+            note: >-
+              M5 Max 40-core GPU; 68.7GB peak. mxfp4 + TurboQuant staggered cache. M5
+              DOMINATES decode here vs the 2x DGX Spark same-model path (~26 t/s decode)
+              — driven by M5's ~612 GB/s LPDDR bandwidth vs GB10's ~275 GB/s. Spark's
+              counter-advantage is 1M OPERATIONAL context (M5 practical ~80-100K).
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)"
+            verification: cited
+            confidence: medium
+            versionPins: { runtime: mlx-lm, quant: "OptiQuant mxfp4" }
       # gateway — endpoint-openrouter: carries PRICE, not config
       - endpoint: endpoint-openrouter
         providerModelId: "qwen/qwen3.5-122b-a10b"
@@ -426,3 +454,19 @@
         runbook cites ~95% — likely different harness/workload. Both agree MTP-2 is
         the throughput sweet spot; the accept figure is approximate.
       provenance: *runbook365639
+    - kind: note
+      body: >-
+        CORROBORATION (forum 365639 post 447) of the DFlash single-Spark recipe
+        (runsOn config #5, forum 374328): independently confirmed at ~80+ tok/s
+        real-world agent usage / 59 tok/s on the e2e benchmark, ported to vLLM 0.23 on
+        AEON-7's sm121 DFlash image (ghcr.io/aeon-7/aeon-vllm-ultimate) via the
+        Entrpi/qwen3.5-122B-A10B-on-spark one-shot installer (`./install.sh --start`).
+        NOTE: Modal's DFlash-MTP speculative-decoding work is REFERENCED as research but
+        is NOT the integrated drafter — that remains z-lab/Qwen3.5-122B-A10B-DFlash (0.8B
+        block-diffusion). The 80-vs-59 split is a real-world-vs-benchmark gap, not a new
+        config. This is the agent-burst counterpart to the MTP-2 (52) sustained path.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://forums.developer.nvidia.com/t/365639 (post 447) + https://forums.developer.nvidia.com/t/374328"
+        verification: cited
+        confidence: medium
