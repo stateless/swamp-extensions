@@ -7,7 +7,14 @@
  */
 
 import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
-import { buildRecognizers, model, redactText, scanText } from "./redaction.ts";
+import {
+  buildRecognizers,
+  deriveDenylist,
+  domainOf,
+  model,
+  redactText,
+  scanText,
+} from "./redaction.ts";
 import { GlobalArgsSchema, type Hit } from "./schemas.ts";
 
 const rules = (deny: string[] = [], custom = []) =>
@@ -128,6 +135,41 @@ Deno.test("scanText: reports 1-based line numbers", () => {
   const hits = scanText("clean line\nleak 10.0.0.1 here\nclean", rules());
   assertEquals(hits.length, 1);
   assertEquals(hits[0].line, 2);
+});
+
+// --- denylist derivation (build the fleet-aware tier from data) -------------
+
+Deno.test("domainOf: handles co.nz and plain TLDs", () => {
+  assertEquals(domainOf("host.example.co.nz"), "example.co.nz");
+  assertEquals(domainOf("host.example.com"), "example.com");
+  assertEquals(domainOf("example.com"), "example.com");
+  assertEquals(domainOf("single"), null);
+});
+
+Deno.test("deriveDenylist: unambiguous vs review tiers, ts.net + generics dropped", () => {
+  // synthetic inputs — never embed real fleet identifiers, even baselined.
+  const r = deriveDenylist(
+    [
+      {
+        hostname: "acmehost",
+        fqdns: ["host1.example.co.nz", "x.ts.net"],
+        users: ["alice", "root"],
+      },
+      { hostname: "rb4011", fqdns: [], users: [] }, // product name → filtered from review
+    ],
+    { current: ["example.co.nz"] },
+  );
+  // unambiguous = fqdns (minus ts.net) + domains + non-generic users
+  assert(r.unambiguous.includes("host1.example.co.nz"));
+  assert(r.unambiguous.includes("example.co.nz"));
+  assert(r.unambiguous.includes("alice"));
+  assert(!r.unambiguous.some((t) => t.includes("ts.net"))); // ts.net dropped (generic recognizer)
+  assert(!r.unambiguous.includes("root")); // generic user dropped
+  // review = hostnames, product names filtered
+  assertEquals(r.review, ["acmehost"]);
+  // diff vs current
+  assert(!r.newUnambiguous.includes("example.co.nz")); // already known
+  assert(r.newUnambiguous.includes("alice"));
 });
 
 // --- method-level: file walk + hard-halt gate -------------------------------

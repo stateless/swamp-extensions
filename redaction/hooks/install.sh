@@ -27,7 +27,9 @@ echo "✓ git pre-push installed (core.hooksPath=.githooks)"
 mkdir -p .claude
 SETTINGS=.claude/settings.json
 [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
-HOOKCMD="\"\$CLAUDE_PROJECT_DIR/extensions/models/redaction/hooks/redaction-guard.sh\""
+# Path to the guard, relative to the target repo (portable across layouts).
+REL="$(realpath --relative-to="$TARGET" "$HERE/redaction-guard.sh" 2>/dev/null || echo "$HERE/redaction-guard.sh")"
+HOOKCMD="\"\$CLAUDE_PROJECT_DIR/$REL\""
 tmp="$(mktemp)"
 jq --arg cmd "$HOOKCMD" '
   .hooks.PreToolUse = ((.hooks.PreToolUse // [])

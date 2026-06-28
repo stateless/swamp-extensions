@@ -34,15 +34,37 @@ function parse(argv: string[]) {
 
 /** Baseline patterns: --ignore flags + a `.redactionignore` in cwd and in each */
 /** scanned directory (one substring/path per line, '#' comments). */
+const SKIP = new Set([".git", "node_modules", ".swamp"]);
+
+/** Recursively collect every `.redactionignore` under a directory (gitignore-style */
+/** nesting), so a whole-tree scan honours a subdir/extension's own baseline. */
+async function findIgnoreFiles(root: string, out: string[]): Promise<void> {
+  let info: Deno.FileInfo;
+  try {
+    info = await Deno.stat(root);
+  } catch {
+    return;
+  }
+  if (info.isFile) {
+    out.push(
+      `${root.split("/").slice(0, -1).join("/") || "."}/.redactionignore`,
+    );
+    return;
+  }
+  if (!info.isDirectory) return;
+  out.push(`${root}/.redactionignore`);
+  for await (const e of Deno.readDir(root)) {
+    if (e.isDirectory && !SKIP.has(e.name)) {
+      await findIgnoreFiles(`${root}/${e.name}`, out);
+    }
+  }
+}
+
 async function loadIgnore(paths: string[], extra: string[]): Promise<string[]> {
   const out = [...extra];
-  const dir = (p: string) => p.split("/").slice(0, -1).join("/") || ".";
-  const cand = new Set<string>([".redactionignore"]);
-  for (const p of paths) {
-    cand.add(`${p}/.redactionignore`); // p is a directory
-    cand.add(`${dir(p)}/.redactionignore`); // p is a file → its parent dir
-  }
-  for (const f of cand) {
+  const cand: string[] = [".redactionignore"];
+  for (const p of paths) await findIgnoreFiles(p, cand);
+  for (const f of new Set(cand)) {
     try {
       out.push(
         ...(await Deno.readTextFile(f)).split("\n")

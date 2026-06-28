@@ -31,8 +31,7 @@ jobs:
             if [ "${#files[@]}" -eq 0 ]; then echo "no changed files"; exit 0; fi
             deno run --allow-read redaction/cli.ts "${files[@]}"
           else
-            # push to main: whole-tree sweep. Reports backlog without failing the
-            # build (flip to a hard fail once the backlog is clean).
-            deno run --allow-read redaction/cli.ts . \
-              || echo "::warning::redaction: published-surface backlog present (whole-tree) — see hits above"
+            # push to main: whole-tree sweep, HARD-FAIL. The tree is clean; legit
+            # recognizer-input fixtures are exempted by per-dir .redactionignore.
+            deno run --allow-read redaction/cli.ts .
           fi

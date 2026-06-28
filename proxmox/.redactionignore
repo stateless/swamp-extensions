@@ -1,0 +1,7 @@
+# Baseline: these test fixtures use arbitrary RFC1918 IPs (10.x) as inputs, not
+# real fleet topology. Exempted from the published-surface gate. CLEANER FOLLOW-UP
+# for the proxmox owner: convert the fixtures to RFC 5737 (192.0.2.x) per §8.
+proxmox/proxmox_lxc_test.ts
+proxmox/_lib/proxmox/client_test.ts
+proxmox/_lib/proxmox/lxc_test.ts
+proxmox/_lib/proxmox/pve_test.ts

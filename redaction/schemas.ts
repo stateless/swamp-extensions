@@ -68,3 +68,19 @@ export const RedactArgsSchema = z.object({
   text: z.string(),
   denylist: z.array(z.string()).optional(),
 });
+
+/** A source-neutral record fed to `deriveDenylist` (a caller normalises its own */
+/** model — e.g. an inventory device — into this shape). */
+export const DerivationRecordSchema = z.object({
+  hostname: z.string().optional(),
+  fqdns: z.array(z.string()).default([]),
+  users: z.array(z.string()).default([]),
+});
+
+export const DeriveDenylistArgsSchema = z.object({
+  records: z.array(DerivationRecordSchema),
+  /** Known terms — used only to compute what's NEW. */
+  current: z.array(z.string()).optional(),
+  productHints: z.array(z.string()).optional(),
+  genericUsers: z.array(z.string()).optional(),
+});

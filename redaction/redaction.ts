@@ -30,6 +30,7 @@
 
 import { z } from "npm:zod@4";
 import {
+  DeriveDenylistArgsSchema,
   type GlobalArgs,
   GlobalArgsSchema,
   type Hit,
@@ -132,6 +133,105 @@ export function redactText(
 }
 
 // ---------------------------------------------------------------------------
+// Denylist derivation (build the fleet-aware tier FROM existing data)
+// ---------------------------------------------------------------------------
+
+/** A source-NEUTRAL record. A caller normalises its own model (e.g. an inventory */
+/** device) into this shape; redaction stays decoupled from any one schema. */
+export interface DerivationRecord {
+  hostname?: string;
+  fqdns?: string[];
+  users?: string[];
+}
+export interface DeriveOpts {
+  /** Already-known denylist terms — used only to compute what's NEW. */
+  current?: string[];
+  /** id substrings that signal a product/model name, not an owned hostname. */
+  productHints?: string[];
+  /** ssh users too generic to denylist (root/admin/…). */
+  genericUsers?: string[];
+}
+
+const DEFAULT_PRODUCT_HINTS = [
+  "ups",
+  "switch",
+  "canyon",
+  "edgerouter",
+  "cyberpower",
+  "eaton",
+  "tapo",
+  "crs",
+  "rb40",
+  "spare",
+  "gap-",
+];
+const DEFAULT_GENERIC_USERS = ["root", "admin", "user", "ubuntu", "ec2-user"];
+
+/** Registrable-ish domain: keep the last 2–3 labels (handles `co.nz`). */
+export function domainOf(fqdn: string): string | null {
+  const parts = fqdn.split(".");
+  if (parts.length < 2) return null;
+  const sld = new Set(["co", "org", "net", "gov", "ac"]);
+  if (parts.length >= 3 && sld.has(parts.at(-2)!)) {
+    return parts.slice(-3).join(".");
+  }
+  return parts.slice(-2).join(".");
+}
+
+/**
+ * Derive denylist candidates from normalised records. Splits into an
+ * UNAMBIGUOUS tier (FQDNs + their domains + non-generic users — safe to add) and
+ * a REVIEW tier (hostnames, after filtering product names — a human confirms the
+ * owned ones, since inventory ids mix real hostnames with product names like
+ * `rb4011`). `*.ts.net` FQDNs are
+ * dropped (a generic recognizer already covers them). Pure + deterministic.
+ */
+export function deriveDenylist(
+  records: DerivationRecord[],
+  opts: DeriveOpts = {},
+): {
+  unambiguous: string[];
+  review: string[];
+  newUnambiguous: string[];
+  newReview: string[];
+} {
+  const productHints = opts.productHints ?? DEFAULT_PRODUCT_HINTS;
+  const genericUsers = new Set(opts.genericUsers ?? DEFAULT_GENERIC_USERS);
+  const current = new Set(opts.current ?? []);
+
+  const fqdns = new Set<string>();
+  const domains = new Set<string>();
+  const users = new Set<string>();
+  const hosts = new Set<string>();
+
+  for (const r of records) {
+    const h = r.hostname;
+    if (
+      h && /^[a-z0-9][a-z0-9-]*$/.test(h) &&
+      !productHints.some((p) => h.includes(p))
+    ) hosts.add(h);
+    for (const f of r.fqdns ?? []) {
+      if (!f || f.endsWith(".ts.net")) continue;
+      fqdns.add(f);
+      const d = domainOf(f);
+      if (d) domains.add(d);
+    }
+    for (const u of r.users ?? []) {
+      if (u && !genericUsers.has(u)) users.add(u);
+    }
+  }
+
+  const unambiguous = [...fqdns, ...domains, ...users].sort();
+  const review = [...hosts].sort();
+  return {
+    unambiguous,
+    review,
+    newUnambiguous: unambiguous.filter((t) => !current.has(t)),
+    newReview: review.filter((t) => !current.has(t)),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // File walking (scan over a path set)
 // ---------------------------------------------------------------------------
 
@@ -228,7 +328,7 @@ interface MethodResult {
 /** The `@stateless/redaction` model definition. */
 export const model = {
   type: "@stateless/redaction",
-  version: "2026.06.28.1",
+  version: "2026.06.28.2",
   globalArguments: GlobalArgsSchema,
   resources: {
     "scan-result": {
@@ -254,6 +354,21 @@ export const model = {
     "redaction-result": {
       description: "The redacted text produced by `redact`.",
       schema: z.object({ redacted: z.string() }),
+      lifetime: "infinite" as const,
+      garbageCollection: 20,
+    },
+    denylist: {
+      description:
+        "Denylist candidates derived by `deriveDenylist` from normalised source " +
+        "records (e.g. an inventory CEL view). `unambiguous` = FQDNs/domains/users " +
+        "(safe to use); `review` = hostnames a human confirms. A gate instance can " +
+        "CEL-reference this resource's `unambiguous` as its denylist.",
+      schema: z.object({
+        unambiguous: z.array(z.string()),
+        review: z.array(z.string()),
+        newUnambiguous: z.array(z.string()),
+        newReview: z.array(z.string()),
+      }),
       lifetime: "infinite" as const,
       garbageCollection: 20,
     },
@@ -342,6 +457,38 @@ export const model = {
         const handle = await ctx.writeResource("redaction-result", "redact", {
           redacted,
         });
+        return { dataHandles: [handle] };
+      },
+    },
+    deriveDenylist: {
+      description:
+        "Build the fleet-aware denylist FROM existing data: take source-NEUTRAL " +
+        "records ({hostname, fqdns, users} — a caller normalises e.g. an " +
+        "@stateless/inventory CEL view into this shape) and split into an " +
+        "UNAMBIGUOUS tier (FQDNs/domains/users, safe to use as the denylist) and a " +
+        "REVIEW tier (hostnames, product names filtered, a human confirms). Writes " +
+        "a `denylist` resource a gate instance can CEL-reference. The fleet model " +
+        "becomes the denylist source — it grows as inventory grows.",
+      arguments: DeriveDenylistArgsSchema,
+      execute: async (
+        args: z.infer<typeof DeriveDenylistArgsSchema>,
+        ctx: MethodContext,
+      ): Promise<MethodResult> => {
+        const result = deriveDenylist(args.records, {
+          current: args.current,
+          productHints: args.productHints,
+          genericUsers: args.genericUsers,
+        });
+        const handle = await ctx.writeResource("denylist", "denylist", result);
+        ctx.logger.info(
+          "deriveDenylist: {u} unambiguous ({nu} new), {r} review ({nr} new)",
+          {
+            u: result.unambiguous.length,
+            nu: result.newUnambiguous.length,
+            r: result.review.length,
+            nr: result.newReview.length,
+          },
+        );
         return { dataHandles: [handle] };
       },
     },
