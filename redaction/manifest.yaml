@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/redaction"
-version: "2026.06.28.2"
+version: "2026.06.28.3"
 description: >-
   A deterministic published-surface hygiene gate — a CLASSIFIER, not an LLM eval.
   It answers "does this artifact contain a forbidden identifier?" with rule-based

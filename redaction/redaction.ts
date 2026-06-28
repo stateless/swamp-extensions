@@ -181,10 +181,13 @@ export function domainOf(fqdn: string): string | null {
 /**
  * Derive denylist candidates from normalised records. Splits into an
  * UNAMBIGUOUS tier (FQDNs + their domains + non-generic users — safe to add) and
- * a REVIEW tier (hostnames, after filtering product names — a human confirms the
- * owned ones, since inventory ids mix real hostnames with product names like
- * `rb4011`). `*.ts.net` FQDNs are
- * dropped (a generic recognizer already covers them). Pure + deterministic.
+ * a REVIEW tier (ALL clean-slug hostnames — a human confirms). In-inventory is
+ * SUFFICIENT to deny, so nothing is silently dropped; product-looking ids (e.g.
+ * `rb4011`) are surfaced in `productLike` as an advisory skip-hint, never removed.
+ * `*.ts.net` FQDNs are dropped (a generic recognizer already covers them). Pure +
+ * deterministic. NOTE: inventory is one SUFFICIENT source, NOT necessary — the
+ * not-in-inventory class (people, codenames, dead/future hosts) lives in a
+ * separate supplement the gate unions in.
  */
 export function deriveDenylist(
   records: DerivationRecord[],
@@ -192,6 +195,7 @@ export function deriveDenylist(
 ): {
   unambiguous: string[];
   review: string[];
+  productLike: string[];
   newUnambiguous: string[];
   newReview: string[];
 } {
@@ -205,11 +209,11 @@ export function deriveDenylist(
   const hosts = new Set<string>();
 
   for (const r of records) {
+    // In-inventory is SUFFICIENT to deny → include every clean-slug id in review;
+    // product-likeness is only ADVISORY (a hint to skip), never a silent drop —
+    // a false halt is a 10s fix, a dropped real identifier is a leak.
     const h = r.hostname;
-    if (
-      h && /^[a-z0-9][a-z0-9-]*$/.test(h) &&
-      !productHints.some((p) => h.includes(p))
-    ) hosts.add(h);
+    if (h && /^[a-z0-9][a-z0-9-]*$/.test(h)) hosts.add(h);
     for (const f of r.fqdns ?? []) {
       if (!f || f.endsWith(".ts.net")) continue;
       fqdns.add(f);
@@ -226,6 +230,7 @@ export function deriveDenylist(
   return {
     unambiguous,
     review,
+    productLike: review.filter((t) => productHints.some((p) => t.includes(p))),
     newUnambiguous: unambiguous.filter((t) => !current.has(t)),
     newReview: review.filter((t) => !current.has(t)),
   };
@@ -328,7 +333,7 @@ interface MethodResult {
 /** The `@stateless/redaction` model definition. */
 export const model = {
   type: "@stateless/redaction",
-  version: "2026.06.28.2",
+  version: "2026.06.28.3",
   globalArguments: GlobalArgsSchema,
   resources: {
     "scan-result": {
@@ -366,6 +371,7 @@ export const model = {
       schema: z.object({
         unambiguous: z.array(z.string()),
         review: z.array(z.string()),
+        productLike: z.array(z.string()),
         newUnambiguous: z.array(z.string()),
         newReview: z.array(z.string()),
       }),

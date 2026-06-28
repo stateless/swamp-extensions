@@ -155,7 +155,7 @@ Deno.test("deriveDenylist: unambiguous vs review tiers, ts.net + generics droppe
         fqdns: ["host1.example.co.nz", "x.ts.net"],
         users: ["alice", "root"],
       },
-      { hostname: "rb4011", fqdns: [], users: [] }, // product name → filtered from review
+      { hostname: "rb4011", fqdns: [], users: [] }, // product-looking → review + productLike, NOT dropped
     ],
     { current: ["example.co.nz"] },
   );
@@ -165,8 +165,9 @@ Deno.test("deriveDenylist: unambiguous vs review tiers, ts.net + generics droppe
   assert(r.unambiguous.includes("alice"));
   assert(!r.unambiguous.some((t) => t.includes("ts.net"))); // ts.net dropped (generic recognizer)
   assert(!r.unambiguous.includes("root")); // generic user dropped
-  // review = hostnames, product names filtered
-  assertEquals(r.review, ["acmehost"]);
+  // review = ALL clean-slug hostnames (in-inventory is sufficient → nothing dropped)
+  assertEquals(r.review, ["acmehost", "rb4011"]);
+  assertEquals(r.productLike, ["rb4011"]); // advisory skip-hint, still present in review
   // diff vs current
   assert(!r.newUnambiguous.includes("example.co.nz")); // already known
   assert(r.newUnambiguous.includes("alice"));
