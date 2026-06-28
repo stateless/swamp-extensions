@@ -73,7 +73,7 @@ Deno.test("getConfig: writes a config resource from the container config", async
         cores: 1,
         memory: 512,
         rootfs: "local-zfs:8",
-        net0: "name=eth0,bridge=vmbr1,ip=10.20.0.11/24",
+        net0: "name=eth0,bridge=vmbr1,ip=203.0.113.11/24",
         tags: "swamp",
       },
     });

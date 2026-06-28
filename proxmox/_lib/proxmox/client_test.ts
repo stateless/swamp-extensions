@@ -19,7 +19,7 @@ const sshGlobal = GlobalArgsSchema.parse({
   transport: {
     kind: "ssh",
     node: "pve1",
-    host: "10.0.0.10",
+    host: "198.51.100.10",
     proxyCommand: "ssh -W [%h]:%p admin@bastion.example",
     identityFile: "/home/u/.ssh/id_example",
   },
@@ -30,7 +30,7 @@ const apiGlobal = GlobalArgsSchema.parse({
   transport: {
     kind: "api",
     node: "pve1",
-    apiUrl: "https://10.0.0.10:8006",
+    apiUrl: "https://198.51.100.10:8006",
     tokenId: "svc@pve!automation",
     tokenSecret: "testsecret",
   },
@@ -104,7 +104,7 @@ Deno.test("buildSshArgv carries ssh options + destination", () => {
   assert(argv.includes("-o"));
   assert(argv.some((a) => a.startsWith("ProxyCommand=")));
   assert(argv.includes("-i"));
-  assert(argv.includes("root@10.0.0.10"));
+  assert(argv.includes("root@198.51.100.10"));
   // remote command is the final argv element
   assert(argv.at(-1)!.startsWith("pvesh get "));
 });
@@ -120,7 +120,7 @@ Deno.test("buildApiCall: GET puts params in query, sets auth header", () => {
   });
   assertEquals(
     url,
-    "https://10.0.0.10:8006/api2/json" +
+    "https://198.51.100.10:8006/api2/json" +
       "/nodes/pve1/qemu/9001/status/current",
   );
   assertEquals(init.method, "GET");

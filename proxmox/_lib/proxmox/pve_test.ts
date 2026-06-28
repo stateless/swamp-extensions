@@ -74,7 +74,7 @@ Deno.test("resizeDiskReq builds a PUT to /resize with disk + size", () => {
 Deno.test("setConfigReq passes config keys through to PUT", () => {
   const req = setConfigReq("pve1", 9001, {
     net0: "virtio,bridge=vmbr3",
-    ipconfig0: "ip=10.10.0.20/24,gw=10.10.0.1",
+    ipconfig0: "ip=192.0.2.20/24,gw=192.0.2.1",
   });
   assertEquals(req.verb, "set");
   assertEquals(req.path, "/nodes/pve1/qemu/9001/config");
@@ -234,12 +234,12 @@ Deno.test("extractIpv4 returns first non-loopback IPv4", () => {
         name: "eth0",
         "ip-addresses": [
           { "ip-address-type": "ipv6", "ip-address": "fe80::1" },
-          { "ip-address-type": "ipv4", "ip-address": "10.10.0.20" },
+          { "ip-address-type": "ipv4", "ip-address": "192.0.2.20" },
         ],
       },
     ],
   };
-  assertEquals(extractIpv4(data), "10.10.0.20");
+  assertEquals(extractIpv4(data), "192.0.2.20");
   assertEquals(extractIpv4({ result: [] }), undefined);
   assertEquals(extractIpv4(null), undefined);
 });

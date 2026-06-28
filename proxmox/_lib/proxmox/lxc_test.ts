@@ -139,9 +139,9 @@ Deno.test("extractCtConfigIpv4 reads a static IP from netN, skips dhcp/loopback"
   assertEquals(
     extractCtConfigIpv4({
       net0: "name=eth0,bridge=vmbr0,ip=dhcp",
-      net1: "name=eth1,bridge=vmbr3,ip=10.10.0.21/24",
+      net1: "name=eth1,bridge=vmbr3,ip=192.0.2.21/24",
     }),
-    "10.10.0.21",
+    "192.0.2.21",
   );
   assertEquals(
     extractCtConfigIpv4({ net0: "name=eth0,bridge=vmbr0,ip=dhcp" }),
@@ -206,7 +206,7 @@ Deno.test("bridgesFromConfig extracts unique bridges from netN entries", () => {
   assertEquals(
     bridgesFromConfig({
       net0: "name=eth0,bridge=vmbr1,ip=203.0.113.18/28,gw=203.0.113.30",
-      net1: "name=eth1,bridge=vmbr3,ip=10.10.0.21/24",
+      net1: "name=eth1,bridge=vmbr3,ip=192.0.2.21/24",
       nameserver: "1.1.1.1",
     }),
     ["vmbr1", "vmbr3"],
