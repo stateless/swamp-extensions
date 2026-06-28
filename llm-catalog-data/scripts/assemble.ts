@@ -45,6 +45,26 @@ const EntrySchema: any = await (async () => {
   );
 })();
 
+// The @stateless/redaction gate primitive — the SAME recognizers the system gate
+// uses, imported so §5d is a CONSUMER, not a 4th copy of the regex. Portable
+// across the source-tree and published-mirror layouts.
+// deno-lint-ignore no-explicit-any
+const redaction: any = await (async () => {
+  for (
+    const p of [
+      "../../extensions/models/redaction/redaction.ts",
+      "../../redaction/redaction.ts",
+    ]
+  ) {
+    try {
+      return await import(new URL(p, import.meta.url).href);
+    } catch { /* try the next layout */ }
+  }
+  throw new Error(
+    "redaction not found — looked in extensions/models/redaction/ and redaction/",
+  );
+})();
+
 const ROOT = dirname(dirname(fromFileUrl(import.meta.url))); // llm-catalog-data/
 const SCRIPTS = join(ROOT, "scripts");
 
@@ -339,40 +359,25 @@ for (const l of loaded) {
 //     too-broad pattern fails on legitimate prose — anchor on IPs and the private
 //     denylist's unambiguously-owned names.
 if (!overlayDir) {
-  // GENERIC structural patterns — inherently private but NOT identity-revealing,
-  // so safe to ship in this (published) script. Full 4-octet quad only: a bare
-  // "10.3." or a version "10.3.2" is NOT an IP and must not trip the gate.
-  const checks: Array<[string, RegExp]> = [
-    ["private IPv4", /\b(?:10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])(?:\.\d{1,3}){2})\b/],
-    ["tailnet host", /\b[\w-]+\.ts\.net\b/i],
-  ];
-  // SPECIFIC owned identifiers (fleet hostnames, people) are loaded from a PRIVATE
-  // file so this published script never itself enumerates the fleet. The list
-  // lives in the private overlay tree (never rsync'd to the public mirror). One
-  // term per line, '#' comments; matched CASE-SENSITIVELY on word boundaries so a
-  // tech acronym never trips a similarly-spelled name. Absent (community CI) →
-  // generic patterns only, which is correct: outsiders have no fleet names to leak.
-  const denyPath = join(ROOT, "..", "llm-catalog-data.private", "forbidden-identifiers.txt");
+  // Owned identifiers (fleet hostnames, people) load from the PRIVATE redaction
+  // denylist so this published script never itself enumerates the fleet. Absent
+  // (community CI) → generic recognizers only, which is correct (outsiders have no
+  // fleet names to leak). The recognizers + matching come from @stateless/redaction.
+  const denyPath = join(ROOT, "..", "redaction.private", "forbidden-identifiers.txt");
+  let denyTerms: string[] = [];
   try {
-    const terms = (await Deno.readTextFile(denyPath))
+    denyTerms = (await Deno.readTextFile(denyPath))
       .split("\n").map((s) => s.trim()).filter((s) => s && !s.startsWith("#"));
-    if (terms.length) {
-      const esc = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-      checks.push(["owned identifier", new RegExp(`\\b(?:${esc.join("|")})\\b`)]);
-      console.log(`  anonymization gate: generic patterns + ${terms.length} private denylist terms`);
-    }
+    console.log(`  anonymization gate (redaction): generic recognizers + ${denyTerms.length} private denylist terms`);
   } catch {
-    console.log(`  anonymization gate: generic patterns only (no private denylist found)`);
+    console.log(`  anonymization gate (redaction): generic recognizers only (no private denylist found)`);
   }
+  const recs = redaction.buildRecognizers(denyTerms);
   for (const l of loaded) {
-    const hay = JSON.stringify(l.entry);
-    for (const [label, re] of checks) {
-      const m = hay.match(re);
-      if (m) {
-        errors.push(
-          `${l.file} [${l.id}]: anonymization gate — ${label} "${m[0]}" must not ship public; sanitise to a public class/attribution (overlay holds private measurements)`,
-        );
-      }
+    for (const h of redaction.scanText(JSON.stringify(l.entry), recs)) {
+      errors.push(
+        `${l.file} [${l.id}]: anonymization gate — ${h.rule} "${h.match}" must not ship public; sanitise to a public class/attribution (overlay holds private measurements)`,
+      );
     }
   }
 }

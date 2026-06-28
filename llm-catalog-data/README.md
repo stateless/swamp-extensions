@@ -51,7 +51,7 @@ deno run --allow-read --allow-write scripts/assemble.ts
 # 2. Belt-and-suspenders: the gate above scans catalog ENTRIES; also scan the
 #    non-YAML files that ride along (README, artifacts/) against the same private
 #    denylist + generic IP/tailnet patterns. Must print nothing.
-DENY=../llm-catalog-data.private/forbidden-identifiers.txt
+DENY=../redaction.private/forbidden-identifiers.txt
 # private-RANGE IPv4 only (full quad) — 0.0.0.0/public IPs in serve commands are fine
 PRIV='\b(10(\.[0-9]{1,3}){3}|192\.168(\.[0-9]{1,3}){2}|172\.(1[6-9]|2[0-9]|3[01])(\.[0-9]{1,3}){2}|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])(\.[0-9]{1,3}){2})\b'
 grep -rEnI -f <(grep -v '^#' "$DENY" | sed '/^$/d') \
@@ -68,7 +68,7 @@ cd /home/swamp/swamp-extensions && git add llm-catalog-data/ \
 ```
 
 **The private denylist.** Owned hostnames and people are listed in
-`llm-catalog-data.private/forbidden-identifiers.txt` (the private overlay tree,
+`redaction.private/forbidden-identifiers.txt` (the private overlay tree,
 never published). The full name-gate runs only where that file is present (our
 pre-publish build); a community CI checkout without it still enforces the generic
 IP/tailnet patterns — correct, since outsiders have no fleet names to leak.

@@ -1,0 +1,109 @@
+# DeepSeek-V4-Flash-180B (REAP) — expert-pruned derivative of DeepSeek-V4-Flash.
+# DISTINCT MODEL, not a quant access-path: the architecture changes (160 routed
+# experts vs the base's 256), so it gets its own entry with a derives-from link.
+# Single-DGX-Spark target. Community (0xSero). Public.
+
+- id: model-deepseek-v4-flash-180b-reap
+  kind: model
+  name: DeepSeek-V4-Flash-180B (REAP)
+  summary: REAP expert-pruned DeepSeek-V4-Flash (160 of 256 routed experts kept) -> 180B; fits 1 DGX Spark @200K; community (0xSero)
+  visibility: public
+  labels: [deepseek, moe, expert-pruning, reap, long-context, dgx-spark, derivative]
+  relations:
+    - { rel: derives-from, target: model-deepseek-v4-flash }
+  facets:
+    architecture:
+      hfRepo: 0xSero/DeepSeek-V4-Flash-180B
+      modelType: deepseek_v4
+      params: "180B"
+      activeParams: "~13B" # 6 routed experts/token — same active count as base; pruning cuts TOTAL not active
+      layers: 43
+      experts: "6/token of 160 routed (REAP-pruned from 256) + 1 shared"
+      nativeContext: 65536
+      extendedContext: 1048576 # 200K validated end-to-end
+      attention: "Sparse MLA (preserved from base)"
+      license: MIT # tooling MIT; weights license inherited from base DeepSeek-V4-Flash
+      modality: [text]
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card"
+        verification: cited
+        confidence: medium
+    footprint:
+      basis: weights-only
+      quants:
+        - { quant: "nvfp4/mxfp4 experts + fp8-KV", memGB: 97, note: "103GB BF16 on-disk; loads ~96.66 GiB; ~6GB KV on 121GB-usable Spark" }
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card"
+        verification: cited
+        confidence: medium
+    runsOn:
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM @ 1x DGX Spark (GB10) — REAP k160"
+        quant: "NVFP4/MXFP4 expert weights + FP8 KV cache"
+        format: safetensors
+        techniques: [technique-reap, technique-nvfp4, technique-mxfp4, technique-fp8, technique-kv-quant-fp4, technique-mtp, technique-context-extension]
+        units: 1
+        download:
+          hfRepo: 0xSero/DeepSeek-V4-Flash-180B
+          revision: null
+          format: safetensors
+          downloadCmd: "vllm serve 0xSero/DeepSeek-V4-Flash-180B  # or: setup.sh full k160 (github.com/0xSero/deepseek-spark)"
+          packager: 0xSero
+        config:
+          maxModelLen: 200000
+          kvCacheDtype: fp8
+          maxNumBatchedTokens: 4096
+          # profile configs/k160-mtp2-200k.env; speculative num_speculative_tokens=2
+        command: "vllm serve 0xSero/DeepSeek-V4-Flash-180B"
+        procedure: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B"
+        outcome:
+          context: { tokens: 200000 } # 1M architectural; 200K validated e2e
+          measurements:
+            - { machine: "1x DGX Spark GB10", prefillTokS: 514.1, note: "prefill" }
+            - { machine: "1x DGX Spark GB10", decodeTokS: 24.4, ttft: "362.6s", note: "long-needle @200K" }
+            - { machine: "1x DGX Spark GB10", decodeTokS: 18.9, note: "long-coding @200K" }
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card + github.com/0xSero/deepseek-spark"
+            verification: cited
+            confidence: medium
+        claims:
+          - kind: note
+            body: >-
+              KEY SINGLE-SPARK COMPARISON: REAP (Router-Enhanced Activation Pruning) drops
+              256->160 routed experts (cold-expert removal by router activation), shrinking
+              284B->180B so 200K context runs on ONE DGX Spark — the base needs TWO Sparks
+              in TP for the same depth. Prefill 514 tok/s, decode ~18.9-24.4 tok/s, TTFT
+              362s @200K (MTP-2, FP8 KV). The competing single-box path (ds4 q2 GGUF) trades
+              quality via 2-bit experts instead of pruning; this trades it via fewer experts.
+            provenance:
+              asOf: "2026-06-28"
+              source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B + github.com/0xSero/deepseek-spark"
+              verification: cited
+              confidence: medium
+  claims:
+    - kind: caveat
+      body: >-
+        STRUCTURALLY pruned, not just quantized — removing experts is (potentially)
+        quality-lossy in a different way than quant, and NO task-eval (toolEval/IFEval)
+        is published for the k160 prune. Compare quality vs the base FP8 2xSpark path
+        (toolEvalBench 89/100) before trusting the single-box win.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card"
+        verification: cited
+        confidence: medium
+    - kind: caveat
+      body: >-
+        DISCREPANCY in the card's param math: it describes REAP applied to a "641B base"
+        pruned to "180B", which does not reconcile with DeepSeek-V4-Flash's 284B total /
+        13B active. Recorded as the repo states (180B total, 160 routed experts, ~13B
+        active); the 641B figure may reference full DeepSeek-V4 (not Flash). VERIFY total
+        vs active param count against config.json before relying on the footprint.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card (internally inconsistent)"
+        verification: cited
+        confidence: low

@@ -430,6 +430,47 @@
         config-QUALITY factor: measure long-context quality before relying on it.
       provenance: { asOf: "2026-06-19", source: "SnapKV / H2O / StreamingLLM", verification: cited }
 
+- id: technique-kv-quant-fp4
+  kind: technique
+  name: KV-cache quant (fp4/fp8, staggered)
+  summary: Quantize the KV cache to fp4/fp8 to ~halve KV bytes/token; MLX uses a staggered (mixed-precision) cache
+  visibility: public
+  labels: [kv-cache, memory, quantization, fp4, mxfp4, mlx, turboquant]
+  facets: { qualityImpact: lossy } # KV-quant is lossy in general; staggered-fp4 reported ~lossless vs fp8 on MLX, unverified on CUDA
+  relations:
+    - { rel: refines, target: technique-kv-quant-bf16 }
+  claims:
+    - kind: finding
+      body: >-
+        KV-cache PRECISION is a second lever on KV capacity, distinct from WEIGHT
+        quant: dropping the cache fp8 → fp4 ~halves KV bytes/token — ~doubling
+        context length or batch at fixed VRAM — with a small speed gain. On
+        Mac/MLX with TurboQuant, mxfp4 vs mxfp8 KV measured "identical" output at
+        half the RAM (TQ smarter than blunt-fp4). MLX (vMLX, derived from vLLM /
+        oMLX) uses a STAGGERED cache: different parts quantized at different
+        precisions rather than flat-fp4-everything (cf. Unsloth Dynamic, but for
+        the CACHE not the weights). Directly relaxes the KV-capacity gate that
+        drives context compaction.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://forums.developer.nvidia.com/t/deepseek-v4-flash-aiden-recipe-...-372268/196"
+        verification: cited
+        confidence: low
+    - kind: caveat
+      body: >-
+        MLX/Metal only and anecdotal — "never tried on Sparks" (GB10/CUDA); the
+        mxfp4/staggered-KV path is NOT yet in vLLM ("hopefully soon it comes to
+        vllm"). Actionable on GB10 TODAY = vLLM fp8 KV cache
+        (`kv_cache_dtype=fp8`, already used by the DeepSeek-v4-Flash recipe — see
+        technique-fp8 + NVIDIA forum 372268); mxfp4/staggered KV is futures.
+        Worth a measured comparison (fp8-KV on vs off) against the prefill ×
+        prefix-cache-hit gate before relying on it.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://forums.developer.nvidia.com/t/deepseek-v4-flash-aiden-recipe-...-372268/196 (post 196)"
+        verification: cited
+        confidence: low
+
 # PARALLELISM approaches — distribute compute across GPUs/nodes. All LOSSLESS
 # (they change WHERE compute runs, never the output). The choice is driven by
 # interconnect bandwidth and model size; captured in recipe.serving + referenced.
@@ -526,3 +567,28 @@
         middle"). NOT all models extend: some hard-cap (Gemma e2b clamps to 128k).
         Verify long-context quality at the target length, don't assume.
       provenance: { asOf: "2026-06-19", source: "RoPE/YaRN + vLLM long-context", verification: cited }
+
+# STRUCTURAL pruning — change the architecture (remove params), not the encoding.
+- id: technique-reap
+  kind: technique
+  name: REAP (Router-Enhanced Activation Pruning)
+  summary: Structured MoE pruning — drop cold routed experts by router activation; shrinks TOTAL params, lossy
+  visibility: public
+  labels: [pruning, moe, expert-pruning, reap]
+  facets: { qualityImpact: lossy }
+  claims:
+    - kind: note
+      body: >-
+        REAP removes "cold" routed experts from a sparse MoE by their router
+        activation patterns (keep the K most-used per layer), shrinking TOTAL
+        params while leaving the per-token ACTIVE expert count unchanged. Distinct
+        from quant (changes the architecture, not the encoding) and from SSD expert
+        streaming (removes experts vs paging them). Used to fit DeepSeek-V4-Flash on
+        ONE DGX Spark: 256→160 routed experts (k160) → 284B→180B
+        (model-deepseek-v4-flash-180b-reap). Structurally lossy — verify task
+        quality; no toolEval/IFEval published for the k160 prune.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B + github.com/0xSero/deepseek-spark"
+        verification: cited
+        confidence: low

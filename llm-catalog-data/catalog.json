@@ -714,6 +714,16 @@
         },
         {
           "kind": "note",
+          "body": "OFFICIAL benchmark suite (model card / arXiv 2606.19348; reported via the DeepSeek-V4-Flash-DSpark card = same checkpoint; Think modes). Knowledge/reasoning: MMLU-Pro 86.2, GPQA Diamond 88.1, SimpleQA-Verified 34.1. Code: LiveCodeBench 91.6, Codeforces 3052, HumanEval 69.5. SWE: SWE-Verified 79.0, SWE-Pro 52.6. Math: HMMT Feb-2026 94.8, IMOAnswerBench 88.4. Long-context: MRCR-1M 78.7, CorpusQA-1M 60.5. These are the QUALITY CEILING (reference precision) — local quants/prunes should be read against them, not assumed equal. NOTE the HumanEval mismatch: this card's 69.5 is BELOW canada-quant W4A16's reported 78-80 — different harness/think-mode/conditions, so cross-variant single-benchmark numbers are NOT directly comparable.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card + arXiv 2606.19348",
+            "confidence": "medium",
+            "verification": "authoritative"
+          }
+        },
+        {
+          "kind": "note",
           "body": "VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active, 43 layers, 256 routed experts + 1 shared, 6/token, MLA attention, native 65536 extended to 1M via YaRN (factor 16), MIT. Published weights are FP4 (MoE experts) + FP8 mixed. Replaces the earlier UNVERIFIED placeholder.",
           "provenance": {
             "asOf": "2026-06-20",
@@ -903,6 +913,204 @@
                   "asOf": "2026-06-19",
                   "source": "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)",
                   "verification": "cited"
+                }
+              }
+            ]
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "vLLM/SGLang @ DGX Spark — official DeepSeek-V4-Flash-DSpark",
+            "quant": "FP4 (MoE experts) + FP8 mixed (official)",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-mxfp4",
+              "technique-fp8",
+              "technique-mtp",
+              "technique-prefix-caching",
+              "technique-context-extension"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "deepseek-ai/DeepSeek-V4-Flash-DSpark",
+              "revision": null,
+              "format": "safetensors",
+              "downloadCmd": "hf download deepseek-ai/DeepSeek-V4-Flash-DSpark"
+            },
+            "config": {
+              "apiSpec": "openai-compat"
+            },
+            "command": "vllm serve deepseek-ai/DeepSeek-V4-Flash-DSpark # or: python3 -m sglang.launch_server --model-path deepseek-ai/DeepSeek-V4-Flash-DSpark --host 0.0.0.0 --port 30000 # or: docker model run hf.co/deepseek-ai/DeepSeek-V4-Flash-DSpark",
+            "procedure": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark",
+            "outcome": {
+              "context": {
+                "tokens": 1000000
+              },
+              "speed": {
+                "note": "no tok/s on the card; Think-Max reasoning wants >=384K ctx — measure on target Spark"
+              },
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card + arXiv 2606.19348",
+                "verification": "authoritative",
+                "confidence": "medium"
+              }
+            },
+            "claims": [
+              {
+                "kind": "note",
+                "body": "OFFICIAL Spark-tailored variant: \"not a new model — the same checkpoint with an additional speculative decoding module (DeepSpec) attached\" over the FP4(MoE)+FP8-mixed base weights, packaged for single-command vLLM / SGLang / `docker model run`. Contrast the aidendle94 community 2xSpark recipe (ap-deepseek-v4-flash-2spark-vllm) which hand-builds b12x-MoE vLLM and bolts on MTP-2 — DSpark ships the spec-decode module IN the repo and runs from one line. No published Spark tok/s on the card (gap); same 284B/13B/1M/MIT base.",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              }
+            ]
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "vLLM @ 2x DGX Spark — canada-quant W4A16-FP8",
+            "quant": "W4A16 INT4 (routed experts, GPTQ g128) + FP8-block attention + BF16 shared/embed/lm_head",
+            "format": "safetensors",
+            "techniques": [
+              "technique-gptq",
+              "technique-fp8",
+              "technique-tensor-parallel"
+            ],
+            "units": 2,
+            "download": {
+              "hfRepo": "canada-quant/DeepSeek-V4-Flash-W4A16-FP8",
+              "revision": null,
+              "format": "safetensors",
+              "downloadCmd": "hf download canada-quant/DeepSeek-V4-Flash-W4A16-FP8",
+              "packager": "canada-quant"
+            },
+            "config": {
+              "maxModelLen": 16384,
+              "tensorParallel": 2,
+              "gpuMemoryUtilization": 0.92,
+              "kvCacheDtype": "fp8",
+              "blockSize": 256,
+              "maxNumSeqs": 4,
+              "tokenizerMode": "deepseek_v4",
+              "toolCallParser": "deepseek_v4",
+              "reasoningParser": "deepseek_v4",
+              "env": {
+                "VLLM_TRITON_MLA_SPARSE": "1",
+                "VLLM_TRITON_MLA_SPARSE_HEAD_BLOCK_SIZE": "4"
+              },
+              "build": {
+                "image": "jasl/vllm @ branch ds4-sm120-experimental"
+              }
+            },
+            "command": "vllm serve canada-quant/DeepSeek-V4-Flash-W4A16-FP8 --tensor-parallel-size 2 --kv-cache-dtype fp8 --block-size 256 --max-model-len 16384 --max-num-seqs 4 --gpu-memory-utilization 0.92 --tokenizer-mode deepseek_v4 --tool-call-parser deepseek_v4 --enable-auto-tool-choice --reasoning-parser deepseek_v4 --trust-remote-code",
+            "procedure": "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8",
+            "outcome": {
+              "context": {
+                "tokens": 16384
+              },
+              "measurements": [
+                {
+                  "machine": "2x DGX Spark GB10 (TP=2)",
+                  "concurrency": 1,
+                  "decodeTokS": 15.5,
+                  "note": "14-17 tok/s band, bs=1"
+                },
+                {
+                  "machine": "2x RTX PRO 6000 (TP=2)",
+                  "concurrency": 1,
+                  "decodeTokS": 47.5,
+                  "note": "TPOT 20.8ms"
+                },
+                {
+                  "machine": "2x RTX PRO 6000 (TP=2)",
+                  "concurrency": 2,
+                  "decodeTokS": 84,
+                  "note": "TPOT 21.7ms; ~420 tok/s aggregate"
+                }
+              ],
+              "quality": {
+                "gsm8k": "95.1-95.5% (8-shot)",
+                "humanEval": "78-80% (pass@1)",
+                "niah": "4/5 retrieval @256K x2 concurrent (377s)"
+              },
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8 model card",
+                "verification": "cited",
+                "confidence": "medium"
+              }
+            },
+            "claims": [
+              {
+                "kind": "caveat",
+                "body": "~143GB quantized (~3.8x vs ~543GB BF16); fits 2xSpark (128GB unified ea, NVLink-C2C, TP=2). But DGX-Spark decode is only ~14-17 tok/s bs=1 vs ~47-48 tok/s on 2x RTX PRO 6000 at the SAME quant — a memory-bandwidth gap, not a quant gap. NO speculative decode (MTP stripped during GPTQ calibration); the -MTP successor repo restores it for ~1.49x. TP>2 blocked by vLLM #41511 (W4A16 MoE scale-sharding). Needs the jasl/vllm ds4-sm120-experimental branch for SM12.x; default max-model-len is only 16384.",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8 model card",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              }
+            ]
+          },
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "vLLM/SGLang — nvidia DeepSeek-V4-Flash-NVFP4 (tested B200/GB300)",
+            "quant": "NVFP4 (MoE-block linear weights+activations; NVIDIA ModelOpt 0.44.0)",
+            "format": "safetensors",
+            "techniques": [
+              "technique-nvfp4",
+              "technique-fp8",
+              "technique-tensor-parallel",
+              "technique-context-extension"
+            ],
+            "units": 4,
+            "download": {
+              "hfRepo": "nvidia/DeepSeek-V4-Flash-NVFP4",
+              "revision": null,
+              "format": "safetensors",
+              "downloadCmd": "hf download nvidia/DeepSeek-V4-Flash-NVFP4",
+              "packager": "nvidia"
+            },
+            "config": {
+              "tensorParallel": 4,
+              "kvCacheDtype": "fp8"
+            },
+            "command": "vllm serve nvidia/DeepSeek-V4-Flash-NVFP4 --tensor-parallel-size 4 --trust-remote-code --kv-cache-dtype fp8 # SGLang (PR #25820): python3 -m sglang.launch_server --model nvidia/DeepSeek-V4-Flash-NVFP4 --tensor-parallel-size 8 --trust-remote-code",
+            "procedure": "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4",
+            "outcome": {
+              "context": {
+                "tokens": 1000000
+              },
+              "speed": {
+                "note": "no tok/s on card; tested B200/GB300 (NOT Spark)"
+              },
+              "quality": {
+                "gpqaDiamond": "0.894 -> 0.891",
+                "aaLcr": "0.658 -> 0.655",
+                "tau2BenchTelecom": "0.943 -> 0.942",
+                "sciCode": "0.481 -> 0.481",
+                "ifBench": "0.788 -> 0.795"
+              },
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4 model card",
+                "verification": "authoritative",
+                "confidence": "medium"
+              }
+            },
+            "claims": [
+              {
+                "kind": "caveat",
+                "body": "NVIDIA-OFFICIAL NVFP4 reference, the quality-reference FP4 point — but the published recipe is TP=4 (vLLM) / TP=8 (SGLang) on B200/GB300, which EXCEEDS a single GB10's 128GB and is NOT validated on DGX Spark in-card. Only MoE-block linear weights+activations are NVFP4 (rest BF16/FP8). Needs a Spark-fit config (TP=2 + expert offload) before it's a single/dual-Spark path. SIZE NOTE: the HF widget's \"167B params\" (DSpark shows \"165B\") is the safetensors element counter UNDER-counting FP4-packed tensors (2 FP4/uint8 → numel halves for the MoE bulk), NOT true params (284B, same checkpoint) and NOT GB on disk (unpublished; ~140-150GB est, cf. canada-quant's 143GB W4A16).",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4 model card",
+                  "verification": "cited",
+                  "confidence": "medium"
                 }
               }
             ]
@@ -1150,6 +1358,162 @@
                 "verification": "authoritative"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "id": "model-deepseek-v4-flash-180b-reap",
+      "kind": "model",
+      "name": "DeepSeek-V4-Flash-180B (REAP)",
+      "summary": "REAP expert-pruned DeepSeek-V4-Flash (160 of 256 routed experts kept) -> 180B; fits 1 DGX Spark @200K; community (0xSero)",
+      "visibility": "public",
+      "labels": [
+        "deepseek",
+        "moe",
+        "expert-pruning",
+        "reap",
+        "long-context",
+        "dgx-spark",
+        "derivative"
+      ],
+      "relations": [
+        {
+          "rel": "derives-from",
+          "target": "model-deepseek-v4-flash"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "caveat",
+          "body": "STRUCTURALLY pruned, not just quantized — removing experts is (potentially) quality-lossy in a different way than quant, and NO task-eval (toolEval/IFEval) is published for the k160 prune. Compare quality vs the base FP8 2xSpark path (toolEvalBench 89/100) before trusting the single-box win.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "DISCREPANCY in the card's param math: it describes REAP applied to a \"641B base\" pruned to \"180B\", which does not reconcile with DeepSeek-V4-Flash's 284B total / 13B active. Recorded as the repo states (180B total, 160 routed experts, ~13B active); the 641B figure may reference full DeepSeek-V4 (not Flash). VERIFY total vs active param count against config.json before relying on the footprint.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card (internally inconsistent)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "Sparse MLA (preserved from base)",
+          "params": "180B",
+          "activeParams": "~13B",
+          "nativeContext": 65536,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "0xSero/DeepSeek-V4-Flash-180B",
+          "modelType": "deepseek_v4",
+          "layers": 43,
+          "experts": "6/token of 160 routed (REAP-pruned from 256) + 1 shared",
+          "extendedContext": 1048576,
+          "license": "MIT",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        },
+        "footprint": {
+          "basis": "weights-only",
+          "quants": [
+            {
+              "quant": "nvfp4/mxfp4 experts + fp8-KV",
+              "memGB": 97,
+              "note": "103GB BF16 on-disk; loads ~96.66 GiB; ~6GB KV on 121GB-usable Spark"
+            }
+          ],
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        },
+        "runsOn": [
+          {
+            "endpoint": "endpoint-vllm-dgx-spark",
+            "name": "vLLM @ 1x DGX Spark (GB10) — REAP k160",
+            "quant": "NVFP4/MXFP4 expert weights + FP8 KV cache",
+            "format": "safetensors",
+            "techniques": [
+              "technique-reap",
+              "technique-nvfp4",
+              "technique-mxfp4",
+              "technique-fp8",
+              "technique-kv-quant-fp4",
+              "technique-mtp",
+              "technique-context-extension"
+            ],
+            "units": 1,
+            "download": {
+              "hfRepo": "0xSero/DeepSeek-V4-Flash-180B",
+              "revision": null,
+              "format": "safetensors",
+              "downloadCmd": "vllm serve 0xSero/DeepSeek-V4-Flash-180B  # or: setup.sh full k160 (github.com/0xSero/deepseek-spark)",
+              "packager": "0xSero"
+            },
+            "config": {
+              "maxModelLen": 200000,
+              "kvCacheDtype": "fp8",
+              "maxNumBatchedTokens": 4096
+            },
+            "command": "vllm serve 0xSero/DeepSeek-V4-Flash-180B",
+            "procedure": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B",
+            "outcome": {
+              "context": {
+                "tokens": 200000
+              },
+              "measurements": [
+                {
+                  "machine": "1x DGX Spark GB10",
+                  "prefillTokS": 514.1,
+                  "note": "prefill"
+                },
+                {
+                  "machine": "1x DGX Spark GB10",
+                  "decodeTokS": 24.4,
+                  "ttft": "362.6s",
+                  "note": "long-needle @200K"
+                },
+                {
+                  "machine": "1x DGX Spark GB10",
+                  "decodeTokS": 18.9,
+                  "note": "long-coding @200K"
+                }
+              ],
+              "provenance": {
+                "asOf": "2026-06-28",
+                "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B model card + github.com/0xSero/deepseek-spark",
+                "verification": "cited",
+                "confidence": "medium"
+              }
+            },
+            "claims": [
+              {
+                "kind": "note",
+                "body": "KEY SINGLE-SPARK COMPARISON: REAP (Router-Enhanced Activation Pruning) drops 256->160 routed experts (cold-expert removal by router activation), shrinking 284B->180B so 200K context runs on ONE DGX Spark — the base needs TWO Sparks in TP for the same depth. Prefill 514 tok/s, decode ~18.9-24.4 tok/s, TTFT 362s @200K (MTP-2, FP8 KV). The competing single-box path (ds4 q2 GGUF) trades quality via 2-bit experts instead of pruning; this trades it via fewer experts.",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B + github.com/0xSero/deepseek-spark",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              }
+            ]
           }
         ]
       }
@@ -11105,6 +11469,53 @@
       }
     },
     {
+      "id": "technique-kv-quant-fp4",
+      "kind": "technique",
+      "name": "KV-cache quant (fp4/fp8, staggered)",
+      "summary": "Quantize the KV cache to fp4/fp8 to ~halve KV bytes/token; MLX uses a staggered (mixed-precision) cache",
+      "visibility": "public",
+      "labels": [
+        "kv-cache",
+        "memory",
+        "quantization",
+        "fp4",
+        "mxfp4",
+        "mlx",
+        "turboquant"
+      ],
+      "relations": [
+        {
+          "rel": "refines",
+          "target": "technique-kv-quant-bf16"
+        }
+      ],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "KV-cache PRECISION is a second lever on KV capacity, distinct from WEIGHT quant: dropping the cache fp8 → fp4 ~halves KV bytes/token — ~doubling context length or batch at fixed VRAM — with a small speed gain. On Mac/MLX with TurboQuant, mxfp4 vs mxfp8 KV measured \"identical\" output at half the RAM (TQ smarter than blunt-fp4). MLX (vMLX, derived from vLLM / oMLX) uses a STAGGERED cache: different parts quantized at different precisions rather than flat-fp4-everything (cf. Unsloth Dynamic, but for the CACHE not the weights). Directly relaxes the KV-capacity gate that drives context compaction.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://forums.developer.nvidia.com/t/deepseek-v4-flash-aiden-recipe-...-372268/196",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "caveat",
+          "body": "MLX/Metal only and anecdotal — \"never tried on Sparks\" (GB10/CUDA); the mxfp4/staggered-KV path is NOT yet in vLLM (\"hopefully soon it comes to vllm\"). Actionable on GB10 TODAY = vLLM fp8 KV cache (`kv_cache_dtype=fp8`, already used by the DeepSeek-v4-Flash recipe — see technique-fp8 + NVIDIA forum 372268); mxfp4/staggered KV is futures. Worth a measured comparison (fp8-KV on vs off) against the prefill × prefix-cache-hit gate before relying on it.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://forums.developer.nvidia.com/t/deepseek-v4-flash-aiden-recipe-...-372268/196 (post 196)",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
+      }
+    },
+    {
       "id": "technique-moe-expert-2bit",
       "kind": "technique",
       "name": "2-bit routed-MoE-expert quant (asymmetric)",
@@ -11389,6 +11800,35 @@
       ],
       "facets": {
         "qualityImpact": "neutral"
+      }
+    },
+    {
+      "id": "technique-reap",
+      "kind": "technique",
+      "name": "REAP (Router-Enhanced Activation Pruning)",
+      "summary": "Structured MoE pruning — drop cold routed experts by router activation; shrinks TOTAL params, lossy",
+      "visibility": "public",
+      "labels": [
+        "pruning",
+        "moe",
+        "expert-pruning",
+        "reap"
+      ],
+      "relations": [],
+      "claims": [
+        {
+          "kind": "note",
+          "body": "REAP removes \"cold\" routed experts from a sparse MoE by their router activation patterns (keep the K most-used per layer), shrinking TOTAL params while leaving the per-token ACTIVE expert count unchanged. Distinct from quant (changes the architecture, not the encoding) and from SSD expert streaming (removes experts vs paging them). Used to fit DeepSeek-V4-Flash on ONE DGX Spark: 256→160 routed experts (k160) → 284B→180B (model-deepseek-v4-flash-180b-reap). Structurally lossy — verify task quality; no toolEval/IFEval published for the k160 prune.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "https://huggingface.co/0xSero/DeepSeek-V4-Flash-180B + github.com/0xSero/deepseek-spark",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
+      "facets": {
+        "qualityImpact": "lossy"
       }
     },
     {

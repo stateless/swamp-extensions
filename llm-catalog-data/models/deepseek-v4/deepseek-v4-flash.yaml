@@ -140,6 +140,164 @@
               asOf: "2026-06-19"
               source: "https://forums.developer.nvidia.com/t/372268 (aidendle94 / 0rand)"
               verification: cited
+      # ── vLLM/SGLang @ DGX Spark — OFFICIAL DeepSeek-V4-Flash-DSpark repo ──
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM/SGLang @ DGX Spark — official DeepSeek-V4-Flash-DSpark"
+        quant: "FP4 (MoE experts) + FP8 mixed (official)"
+        format: safetensors
+        techniques: [technique-nvfp4, technique-mxfp4, technique-fp8, technique-mtp, technique-prefix-caching, technique-context-extension]
+        units: 1
+        download:
+          hfRepo: deepseek-ai/DeepSeek-V4-Flash-DSpark
+          revision: null # TODO pin commit/tag
+          format: safetensors
+          downloadCmd: "hf download deepseek-ai/DeepSeek-V4-Flash-DSpark"
+        config:
+          apiSpec: openai-compat
+        command: >-
+          vllm serve deepseek-ai/DeepSeek-V4-Flash-DSpark
+          # or: python3 -m sglang.launch_server --model-path deepseek-ai/DeepSeek-V4-Flash-DSpark --host 0.0.0.0 --port 30000
+          # or: docker model run hf.co/deepseek-ai/DeepSeek-V4-Flash-DSpark
+        procedure: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark"
+        outcome:
+          context: { tokens: 1000000 }
+          speed: { note: "no tok/s on the card; Think-Max reasoning wants >=384K ctx — measure on target Spark" }
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card + arXiv 2606.19348"
+            verification: authoritative
+            confidence: medium
+        claims:
+          - kind: note
+            body: >-
+              OFFICIAL Spark-tailored variant: "not a new model — the same checkpoint
+              with an additional speculative decoding module (DeepSpec) attached" over the
+              FP4(MoE)+FP8-mixed base weights, packaged for single-command vLLM / SGLang /
+              `docker model run`. Contrast the aidendle94 community 2xSpark recipe
+              (ap-deepseek-v4-flash-2spark-vllm) which hand-builds b12x-MoE vLLM and bolts
+              on MTP-2 — DSpark ships the spec-decode module IN the repo and runs from one
+              line. No published Spark tok/s on the card (gap); same 284B/13B/1M/MIT base.
+            provenance:
+              asOf: "2026-06-28"
+              source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card"
+              verification: cited
+              confidence: medium
+      # ── vLLM @ 2x DGX Spark — canada-quant W4A16+FP8 (GPTQ MoE) ──────────
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM @ 2x DGX Spark — canada-quant W4A16-FP8"
+        quant: "W4A16 INT4 (routed experts, GPTQ g128) + FP8-block attention + BF16 shared/embed/lm_head"
+        format: safetensors
+        techniques: [technique-gptq, technique-fp8, technique-tensor-parallel]
+        units: 2
+        download:
+          hfRepo: canada-quant/DeepSeek-V4-Flash-W4A16-FP8
+          revision: null
+          format: safetensors
+          downloadCmd: "hf download canada-quant/DeepSeek-V4-Flash-W4A16-FP8"
+          packager: canada-quant
+        config:
+          maxModelLen: 16384 # card default; raises toward 1M with adjusted config
+          tensorParallel: 2
+          gpuMemoryUtilization: 0.92
+          kvCacheDtype: fp8
+          blockSize: 256
+          maxNumSeqs: 4
+          tokenizerMode: deepseek_v4
+          toolCallParser: deepseek_v4
+          reasoningParser: deepseek_v4
+          env:
+            VLLM_TRITON_MLA_SPARSE: "1"
+            VLLM_TRITON_MLA_SPARSE_HEAD_BLOCK_SIZE: "4"
+          build:
+            image: "jasl/vllm @ branch ds4-sm120-experimental"
+        command: >-
+          vllm serve canada-quant/DeepSeek-V4-Flash-W4A16-FP8 --tensor-parallel-size 2
+          --kv-cache-dtype fp8 --block-size 256 --max-model-len 16384 --max-num-seqs 4
+          --gpu-memory-utilization 0.92 --tokenizer-mode deepseek_v4
+          --tool-call-parser deepseek_v4 --enable-auto-tool-choice
+          --reasoning-parser deepseek_v4 --trust-remote-code
+        procedure: "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8"
+        outcome:
+          context: { tokens: 16384 } # default; up to 1M with config
+          measurements:
+            - { machine: "2x DGX Spark GB10 (TP=2)", concurrency: 1, decodeTokS: 15.5, note: "14-17 tok/s band, bs=1" }
+            - { machine: "2x RTX PRO 6000 (TP=2)", concurrency: 1, decodeTokS: 47.5, note: "TPOT 20.8ms" }
+            - { machine: "2x RTX PRO 6000 (TP=2)", concurrency: 2, decodeTokS: 84.0, note: "TPOT 21.7ms; ~420 tok/s aggregate" }
+          quality:
+            gsm8k: "95.1-95.5% (8-shot)"
+            humanEval: "78-80% (pass@1)"
+            niah: "4/5 retrieval @256K x2 concurrent (377s)"
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8 model card"
+            verification: cited
+            confidence: medium
+        claims:
+          - kind: caveat
+            body: >-
+              ~143GB quantized (~3.8x vs ~543GB BF16); fits 2xSpark (128GB unified ea,
+              NVLink-C2C, TP=2). But DGX-Spark decode is only ~14-17 tok/s bs=1 vs ~47-48
+              tok/s on 2x RTX PRO 6000 at the SAME quant — a memory-bandwidth gap, not a
+              quant gap. NO speculative decode (MTP stripped during GPTQ calibration); the
+              -MTP successor repo restores it for ~1.49x. TP>2 blocked by vLLM #41511
+              (W4A16 MoE scale-sharding). Needs the jasl/vllm ds4-sm120-experimental
+              branch for SM12.x; default max-model-len is only 16384.
+            provenance:
+              asOf: "2026-06-28"
+              source: "https://huggingface.co/canada-quant/DeepSeek-V4-Flash-W4A16-FP8 model card"
+              verification: cited
+              confidence: medium
+      # ── vLLM/SGLang — nvidia NVFP4 (reference; tested B200/GB300, not Spark) ──
+      - endpoint: endpoint-vllm-dgx-spark
+        name: "vLLM/SGLang — nvidia DeepSeek-V4-Flash-NVFP4 (tested B200/GB300)"
+        quant: "NVFP4 (MoE-block linear weights+activations; NVIDIA ModelOpt 0.44.0)"
+        format: safetensors
+        techniques: [technique-nvfp4, technique-fp8, technique-tensor-parallel, technique-context-extension]
+        units: 4 # TP=4 (vLLM) / TP=8 (SGLang) — exceeds a single GB10
+        download:
+          hfRepo: nvidia/DeepSeek-V4-Flash-NVFP4
+          revision: null
+          format: safetensors
+          downloadCmd: "hf download nvidia/DeepSeek-V4-Flash-NVFP4"
+          packager: nvidia
+        config:
+          tensorParallel: 4
+          kvCacheDtype: fp8
+        command: >-
+          vllm serve nvidia/DeepSeek-V4-Flash-NVFP4 --tensor-parallel-size 4 --trust-remote-code --kv-cache-dtype fp8
+          # SGLang (PR #25820): python3 -m sglang.launch_server --model nvidia/DeepSeek-V4-Flash-NVFP4 --tensor-parallel-size 8 --trust-remote-code
+        procedure: "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4"
+        outcome:
+          context: { tokens: 1000000 }
+          speed: { note: "no tok/s on card; tested B200/GB300 (NOT Spark)" }
+          quality: # baseline -> NVFP4 (near-lossless, <=0.3pp); temp 1.0 top_p 1.0 max 384k tok
+            gpqaDiamond: "0.894 -> 0.891"
+            aaLcr: "0.658 -> 0.655"
+            tau2BenchTelecom: "0.943 -> 0.942"
+            sciCode: "0.481 -> 0.481"
+            ifBench: "0.788 -> 0.795" # NVFP4 slightly higher = noise
+          provenance:
+            asOf: "2026-06-28"
+            source: "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4 model card"
+            verification: authoritative
+            confidence: medium
+        claims:
+          - kind: caveat
+            body: >-
+              NVIDIA-OFFICIAL NVFP4 reference, the quality-reference FP4 point —
+              but the published recipe is TP=4 (vLLM) / TP=8 (SGLang) on B200/GB300, which
+              EXCEEDS a single GB10's 128GB and is NOT validated on DGX Spark in-card.
+              Only MoE-block linear weights+activations are NVFP4 (rest BF16/FP8). Needs a
+              Spark-fit config (TP=2 + expert offload) before it's a single/dual-Spark path.
+              SIZE NOTE: the HF widget's "167B params" (DSpark shows "165B") is the
+              safetensors element counter UNDER-counting FP4-packed tensors (2 FP4/uint8 →
+              numel halves for the MoE bulk), NOT true params (284B, same checkpoint) and
+              NOT GB on disk (unpublished; ~140-150GB est, cf. canada-quant's 143GB W4A16).
+            provenance:
+              asOf: "2026-06-28"
+              source: "https://huggingface.co/nvidia/DeepSeek-V4-Flash-NVFP4 model card"
+              verification: cited
+              confidence: medium
       # ── DwarfStar (ds4) @ Mac (96/128GB, Metal) ──────────────────────────
       # was ap-deepseek-v4-flash-ds4-mac
       - endpoint: endpoint-ds4-mac
@@ -346,6 +504,22 @@
         source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"
         verification: cited
         confidence: low # subjective community verdicts
+    - kind: note
+      body: >-
+        OFFICIAL benchmark suite (model card / arXiv 2606.19348; reported via the
+        DeepSeek-V4-Flash-DSpark card = same checkpoint; Think modes). Knowledge/reasoning:
+        MMLU-Pro 86.2, GPQA Diamond 88.1, SimpleQA-Verified 34.1. Code: LiveCodeBench 91.6,
+        Codeforces 3052, HumanEval 69.5. SWE: SWE-Verified 79.0, SWE-Pro 52.6. Math: HMMT
+        Feb-2026 94.8, IMOAnswerBench 88.4. Long-context: MRCR-1M 78.7, CorpusQA-1M 60.5.
+        These are the QUALITY CEILING (reference precision) — local quants/prunes should be
+        read against them, not assumed equal. NOTE the HumanEval mismatch: this card's 69.5
+        is BELOW canada-quant W4A16's reported 78-80 — different harness/think-mode/conditions,
+        so cross-variant single-benchmark numbers are NOT directly comparable.
+      provenance:
+        asOf: "2026-06-28"
+        source: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark model card + arXiv 2606.19348"
+        verification: authoritative
+        confidence: medium
     - kind: note
       body: >-
         VERIFIED against HF (2026-06-20): deepseek_v4 MoE, 284B total / 13B active,
