@@ -366,6 +366,25 @@
         source: "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561 post 32 (ajvazan)"
         verification: cited
         confidence: medium
+    - kind: finding
+      body: >-
+        MECHANISM (why DFlash beats MTP on structured traffic): MTP-N drafts N tokens
+        SEQUENTIALLY, so acceptance length caps at ~3 (MTP-2). DFlash block-drafts ~12
+        tokens in ONE PARALLEL forward (a 0.8B/6-layer non-causal block-diffusion
+        drafter sharing the base's embed_tokens + lm_head, ~1.6GiB), accepting 5-11 on
+        predictable/agent traffic. Same-harness on GB10 (Qwen3.5-122B, Entrpi):
+        prose acc~2.3 → DFlash 33.2 ≈ MTP 33.7 (TIE — use n=4); code acc~5.4 → 54.5 vs
+        40.5; counting acc~11 → 124.5 vs 43.7 (MTP capped); real agent turns acc 8.3 →
+        ~81 vs 39.9 (~2x). So DFlash's win scales with ACCEPTANCE LENGTH — structured/
+        tool-call/code wins big, open-ended prose ties. Reconciles with the long-context
+        caveat above: the trade is acceptance-vs-KV-footprint, model- and
+        regime-specific (the 122B's KV is small — ~24KiB/tok, 12/48 full-attn layers —
+        so DFlash's larger draft footprint is affordable there).
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README benchmarks) + forum 374328"
+        verification: cited
+        confidence: medium
 
 # KV-cache / attention OPTIMISATIONS. The decisive axis is qualityImpact:
 #   neutral = mathematically exact (pure speed/memory win — never changes output)

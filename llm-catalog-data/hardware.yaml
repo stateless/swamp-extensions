@@ -94,6 +94,20 @@
         instead. Observed on a DGX Spark (GB10): driver 580.159.03, CUDA 13.0,
         DGX OS 7.
       provenance: *spark-runbook
+    - kind: finding
+      body: >-
+        WEIGHT LOADING — use fastsafetensors. vLLM's default mmap-backed per-tensor
+        loader is "pathologically slow on GB10's current kernel": a 62-71GiB
+        checkpoint takes ~8min via the default (per-tensor read + a redundant CPU→GPU
+        copy that is physically pointless on unified memory) vs ~32s with
+        `--load-format fastsafetensors` (straight to device). It falls back to nogds —
+        no GPUDirect Storage hardware required. Cuts a 122B time-to-READY from ~12min
+        to ~3min. Generalizable across large models on GB10.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README, Startup time)"
+        verification: cited
+        confidence: medium
 
 - id: hardware-apple-silicon
   kind: hardware

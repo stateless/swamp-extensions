@@ -606,6 +606,16 @@
             "source": "github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public (builds on Albond, forum 365639) + live check on a DGX Spark unit",
             "verification": "cited"
           }
+        },
+        {
+          "kind": "finding",
+          "body": "WEIGHT LOADING — use fastsafetensors. vLLM's default mmap-backed per-tensor loader is \"pathologically slow on GB10's current kernel\": a 62-71GiB checkpoint takes ~8min via the default (per-tensor read + a redundant CPU→GPU copy that is physically pointless on unified memory) vs ~32s with `--load-format fastsafetensors` (straight to device). It falls back to nogds — no GPUDirect Storage hardware required. Cuts a 122B time-to-READY from ~12min to ~3min. Generalizable across large models on GB10.",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README, Startup time)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
         }
       ],
       "facets": {
@@ -9384,22 +9394,31 @@
             ],
             "units": 1,
             "download": {
-              "hfRepo": "Intel/Qwen3.5-122B-A10B-int4-AutoRound",
+              "hfRepo": "bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid",
               "format": "safetensors",
-              "note": "drafter z-lab/Qwen3.5-122B-A10B-DFlash (0.8B block-diffusion); optional dense levers via bleysg/Qwen3.5-122B-A10B-int4-fp8-hybrid (FP8 shared experts + int8 lm-head)."
+              "note": "dense-profile prebuilt: INT4 (AutoRound/GPTQ) routed experts + attention, calibrated FP8 shared experts, BF16 embeddings/head (~67GiB; NOT GGUF — vLLM serves directly). drafter z-lab/Qwen3.5-122B-A10B-DFlash = 0.8B / 6-layer non-causal block-diffusion (block 16), shares embed_tokens + lm_head, ~1.6GiB."
             },
             "config": {
               "maxModelLen": 262144,
               "gpuMemoryUtilization": 0.82,
-              "speculative": "dflash, 12 draft tokens",
+              "maxNumSeqs": 3,
+              "maxNumBatchedTokens": 8192,
+              "speculative": "dflash, 12 draft tokens (block-drafted in ONE parallel forward)",
               "toolCallParser": "qwen3_xml",
               "reasoningParser": "qwen3",
+              "loadFormat": "fastsafetensors",
               "build": {
                 "runtime": "vLLM",
-                "version": "0.23.0+aeon.sm121a.dflash",
-                "image": "ghcr.io/aeon-7/aeon-vllm-ultimate"
+                "version": "0.23.0",
+                "image": "ghcr.io/aeon-7/aeon-vllm-ultimate:2026-06-18-v0.23.0-dflashfix"
               },
-              "note": "prefix-caching MUST be disabled for DFlash; scale-block KV unification patch required; fastsafetensors loads 62–71GiB in ~32s; ~3min to READY; KV pool ~426k–456k tokens; ~15GiB free at 3-stream peak."
+              "profiles": {
+                "dense": "hybrid INT4+FP8 + int8 lm-head + DFlash n=12 (default; +28% base, ≈dflash on agents); KV pool 426,610 tok (1.63x)",
+                "dflash": "INT4 + DFlash n=12; largest KV pool 456,664 tok (1.74x); ~81 tok/s Hermes",
+                "base": "plain INT4, no spec-decode; 28.2 tok/s c=1 (airtight baseline)",
+                "mtp": "INT4 + native MTP-2 head; ~40 tok/s Hermes (comparison)"
+              },
+              "note": "prefix-caching MUST be disabled for DFlash; scale-block KV unification patch required; ~16GiB free at READY (~15 under 3-stream peak)."
             },
             "command": "vllm serve Intel/Qwen3.5-122B-A10B-int4-AutoRound \\\n  --enable-auto-tool-choice --tool-call-parser qwen3_xml \\\n  --reasoning-parser qwen3 \\\n  --speculative-model-type dflash --speculative_tokens 12 \\\n  --gpu-memory-utilization 0.82 --max-model-len 262144\n",
             "procedure": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (install.sh --start; profiles dense/dflash/base/mtp)",
@@ -9423,7 +9442,39 @@
                   "quant": "int4-autoround"
                 }
               }
-            }
+            },
+            "claims": [
+              {
+                "kind": "finding",
+                "body": "DFlash vs MTP-2, SAME unpatched harness (Entrpi repo, GB10 c=1, temp 0): MTP-2 drafts 2 tokens SEQUENTIALLY so acceptance caps at ~3; DFlash block-drafts 12 in ONE PARALLEL forward, accepting 5-11 on predictable/agent traffic. Prose(acc~2.3): 28.2 base / 33.7 MTP / 33.2 DFlash (use n=4) — they TIE on low-acceptance prose. Code(~5.4): 40.5 / 54.5. Counting(~11): 43.7 (MTP capped) / 124.5. Hermes real turns(8.3): 39.9 / ~81 — DFlash ~2x MTP. Unpatched DFlash e2e (53.7) already clears Albond's fully-patched MTP (51.58) on the same method. So: DFlash for structured/tool-call/code; the gain vanishes on open-ended prose.",
+                "provenance": {
+                  "asOf": "2026-06-29",
+                  "source": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README benchmarks)",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              },
+              {
+                "kind": "finding",
+                "body": "FAST STARTUP on GB10: `--load-format fastsafetensors` reads the 62-71GiB checkpoint STRAIGHT TO DEVICE in ~32s vs ~8min for the default mmap per-tensor read + redundant CPU→GPU copy — the default loader is \"pathologically slow on GB10's current kernel\" and the copy is physically pointless on unified memory. Total time-to-READY ~3min (~32s load + ~42s torch.compile + ~2min CUDA-graph capture; compile cache persisted, later boots skip compile). Falls back to nogds — no GPUDirect hardware needed. Generalizable GB10 finding (see hardware-dgx-spark).",
+                "provenance": {
+                  "asOf": "2026-06-29",
+                  "source": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README)",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              },
+              {
+                "kind": "note",
+                "body": "KV-POOL RECLAIM (dense profile, same 0.82 headroom): lifted 376,518 → 426,610 tokens (+13%) WITHOUT spending headroom — the int8 lm-head frees its now-dead bf16 copy (~1.4GiB; the DFlash drafter shares the int8 lm_head and tie_word_embeddings=False, so it's genuinely unused), and `VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0` returns the CUDA-graph over-estimate (~0.6GiB; actual capture ~0.14GiB). NOTE the regime difference vs the drewid74 runbook, which sets the same var to 1 to FIX a low-GMU (0.80) silent OOM — at 0.82 with wide headroom Entrpi sets it to 0 to RECLAIM the over-estimate. Stacks with technique-headless-serving-mode (the ~10-15GiB desktop reclaim) — orthogonal KV-pool levers.",
+                "provenance": {
+                  "asOf": "2026-06-29",
+                  "source": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README, Memory and context)",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              }
+            ]
           },
           {
             "endpoint": "endpoint-mlx-mac",
@@ -12649,6 +12700,16 @@
           "provenance": {
             "asOf": "2026-06-26",
             "source": "https://forums.developer.nvidia.com/t/whats-the-best-speed-we-can-get-with-qwen-3-6-27b-without-quantizing/367561 post 32 (ajvazan)",
+            "confidence": "medium",
+            "verification": "cited"
+          }
+        },
+        {
+          "kind": "finding",
+          "body": "MECHANISM (why DFlash beats MTP on structured traffic): MTP-N drafts N tokens SEQUENTIALLY, so acceptance length caps at ~3 (MTP-2). DFlash block-drafts ~12 tokens in ONE PARALLEL forward (a 0.8B/6-layer non-causal block-diffusion drafter sharing the base's embed_tokens + lm_head, ~1.6GiB), accepting 5-11 on predictable/agent traffic. Same-harness on GB10 (Qwen3.5-122B, Entrpi): prose acc~2.3 → DFlash 33.2 ≈ MTP 33.7 (TIE — use n=4); code acc~5.4 → 54.5 vs 40.5; counting acc~11 → 124.5 vs 43.7 (MTP capped); real agent turns acc 8.3 → ~81 vs 39.9 (~2x). So DFlash's win scales with ACCEPTANCE LENGTH — structured/ tool-call/code wins big, open-ended prose ties. Reconciles with the long-context caveat above: the trade is acceptance-vs-KV-footprint, model- and regime-specific (the 122B's KV is small — ~24KiB/tok, 12/48 full-attn layers — so DFlash's larger draft footprint is affordable there).",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://github.com/Entrpi/qwen3.5-122B-A10B-on-spark (README benchmarks) + forum 374328",
             "confidence": "medium",
             "verification": "cited"
           }
