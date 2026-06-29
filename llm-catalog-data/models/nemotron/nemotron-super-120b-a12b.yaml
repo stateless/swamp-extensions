@@ -158,6 +158,20 @@
             confidence: medium
             versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: fp8 }
   claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Nemotron-3-Super-120B-A12B
+        NVFP4 Overall just 25.4% — bfcl COLLAPSED to 12% (vs ~76-80% for the small
+        models), bigcodebench 60%. Concrete evidence that fitting a LARGE model on one
+        Spark via FP4 does NOT buy agentic/tool-use quality — the small dense / small-active
+        MoEs (Qwen3.6-35B-A3B 47.7, Gemma4-31B 46.5) decisively beat it on this board.
+        Weigh against the vendor BF16 benchmarks facet (reference precision).
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
     - kind: note
       body: >-
         VS QWEN3.5-122B ON SPARK (can it run the same way?): SAME SIZE CLASS

@@ -1,21 +1,37 @@
-# Holo-3.1-35B-A3B — community-reported agentic MoE. STUB created 2026-06-26 from a
-# single-Spark coding thread (forum 374423); creator + architecture UNCONFIRMED —
-# enrich via vendor config.json (`ingest`) before trusting any field.
+# Holo-3.1-35B-A3B — H Company vision-language computer-use agent, built on
+# Qwen3.5-MoE-VL. Enriched from the HF card + config.json (2026-06-29).
 
 - id: model-holo-3-1-35b-a3b
   kind: model
   name: Holo-3.1-35B-A3B
-  summary: "Agentic MoE (35B total / ~3B active, A3B), open-weights. Community-reported 'best agentic tool-user of its size' (forum 374423). Creator/arch unconfirmed — stub."
+  summary: 35B/3B-active VL computer-use agent MoE (256 experts, 8/token; hybrid linear+full attn) on Qwen3.5-MoE-VL; 256K context; Apache-2.0
   visibility: public
-  labels: [holo, moe, agentic, open-weights, stub]
+  labels: [holo, open-weights, moe, multimodal, agentic, long-context]
+  facets:
+    architecture:
+      hfRepo: Hcompany/Holo-3.1-35B-A3B
+      modelType: qwen3_5_moe
+      params: "35B"
+      activeParams: "3B"
+      layers: 40
+      hidden: 2048
+      experts: "256 routed (8/token)"
+      nativeContext: 262144
+      attention: "GQA (16 heads / 2 KV; hybrid linear + full attention, full every 4th layer)"
+      vocab: 248320
+      license: apache-2.0
+      modality: [text, image, video] # vision depth 27, hidden 1152
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Hcompany/Holo-3.1-35B-A3B config.json + model card (computer-use agent on Qwen3.5-MoE-VL)"
+        verification: authoritative
+    # benchmarks: card Table 1 not machine-readable — omitted
   claims:
     - kind: note
       body: >-
         COMMUNITY (single-Spark coding, forum 374423, nangld85): run as NVFP4 on
         1× DGX Spark; "best agentic tool-user of its size" alongside Qwen3.6-35B
-        (daily driver) and DeepSeek-V4-Flash. No measured tok/s or eval in-thread;
-        creator (possibly H Company) and architecture NOT confirmed — verify against
-        the vendor HF config.json before recording architecture facets.
+        (daily driver) and DeepSeek-V4-Flash. No measured tok/s or eval in-thread.
       provenance:
         asOf: "2026-06-26"
         source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"

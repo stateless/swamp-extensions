@@ -1,13 +1,12 @@
-# Hy3-preview — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Hy3-preview (Hunyuan) — Tencent MoE with MTP. Enriched from the HF card +
+# config.json (2026-06-29).
 
 - id: model-hy3-preview
   kind: model
   name: Hy3-preview
-  summary: "Open-weights LLM by Tencent; catalog stub (AA-leaderboard-seeded, 34 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 295B/21B-active MoE (192 experts top-8 + 1 shared; MTP); GQA; 256K context; Tencent Hy Community License
   visibility: public
-  labels: [tencent, open-weights, stub, aa-leaderboard]
+  labels: [tencent, open-weights, moe, long-context]
   facets:
     aaIntelligence:
       index: 34
@@ -18,13 +17,30 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 256k, hosted price ~$0.10/1M blended; AA Intelligence Index 34.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: tencent/Hy3-preview
+      modelType: hy_v3
+      params: "295B"
+      activeParams: "21B"
+      layers: 80 # excl. MTP; num_nextn_predict_layers 1 (~3.8B)
+      hidden: 4096
+      experts: "192 routed (8/token) + 1 shared (MoE from layer 1)"
+      nativeContext: 262144
+      attention: "GQA (64 / 8 KV, head_dim 128, qk_norm)"
+      vocab: 120832
+      license: tencent-hy-community
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/tencent/Hy3-preview config.json + model card"
+        verification: authoritative
+    benchmarks: # Tencent card (Instruct variant)
+      mmlu: 87.42 # 5-shot
+      gsm8k: 95.37 # 4-shot
+      sweBenchVerified: 74.4
+      gpqaDiamond: 87.2
+      terminalBench2: 54.4
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/tencent/Hy3-preview model card"
+        verification: cited

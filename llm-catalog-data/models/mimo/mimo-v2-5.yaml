@@ -1,13 +1,12 @@
-# MiMo-V2.5 — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# MiMo-V2.5 — Xiaomi omnimodal MoE. Enriched from config.json (2026-06-29).
+# Benchmark table not reliably parsed → architecture only.
 
 - id: model-mimo-v2-5
   kind: model
   name: MiMo-V2.5
-  summary: "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 310B/15B-active omnimodal MoE (256 experts, 8/token; SWA+GA 5:1; +ViT/audio); 1M context; MIT
   visibility: public
-  labels: [xiaomi, open-weights, stub, aa-leaderboard]
+  labels: [xiaomi, open-weights, moe, multimodal, long-context]
   facets:
     aaIntelligence:
       index: 40
@@ -18,13 +17,21 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 1M, hosted price ~$0.06/1M blended; AA Intelligence Index 40.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: XiaomiMiMo/MiMo-V2.5
+      modelType: mimo_v2
+      params: "310B"
+      activeParams: "15B"
+      layers: 48
+      hidden: 4096
+      experts: "256 routed (8/token)"
+      nativeContext: 1048576
+      attention: "GQA (64 / 4 KV); hybrid SWA+GA 5:1, 128 window"
+      vocab: 152576
+      license: mit
+      modality: [text, image, video, audio] # LM backbone + 729M ViT + audio encoder
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/XiaomiMiMo/MiMo-V2.5 config.json + model card (config = text LM backbone)"
+        verification: authoritative
+    # benchmarks: card table not reliably parsed — omitted pending direct re-read

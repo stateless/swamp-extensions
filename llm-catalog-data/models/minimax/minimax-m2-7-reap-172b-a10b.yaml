@@ -1,15 +1,35 @@
 # MiniMax-M2.7-REAP-172B-A10B — REAP expert-pruned derivative of MiniMax-M2.7.
-# STUB created 2026-06-26 from a single-Spark coding thread (forum 374423).
 # Different weights (pruned) → its own model entry; variant-of model-minimax-m27.
+# Architecture enriched 2026-06-29 from the saricles BF16 community repack (no
+# official cerebras/MiniMax repo exists for M2.7-REAP).
 
 - id: model-minimax-m27-reap-172b-a10b
   kind: model
   name: MiniMax-M2.7-REAP-172B-A10B
-  summary: "REAP expert-pruned MiniMax-M2.7 (~172B total / ~10B active), open-weights. Community-reported: fast (NVFP4 ~40 tg) but quality-degraded on multistep reasoning. Stub."
+  summary: REAP expert-pruned MiniMax-M2.7 (172B/~10B-active, 256→192 experts); fast but quality-degraded; community repack; NC License
   visibility: public
-  labels: [minimax, moe, reap, expert-pruned, open-weights, stub]
+  labels: [minimax, moe, reap, expert-pruned, open-weights, long-context]
   relations:
     - { rel: variant-of, target: model-minimax-m27 }
+  facets:
+    architecture:
+      hfRepo: saricles/MiniMax-M2.7-REAP-172B-A10B-BF16 # community repack; no official cerebras/MiniMax M2.7-REAP repo
+      modelType: minimax_m2
+      params: "172B"
+      activeParams: "~10B" # 8 of 192 experts/token
+      layers: 62
+      hidden: 3072
+      experts: "192 routed (8/token) — REAP-pruned from MiniMax-M2.7's 256"
+      nativeContext: 196608
+      # attention inherited from the base (REAP prunes experts, not attention) — see model-minimax-m27
+      vocab: 200064
+      license: minimax-m2.7-nc # tagged 'other'
+      modality: [text]
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/saricles/MiniMax-M2.7-REAP-172B-A10B-BF16 config.json (REAP method arXiv:2510.13999; arch verified vs base MiniMaxAI/MiniMax-M2.7)"
+        verification: cited
+        confidence: medium
   claims:
     - kind: caveat
       body: >-
@@ -18,7 +38,7 @@
         broader pattern that aggressive expert-pruning (REAP) trades capability for
         fit/speed (cf. the GLM-5.2 15%-pruned caveat). Treat as a speed-over-quality
         option; verify on a real eval before relying on it for agentic coding.
-        Architecture/exact pruning ratio not confirmed — stub.
+        No quality benchmarks published — community repacks carry only throughput.
       provenance:
         asOf: "2026-06-26"
         source: "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423"

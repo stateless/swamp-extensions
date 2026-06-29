@@ -1,13 +1,13 @@
-# Jamba 1.7 Large — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Jamba 1.7 Large — AI21 SSM-Transformer (Mamba+attention) hybrid MoE. Enriched
+# from the HF card (2026-06-29). NOTE: repo is gated (config.json 401) so
+# layers/hidden/vocab/expert-count are unverified — card facts only.
 
 - id: model-jamba-1-7-large
   kind: model
   name: Jamba 1.7 Large
-  summary: "Open-weights LLM by AI21 Labs; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 398B/94B-active SSM-Transformer (Mamba+attention) hybrid MoE; 256K context; Jamba Open Model License
   visibility: public
-  labels: [ai21, open-weights, stub, aa-leaderboard]
+  labels: [ai21, open-weights, moe, hybrid-mamba, long-context]
   facets:
     aaIntelligence:
       index: 5
@@ -18,13 +18,24 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 256k, hosted price ~$2.60/1M blended; AA Intelligence Index 5.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: ai21labs/AI21-Jamba-Large-1.7
+      params: "398B"
+      activeParams: "94B"
+      nativeContext: 262144
+      attention: "SSM-Transformer hybrid (Mamba + attention), MoE"
+      license: Jamba Open Model License
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/ai21labs/AI21-Jamba-Large-1.7 model card (config.json gated/401 — layers/hidden/vocab/experts unverified)"
+        verification: cited
         confidence: medium
+    benchmarks: # AI21 card (labels approximate)
+      facts: 0.832 # grounding
+      ifEval: 0.84 # steerability
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/ai21labs/AI21-Jamba-Large-1.7 model card"
+        verification: cited
+        confidence: low

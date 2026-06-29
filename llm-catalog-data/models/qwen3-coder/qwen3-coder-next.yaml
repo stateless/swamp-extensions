@@ -173,6 +173,18 @@
             source: "https://unsloth.ai/docs/models/qwen3-coder-next"
             verification: cited
   claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3-Coder-Next FP8
+        Overall 41.2% — bfcl 78%, bigcodebench 62%, and notably TheAgentCompany 20%
+        (tied best agentic on the board) despite a mid-pack Overall. A genuinely-agentic
+        coder. NOT a knowledge bench.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
     - kind: caveat
       body: >-
         `--min-p 0.01` is required — llama.cpp defaults to 0.05, which diverges

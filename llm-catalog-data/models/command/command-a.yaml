@@ -1,13 +1,13 @@
-# Command A+ — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Command A+ — Cohere multimodal MoE (cohere2_moe). Enriched from the HF card +
+# config.json (2026-06-29). NOTE: the stub targets the newer A+ (command-a-plus-
+# 05-2026, MoE multimodal), NOT the older dense Command A (c4ai-command-a-03-2025).
 
 - id: model-command-a
   kind: model
   name: Command A+
-  summary: "Open-weights LLM by Cohere; catalog stub (AA-leaderboard-seeded, 29 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: Multimodal MoE (cohere2_moe; 128 experts top-8 + 4 shared, vision); ~192K context; CC-BY-NC-4.0
   visibility: public
-  labels: [cohere, open-weights, stub, aa-leaderboard]
+  labels: [cohere, open-weights, moe, multimodal, vision, long-context]
   facets:
     aaIntelligence:
       index: 29
@@ -18,13 +18,21 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 192k, hosted price ~$0.00/1M blended; AA Intelligence Index 29.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: CohereLabs/command-a-plus-05-2026
+      modelType: cohere2_moe
+      layers: 32
+      hidden: 4096
+      experts: "128 routed (8/token) + 4 shared"
+      nativeContext: 196608 # AA-observed ~192K
+      attention: "GQA + interleaved sliding-window / global (Cohere2 pattern)"
+      vocab: 262144
+      license: cc-by-nc-4.0 # + Cohere Acceptable Use Policy
+      modality: [text, image]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/CohereLabs/command-a-plus-05-2026 config.json (params/benchmarks not captured — config.json gated for some fields)"
+        verification: cited
         confidence: medium
+        note: "params total/active not on the public card; the older dense sibling = CohereLabs/c4ai-command-a-03-2025 (111B dense, cohere2, GPQA-D 50.51)"
+    # benchmarks: A+ card publishes few raw numbers on HF — omitted pending a direct card read

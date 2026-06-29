@@ -1,13 +1,12 @@
-# EXAONE 4.5 33B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# EXAONE 4.5 33B — LG AI first open VLM (dense hybrid-GQA + vision). Enriched from
+# the HF card + config.json (2026-06-29).
 
 - id: model-exaone-4-5-33b
   kind: model
   name: EXAONE 4.5 33B
-  summary: "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 23 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 33B dense multimodal VLM (31.7B LM + 1.29B vision; hybrid-GQA); 256K context; EXAONE NC License
   visibility: public
-  labels: [lg-ai, open-weights, stub, aa-leaderboard]
+  labels: [lg-ai, open-weights, dense, multimodal, vision, long-context]
   facets:
     aaIntelligence:
       index: 23
@@ -18,13 +17,30 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 262k; AA Intelligence Index 23.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: LGAI-EXAONE/EXAONE-4.5-33B
+      modelType: exaone4_5
+      params: "33B" # 31.7B LM + 1.29B vision encoder
+      layers: 64
+      hidden: 5120
+      nativeContext: 262144
+      attention: "Hybrid GQA (sliding_window 4096); 40 heads / 8 KV"
+      vocab: 153600
+      license: exaone-ai-1.2-nc # non-commercial
+      modality: [text, image]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/LGAI-EXAONE/EXAONE-4.5-33B config.json + model card"
+        verification: authoritative
+    benchmarks: # LG card
+      mmmu: 78.7
+      mathVista: 85.0
+      aime25: 92.9
+      gpqaDiamond: 80.5
+      mmluPro: 83.3
+      liveCodeBench: 81.4 # v6
+      ifEval: 89.6
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/LGAI-EXAONE/EXAONE-4.5-33B model card"
+        verification: cited

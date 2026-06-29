@@ -112,6 +112,18 @@
             confidence: medium
             versionPins: { runtime: mlx-lm, quant: "base mxfp4" }
   claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3.6-27B mid-pack.
+        Tested configs: nothink Overall 43.8%, FP8 42.7%, DFlash(15) 42.3%, base 36.5%.
+        Disabling thinking (43.8) edged FP8 (42.7) here. bfcl ~78% across configs; the
+        agentic axis (TheAgentCompany) only 0–10%. NOT a knowledge bench.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
     - kind: note
       body: >-
         Dense 27B (non-MoE), multimodal, ~196K context. Distinct from Qwen3.5-27B

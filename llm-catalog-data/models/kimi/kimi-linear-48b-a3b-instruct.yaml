@@ -1,13 +1,12 @@
-# Kimi Linear 48B A3B Instruct — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Kimi Linear 48B A3B Instruct — Moonshot hybrid linear-attention MoE (KDA + MLA).
+# Enriched from the HF card + config.json (2026-06-29).
 
 - id: model-kimi-linear-48b-a3b-instruct
   kind: model
   name: Kimi Linear 48B A3B Instruct
-  summary: "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 48B/3B-active hybrid linear MoE (Kimi Delta Attention + global MLA 3:1); 1M context; MIT
   visibility: public
-  labels: [moonshot, open-weights, stub, aa-leaderboard]
+  labels: [moonshot, open-weights, moe, linear-attention, long-context]
   facets:
     aaIntelligence:
       index: 9
@@ -18,13 +17,28 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 1M; AA Intelligence Index 9.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: moonshotai/Kimi-Linear-48B-A3B-Instruct
+      modelType: kimi_linear
+      params: "48B"
+      activeParams: "3B"
+      layers: 27
+      hidden: 2304
+      experts: "256 routed (8/token) + 1 shared"
+      nativeContext: 1048576
+      attention: "hybrid linear: Kimi Delta Attention (gated DeltaNet) + global MLA at 3:1 (full-attn layers 4/8/12/16/20/24/27)"
+      vocab: 163840
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct config.json + model card"
+        verification: authoritative
+        note: "card calls it 'not traditional MoE' but config IS MoE (256+1, 8/token); claims ~6x decode throughput + 75% KV-cache reduction at 1M"
+    benchmarks: # Moonshot card
+      mmluPro: 51.0 # 4k
+      ruler128k: 84.3
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct model card"
+        verification: cited

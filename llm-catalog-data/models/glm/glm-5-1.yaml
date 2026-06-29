@@ -1,13 +1,12 @@
-# GLM-5.1 — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# GLM-5.1 — Z.ai MoE with MLA + DeepSeek Sparse Attention (DSA). Enriched from the
+# HF card + config.json (2026-06-29).
 
 - id: model-glm-5-1
   kind: model
   name: GLM-5.1
-  summary: "Open-weights LLM by Z AI; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 754B/~40B-active MoE (256 experts, 8/token; MLA + DeepSeek Sparse Attention); 200K context; MIT
   visibility: public
-  labels: [z-ai, open-weights, stub, aa-leaderboard]
+  labels: [z-ai, open-weights, moe, reasoning, long-context]
   facets:
     aaIntelligence:
       index: 40
@@ -18,13 +17,32 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 200k, hosted price ~$0.90/1M blended; AA Intelligence Index 40.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: zai-org/GLM-5.1
+      modelType: glm_moe_dsa
+      params: "754B"
+      activeParams: "~40B" # not on card; third-party
+      layers: 78
+      hidden: 6144
+      experts: "256 routed (8/token) + 1 shared"
+      nativeContext: 202752
+      attention: "MLA + DeepSeek Sparse Attention (DSA); kv_lora_rank 512, q_lora_rank 2048, 64 Q / 64 KV"
+      vocab: 154880
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/zai-org/GLM-5.1 config.json + model card (activeParams ~40B from third-party, not on card)"
+        verification: authoritative
         confidence: medium
+    benchmarks: # Z.ai card
+      sweBenchPro: 58.4
+      gpqaDiamond: 86.2
+      terminalBench2: 63.5
+      aime2026: 95.3
+      hmmtFeb2026: 82.6
+      browseComp: 68.0
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/zai-org/GLM-5.1 model card"
+        verification: cited

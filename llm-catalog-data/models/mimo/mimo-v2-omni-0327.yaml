@@ -23,8 +23,19 @@
       body: >-
         Leaderboard-observed (third-party, provider-dependent — NOT authoritative
         architecture): context 256k, hosted price ~$0.34/1M blended; AA Intelligence Index 36.
-        Stub pending enrichment from the vendor config.json.
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
+    - kind: note
+      body: >-
+        REPO NOT FOUND (checked 2026-06-29): no "MiMo-V2-Omni-0327" (or any Omni/0327-
+        dated) repo under XiaomiMiMo. Existing repos: MiMo-V2-Flash(-Base),
+        MiMo-V2.5(-Base/-Pro/-ASR). The omnimodal model is MiMo-V2.5
+        (model-mimo-v2-5) — a different exact ID, not substituted here. This stub may
+        be a leaderboard-only / renamed/withdrawn entry; not enrichable from HF.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/XiaomiMiMo (org checked — exact repo absent)"
+        verification: cited
+        confidence: low

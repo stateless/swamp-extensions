@@ -1,13 +1,12 @@
-# Ling-2.6-1T — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Ling-2.6-1T — InclusionAI trillion-param hybrid MLA + linear-attention MoE
+# (instruct). Enriched from the HF card + config.json (2026-06-29).
 
 - id: model-ling-2-6-1t
   kind: model
   name: Ling-2.6-1T
-  summary: "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 26 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 1T hybrid MLA + linear-attention MoE (256 experts, 8/token); instruct sibling of Ring; 256K context; MIT
   visibility: public
-  labels: [inclusion-ai, open-weights, stub, aa-leaderboard]
+  labels: [inclusion-ai, open-weights, moe, hybrid-linear, long-context]
   facets:
     aaIntelligence:
       index: 26
@@ -18,13 +17,27 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 262k, hosted price ~$0.52/1M blended; AA Intelligence Index 26.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: inclusionAI/Ling-2.6-1T
+      modelType: bailing_hybrid
+      params: "1T"
+      # activeParams omitted — not on the authoritative card (third-party conflicts 50B vs 63B)
+      layers: 80
+      hidden: 8192
+      experts: "256 routed (8/token) + 1 shared"
+      nativeContext: 262144
+      attention: "hybrid MLA (q_lora 1536 / kv_lora 512) + linear attention"
+      vocab: 157184
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/inclusionAI/Ling-2.6-1T config.json + model card"
+        verification: authoritative
+        note: "activeParams not published on card; config FP8_DYNAMIC quant, rope_theta 6e6"
+    benchmarks: # InclusionAI card
+      sweBenchVerified: 72.2
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/inclusionAI/Ling-2.6-1T model card"
+        verification: cited

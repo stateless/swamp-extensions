@@ -1,13 +1,12 @@
-# Kimi K2.7 Code — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Kimi K2.7 Code — Moonshot coding variant built on K2.6 (MLA MoE). Enriched from
+# the HF card + config.json (2026-06-29).
 
 - id: model-kimi-k2-7-code
   kind: model
   name: Kimi K2.7 Code
-  summary: "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 1T/32B-active MLA MoE (384 experts, 8/token); coding/agentic build on K2.6; 256K context; Modified MIT
   visibility: public
-  labels: [moonshot, open-weights, stub, aa-leaderboard]
+  labels: [moonshot, open-weights, moe, coding, multimodal, long-context]
   facets:
     aaIntelligence:
       index: 42
@@ -18,13 +17,30 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 256k, hosted price ~$0.70/1M blended; AA Intelligence Index 42.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: moonshotai/Kimi-K2.7-Code
+      modelType: kimi_k25
+      params: "1T"
+      activeParams: "32B"
+      layers: 61
+      hidden: 7168
+      experts: "384 routed (8/token) + 1 shared"
+      nativeContext: 262144 # yarn (orig 4096)
+      attention: "MLA (kv_lora_rank 512, q_lora_rank 1536, qk_nope 128 + qk_rope 64, v_head 128)"
+      vocab: 163840
+      license: modified-mit
+      modality: [text, image, video]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/moonshotai/Kimi-K2.7-Code config.json + model card"
+        verification: authoritative
+    benchmarks: # Moonshot card (code-specific suites)
+      kimiCodeBenchV2: 62.0
+      programBench: 53.6
+      mlsBenchLite: 35.1
+      mcpAtlas: 76.0
+      mcpMarkVerified: 81.1
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/moonshotai/Kimi-K2.7-Code model card"
+        verification: cited

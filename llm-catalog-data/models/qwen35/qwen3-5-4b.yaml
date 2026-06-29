@@ -1,13 +1,13 @@
-# Qwen3.5 4B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Qwen3.5 4B — Alibaba dense hybrid (Gated-DeltaNet linear + full attn) VL.
+# Enriched from the HF card + config.json (2026-06-29). Genuine Qwen3.5, NOT a
+# Qwen3-4B substitution.
 
 - id: model-qwen3-5-4b
   kind: model
   name: Qwen3.5 4B
-  summary: "Open-weights LLM by Alibaba; catalog stub (AA-leaderboard-seeded, 20 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 4B dense hybrid (Gated-DeltaNet linear + full attn) multimodal VL; 256K native (~1M extended); Apache-2.0
   visibility: public
-  labels: [alibaba, open-weights, stub, aa-leaderboard]
+  labels: [qwen, alibaba, open-weights, dense, multimodal, long-context]
   facets:
     aaIntelligence:
       index: 20
@@ -18,13 +18,30 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 262k, hosted price ~$0.04/1M blended; AA Intelligence Index 20.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: Qwen/Qwen3.5-4B
+      modelType: qwen3_5
+      params: "4B"
+      layers: 32
+      hidden: 2560
+      nativeContext: 262144
+      extendedContext: 1010000 # ~1.01M per card
+      attention: "GQA (16 heads / 4 KV; hybrid Gated-DeltaNet linear + full attention)"
+      vocab: 248320
+      license: apache-2.0
+      modality: [text, image, video]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Qwen/Qwen3.5-4B config.json + model card (dense — mlp_only_layers empty)"
+        verification: authoritative
+    benchmarks: # Qwen card
+      mmluPro: 79.1
+      gpqaDiamond: 76.2
+      cEval: 85.1
+      mmmuPro: 66.3
+      mathVision: 74.6
+      longBenchV2: 50.0
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Qwen/Qwen3.5-4B model card"
+        verification: cited

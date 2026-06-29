@@ -94,3 +94,17 @@
             verification: cited
             confidence: medium
             versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: nvfp4 }
+  claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Gemma4-31B Overall 46.5%
+        — bfcl 78%, BEST bigcodebench on the board at 72%. Variants: +MTP 46.5%
+        (identical score, ~half the wall-time — spec-decode is throughput-neutral on
+        quality), QAT w4a16 +MTP 43.8%. Agentic axis (TheAgentCompany) 0%. Top single-Spark
+        cluster alongside Qwen3.6-35B-A3B. NOT a knowledge bench.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low

@@ -1,13 +1,12 @@
-# Granite 4.1 8B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Granite 4.1 8B — IBM DENSE GQA transformer (NOT a Mamba/MoE hybrid). Enriched
+# from the HF card + config.json (2026-06-29).
 
 - id: model-granite-4-1-8b
   kind: model
   name: Granite 4.1 8B
-  summary: "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 8B dense GQA transformer (decoder-only, RoPE/SwiGLU); 128K context; Apache-2.0
   visibility: public
-  labels: [ibm, open-weights, stub, aa-leaderboard]
+  labels: [ibm, open-weights, dense, long-context]
   facets:
     aaIntelligence:
       index: 7
@@ -18,13 +17,29 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 131k, hosted price ~$0.06/1M blended; AA Intelligence Index 7.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: ibm-granite/granite-4.1-8b
+      modelType: granite
+      params: "8B"
+      layers: 40
+      hidden: 4096
+      nativeContext: 131072
+      attention: "GQA (dense decoder-only; 32 heads / 8 KV, RoPE, SwiGLU, RMSNorm)"
+      vocab: 100352
+      license: apache-2.0
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/ibm-granite/granite-4.1-8b config.json + model card"
+        verification: authoritative
+    benchmarks: # IBM-published model card
+      mmlu: 73.84 # 5-shot
+      mmluPro: 55.99 # CoT
+      gsm8k: 92.49 # 8-shot
+      humanEval: 85.37
+      arenaHard: 68.98
+      alpacaEval2: 50.08
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/ibm-granite/granite-4.1-8b model card"
+        verification: cited

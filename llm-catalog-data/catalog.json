@@ -654,27 +654,41 @@
       "id": "model-command-a",
       "kind": "model",
       "name": "Command A+",
-      "summary": "Open-weights LLM by Cohere; catalog stub (AA-leaderboard-seeded, 29 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "Multimodal MoE (cohere2_moe; 128 experts top-8 + 4 shared, vision); ~192K context; CC-BY-NC-4.0",
       "visibility": "public",
       "labels": [
         "cohere",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 192k, hosted price ~$0.00/1M blended; AA Intelligence Index 29. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA + interleaved sliding-window / global (Cohere2 pattern)",
+          "nativeContext": 196608,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "CohereLabs/command-a-plus-05-2026",
+          "modelType": "cohere2_moe",
+          "layers": 32,
+          "hidden": 4096,
+          "experts": "128 routed (8/token) + 4 shared",
+          "vocab": 262144,
+          "license": "cc-by-nc-4.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/CohereLabs/command-a-plus-05-2026 config.json (params/benchmarks not captured — config.json gated for some fields)",
+            "verification": "cited",
+            "confidence": "medium",
+            "note": "params total/active not on the public card; the older dense sibling = CohereLabs/c4ai-command-a-03-2025 (111B dense, cohere2, GPQA-D 50.51)"
+          }
+        },
         "aaIntelligence": {
           "index": 29,
           "basis": "reference-precision",
@@ -853,7 +867,8 @@
               },
               "speed": {
                 "genTokS": 39.4,
-                "note": "@240K ctx, single request — see measurements for the conditions"
+                "prefillTokS": 1850,
+                "note": "@240K ctx, single request — see measurements for the conditions; prefill ~1800-1900 @2048 prompt (forum 373482)"
               },
               "measurements": [
                 {
@@ -907,6 +922,16 @@
               }
             },
             "claims": [
+              {
+                "kind": "finding",
+                "body": "PREFILL (forum 373482 post 38, a 2nd 2x-GB10 operator — separate from the 372268 decode rows): ~1,800-1,900 tok/s prompt-processing at a 2048-token prompt, decode 30-50 tok/s (concurrency-dependent), 1M context \"battle proven\", ~70C/158F thermal. Prefill is the Spark's structural edge — vs the M5 Max's ~1005 tok/s on Qwen3.5-122B (forum 373482), GB10 prefill compute wins even where M5 wins decode. Fills the prefill gap left by the 372268 recipe (which published decode only).",
+                "provenance": {
+                  "asOf": "2026-06-28",
+                  "source": "https://forums.developer.nvidia.com/t/deliberations-on-4-sparks-cluster-advantages/373482 (post 38)",
+                  "verification": "cited",
+                  "confidence": "medium"
+                }
+              },
               {
                 "kind": "caveat",
                 "body": "Dead ends (per 0rand): FP4-Marlin backend incompatible with FP8 weights; manual PR-40082 build hits a FlashInfer/cutlass mismatch; standard spark-vllm-docker lacks b12x MoE (2× slower prefill). Requires `shm_size: 64gb` + `ulimits memlock=-1` or NCCL \"unhandled system error\". Launch worker node before head (~10s delay).",
@@ -1695,27 +1720,38 @@
       "id": "model-devstral-2",
       "kind": "model",
       "name": "Devstral 2",
-      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 15 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "123B dense GQA agentic-coding model (Devstral-2-123B-Instruct-2512); 256K context; modified MIT",
       "visibility": "public",
       "labels": [
         "mistral",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "coding",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 15. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (96 heads / 8 KV, head_dim 128)",
+          "params": "123B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "mistralai/Devstral-2-123B-Instruct-2512",
+          "modelType": "ministral3",
+          "layers": 88,
+          "hidden": 12288,
+          "vocab": 131072,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Devstral-2-123B-Instruct-2512 config.json + model card",
+            "verification": "authoritative",
+            "note": "flagship = 123B; a smaller sibling Devstral-Small-2-24B-Instruct-2512 also exists"
+          }
+        },
         "aaIntelligence": {
           "index": 15,
           "basis": "reference-precision",
@@ -1726,6 +1762,16 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "sweBenchVerified": 72.2,
+          "sweBenchMultilingual": 61.3,
+          "terminalBench2": 32.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Devstral-2-123B-Instruct-2512 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -1733,27 +1779,39 @@
       "id": "model-ernie-4-5-300b-a47b",
       "kind": "model",
       "name": "ERNIE 4.5 300B A47B",
-      "summary": "Open-weights LLM by Baidu; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "300B/47B-active MoE (64 experts, 8/token; GQA); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "baidu",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.36/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 Q / 8 KV), RoPE theta 500000",
+          "params": "300B",
+          "activeParams": "47B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "baidu/ERNIE-4.5-300B-A47B-PT",
+          "modelType": "ernie4_5_moe",
+          "layers": 54,
+          "hidden": 8192,
+          "experts": "64 routed (8/token), 0 shared (MoE from layer 3)",
+          "vocab": 103424,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/baidu/ERNIE-4.5-300B-A47B-PT config.json + model card",
+            "verification": "authoritative",
+            "note": "config moe_num_shared_experts=0 (text PT) — conflicts with card's 'heterogeneous MoE' narrative (that's the multimodal family arch)"
+          }
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -1764,6 +1822,14 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 78.4,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/baidu/ERNIE-4.5-300B-A47B-PT model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -1771,27 +1837,37 @@
       "id": "model-exaone-4-0-32b",
       "kind": "model",
       "name": "EXAONE 4.0 32B",
-      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 11 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "32B dense hybrid-GQA (sliding-window+global 3:1) unified reasoning model; 128K context; EXAONE NC License",
       "visibility": "public",
       "labels": [
         "lg-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 11. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Hybrid GQA — local sliding-window (4096) + global, 3:1 ratio; 40 heads / 8 KV",
+          "params": "32B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "LGAI-EXAONE/EXAONE-4.0-32B",
+          "modelType": "exaone4",
+          "layers": 64,
+          "hidden": 5120,
+          "vocab": 102400,
+          "license": "exaone-ai-1.2-nc",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 11,
           "basis": "reference-precision",
@@ -1802,6 +1878,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluRedux": 92.3,
+          "mmluPro": 81.8,
+          "aime25": 85.3,
+          "liveCodeBench": 72.6,
+          "ifEval": 83.7,
+          "bfcl": 63.9,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -1809,27 +1898,39 @@
       "id": "model-exaone-4-5-33b",
       "kind": "model",
       "name": "EXAONE 4.5 33B",
-      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 23 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "33B dense multimodal VLM (31.7B LM + 1.29B vision; hybrid-GQA); 256K context; EXAONE NC License",
       "visibility": "public",
       "labels": [
         "lg-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 23. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Hybrid GQA (sliding_window 4096); 40 heads / 8 KV",
+          "params": "33B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "LGAI-EXAONE/EXAONE-4.5-33B",
+          "modelType": "exaone4_5",
+          "layers": 64,
+          "hidden": 5120,
+          "vocab": 153600,
+          "license": "exaone-ai-1.2-nc",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.5-33B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 23,
           "basis": "reference-precision",
@@ -1840,6 +1941,20 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmmu": 78.7,
+          "mathVista": 85,
+          "aime25": 92.9,
+          "gpqaDiamond": 80.5,
+          "mmluPro": 83.3,
+          "liveCodeBench": 81.4,
+          "ifEval": 89.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.5-33B model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -1847,27 +1962,38 @@
       "id": "model-falcon-h1r-7b",
       "kind": "model",
       "name": "Falcon-H1R-7B",
-      "summary": "Open-weights LLM by TII UAE; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "7B dense Transformer+Mamba2 hybrid reasoning model (SFT+GRPO); 256K context; Falcon LLM License",
       "visibility": "public",
       "labels": [
         "tii",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "hybrid-mamba",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Mamba-2 + attention hybrid (GQA 12 heads / 2 KV)",
+          "params": "7B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "tiiuae/Falcon-H1R-7B",
+          "modelType": "falcon_h1",
+          "layers": 44,
+          "hidden": 3072,
+          "vocab": 130048,
+          "license": "falcon-llm-license",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/tiiuae/Falcon-H1R-7B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 10,
           "basis": "reference-precision",
@@ -1877,6 +2003,20 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "aime24": 88.1,
+          "aime25": 83.1,
+          "hmmt25": 64.9,
+          "math500": 97.4,
+          "gpqaDiamond": 61.3,
+          "mmluPro": 72.1,
+          "liveCodeBench": 68.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/tiiuae/Falcon-H1R-7B model card",
+            "verification": "cited"
           }
         }
       }
@@ -2254,7 +2394,18 @@
           "target": "model-gemma4"
         }
       ],
-      "claims": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Gemma4-26B-A4B Overall 45.0% — bfcl 80% (tied best), bigcodebench 62%, IfEvalCode 18%, TheAgentCompany 0%. In the top single-Spark cluster (~45-48). NOT a knowledge bench — read alongside the vendor benchmarks facet.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
       "facets": {
         "architecture": {
           "attention": "hybrid-sliding-global",
@@ -2449,7 +2600,18 @@
           "target": "model-gemma4"
         }
       ],
-      "claims": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Gemma4-31B Overall 46.5% — bfcl 78%, BEST bigcodebench on the board at 72%. Variants: +MTP 46.5% (identical score, ~half the wall-time — spec-decode is throughput-neutral on quality), QAT w4a16 +MTP 43.8%. Agentic axis (TheAgentCompany) 0%. Top single-Spark cluster alongside Qwen3.6-35B-A3B. NOT a knowledge bench.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
       "facets": {
         "architecture": {
           "attention": "hybrid-sliding-global",
@@ -3026,27 +3188,40 @@
       "id": "model-glm-5-1",
       "kind": "model",
       "name": "GLM-5.1",
-      "summary": "Open-weights LLM by Z AI; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "754B/~40B-active MoE (256 experts, 8/token; MLA + DeepSeek Sparse Attention); 200K context; MIT",
       "visibility": "public",
       "labels": [
         "z-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 200k, hosted price ~$0.90/1M blended; AA Intelligence Index 40. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "MLA + DeepSeek Sparse Attention (DSA); kv_lora_rank 512, q_lora_rank 2048, 64 Q / 64 KV",
+          "params": "754B",
+          "activeParams": "~40B",
+          "nativeContext": 202752,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "zai-org/GLM-5.1",
+          "modelType": "glm_moe_dsa",
+          "layers": 78,
+          "hidden": 6144,
+          "experts": "256 routed (8/token) + 1 shared",
+          "vocab": 154880,
+          "license": "mit",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/zai-org/GLM-5.1 config.json + model card (activeParams ~40B from third-party, not on card)",
+            "verification": "authoritative",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 40,
           "basis": "reference-precision",
@@ -3056,6 +3231,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "sweBenchPro": 58.4,
+          "gpqaDiamond": 86.2,
+          "terminalBench2": 63.5,
+          "aime2026": 95.3,
+          "hmmtFeb2026": 82.6,
+          "browseComp": 68,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/zai-org/GLM-5.1 model card",
+            "verification": "cited"
           }
         }
       }
@@ -3773,27 +3961,39 @@
       "id": "model-granite-4-0-h-small",
       "kind": "model",
       "name": "Granite 4.0 H Small",
-      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "32B/9B-active Mamba2+attention hybrid MoE (72 experts, 10/token); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "ibm",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-mamba",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.08/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Mamba-2 + attention hybrid (36 Mamba / 4 attention; attn = GQA 32 heads / 8 KV, NoPE)",
+          "params": "32B",
+          "activeParams": "9B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "ibm-granite/granite-4.0-h-small",
+          "modelType": "granitemoehybrid",
+          "layers": 40,
+          "hidden": 4096,
+          "experts": "72 routed (10/token) + 1 shared",
+          "vocab": 100352,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.0-h-small config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 5,
           "basis": "reference-precision",
@@ -3804,6 +4004,21 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 78.44,
+          "gsm8k": 87.27,
+          "humanEval": 88,
+          "ifEval": 87.55,
+          "bbh": 81.62,
+          "mbpp": 84,
+          "arenaHard": 46.48,
+          "alpacaEval2": 42.48,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.0-h-small model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3811,27 +4026,36 @@
       "id": "model-granite-4-1-30b",
       "kind": "model",
       "name": "Granite 4.1 30B",
-      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "30B dense GQA transformer (decoder-only, RoPE/SwiGLU); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "ibm",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (dense decoder-only; 32 heads / 8 KV, RoPE, SwiGLU, RMSNorm)",
+          "params": "30B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "ibm-granite/granite-4.1-30b",
+          "modelType": "granite",
+          "layers": 64,
+          "hidden": 4096,
+          "vocab": 100352,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.1-30b config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -3842,6 +4066,21 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 80.16,
+          "gsm8k": 94.16,
+          "humanEval": 88.41,
+          "mbpp": 85.45,
+          "gpqaDiamond": 45.76,
+          "bfcl": 73.68,
+          "arenaHard": 71.02,
+          "alpacaEval2": 56.16,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.1-30b model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3849,27 +4088,36 @@
       "id": "model-granite-4-1-8b",
       "kind": "model",
       "name": "Granite 4.1 8B",
-      "summary": "Open-weights LLM by IBM; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "8B dense GQA transformer (decoder-only, RoPE/SwiGLU); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "ibm",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.06/1M blended; AA Intelligence Index 7. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (dense decoder-only; 32 heads / 8 KV, RoPE, SwiGLU, RMSNorm)",
+          "params": "8B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "ibm-granite/granite-4.1-8b",
+          "modelType": "granite",
+          "layers": 40,
+          "hidden": 4096,
+          "vocab": 100352,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.1-8b config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 7,
           "basis": "reference-precision",
@@ -3880,6 +4128,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 73.84,
+          "mmluPro": 55.99,
+          "gsm8k": 92.49,
+          "humanEval": 85.37,
+          "arenaHard": 68.98,
+          "alpacaEval2": 50.08,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ibm-granite/granite-4.1-8b model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3887,20 +4148,21 @@
       "id": "model-holo-3-1-35b-a3b",
       "kind": "model",
       "name": "Holo-3.1-35B-A3B",
-      "summary": "Agentic MoE (35B total / ~3B active, A3B), open-weights. Community-reported 'best agentic tool-user of its size' (forum 374423). Creator/arch unconfirmed — stub.",
+      "summary": "35B/3B-active VL computer-use agent MoE (256 experts, 8/token; hybrid linear+full attn) on Qwen3.5-MoE-VL; 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "holo",
-        "moe",
-        "agentic",
         "open-weights",
-        "stub"
+        "moe",
+        "multimodal",
+        "agentic",
+        "long-context"
       ],
       "relations": [],
       "claims": [
         {
           "kind": "note",
-          "body": "COMMUNITY (single-Spark coding, forum 374423, nangld85): run as NVFP4 on 1× DGX Spark; \"best agentic tool-user of its size\" alongside Qwen3.6-35B (daily driver) and DeepSeek-V4-Flash. No measured tok/s or eval in-thread; creator (possibly H Company) and architecture NOT confirmed — verify against the vendor HF config.json before recording architecture facets.",
+          "body": "COMMUNITY (single-Spark coding, forum 374423, nangld85): run as NVFP4 on 1× DGX Spark; \"best agentic tool-user of its size\" alongside Qwen3.6-35B (daily driver) and DeepSeek-V4-Flash. No measured tok/s or eval in-thread.",
           "provenance": {
             "asOf": "2026-06-26",
             "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
@@ -3908,33 +4170,69 @@
             "verification": "cited"
           }
         }
-      ]
+      ],
+      "facets": {
+        "architecture": {
+          "attention": "GQA (16 heads / 2 KV; hybrid linear + full attention, full every 4th layer)",
+          "params": "35B",
+          "activeParams": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "Hcompany/Holo-3.1-35B-A3B",
+          "modelType": "qwen3_5_moe",
+          "layers": 40,
+          "hidden": 2048,
+          "experts": "256 routed (8/token)",
+          "vocab": 248320,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Hcompany/Holo-3.1-35B-A3B config.json + model card (computer-use agent on Qwen3.5-MoE-VL)",
+            "verification": "authoritative"
+          }
+        }
+      }
     },
     {
       "id": "model-hy3-preview",
       "kind": "model",
       "name": "Hy3-preview",
-      "summary": "Open-weights LLM by Tencent; catalog stub (AA-leaderboard-seeded, 34 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "295B/21B-active MoE (192 experts top-8 + 1 shared; MTP); GQA; 256K context; Tencent Hy Community License",
       "visibility": "public",
       "labels": [
         "tencent",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.10/1M blended; AA Intelligence Index 34. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 / 8 KV, head_dim 128, qk_norm)",
+          "params": "295B",
+          "activeParams": "21B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "tencent/Hy3-preview",
+          "modelType": "hy_v3",
+          "layers": 80,
+          "hidden": 4096,
+          "experts": "192 routed (8/token) + 1 shared (MoE from layer 1)",
+          "vocab": 120832,
+          "license": "tencent-hy-community",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/tencent/Hy3-preview config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 34,
           "basis": "reference-precision",
@@ -3945,6 +4243,18 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 87.42,
+          "gsm8k": 95.37,
+          "sweBenchVerified": 74.4,
+          "gpqaDiamond": 87.2,
+          "terminalBench2": 54.4,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/tencent/Hy3-preview model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3952,27 +4262,41 @@
       "id": "model-hypernova-60b-2605",
       "kind": "model",
       "name": "HyperNova 60B 2605",
-      "summary": "Open-weights LLM by Multiverse Computing; catalog stub (AA-leaderboard-seeded, 22 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "60B/4.8B-active MoE (gpt-oss arch; CompactifAI 50%-compressed gpt-oss-120b, mxfp4); 4K native (128K YaRN); Apache-2.0",
       "visibility": "public",
       "labels": [
         "multiverse",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "compressed",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k, hosted price ~$0.05/1M blended; AA Intelligence Index 22. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 / 8 KV; alternating sliding+full, sliding_window 128)",
+          "params": "60B",
+          "activeParams": "4.8B",
+          "nativeContext": 4096,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "MultiverseComputingCAI/Hypernova-60B-2605",
+          "modelType": "gpt_oss",
+          "layers": 32,
+          "hidden": 2880,
+          "experts": "80 routed (4/token)",
+          "extendedContext": 131072,
+          "vocab": 201088,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/MultiverseComputingCAI/Hypernova-60B-2605 config.json + model card",
+            "verification": "authoritative",
+            "note": "CompactifAI 50%-compressed derivative of openai/gpt-oss-120b; weights mxfp4-quantized (attn/router/embeddings/head excluded)"
+          }
+        },
         "aaIntelligence": {
           "index": 22,
           "basis": "reference-precision",
@@ -3983,6 +4307,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 76.8,
+          "liveCodeBench": 68.7,
+          "gpqaDiamond": 71.9,
+          "hle": 15,
+          "aime25": 90,
+          "ifBench": 66.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/MultiverseComputingCAI/Hypernova-60B-2605 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -3990,27 +4327,39 @@
       "id": "model-intellect-3",
       "kind": "model",
       "name": "INTELLECT-3",
-      "summary": "Open-weights LLM by Prime Intellect; catalog stub (AA-leaderboard-seeded, 16 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "106B/12B-active MoE (128 experts top-8 + 1 shared; GLM-4.5-Air-Base + RL); 128K context; MIT",
       "visibility": "public",
       "labels": [
         "prime-intellect",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 131k; AA Intelligence Index 16. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (96 heads / 8 KV, head_dim 128, partial_rotary 0.5)",
+          "params": "106B",
+          "activeParams": "12B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "PrimeIntellect/INTELLECT-3",
+          "modelType": "glm4_moe",
+          "layers": 46,
+          "hidden": 4096,
+          "experts": "128 routed (8/token) + 1 shared (MoE from layer 1); MTP (1 nextn layer)",
+          "vocab": 151552,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/PrimeIntellect/INTELLECT-3 config.json + model card (built on GLM-4.5-Air-Base, SFT + large-scale RL)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 16,
           "basis": "reference-precision",
@@ -4021,6 +4370,20 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "math500": 98.1,
+          "aime24": 90.8,
+          "aime25": 88,
+          "liveCodeBench": 69.3,
+          "gpqaDiamond": 74.4,
+          "hle": 14.6,
+          "mmluPro": 81.9,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/PrimeIntellect/INTELLECT-3 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4028,27 +4391,35 @@
       "id": "model-jamba-1-7-large",
       "kind": "model",
       "name": "Jamba 1.7 Large",
-      "summary": "Open-weights LLM by AI21 Labs; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "398B/94B-active SSM-Transformer (Mamba+attention) hybrid MoE; 256K context; Jamba Open Model License",
       "visibility": "public",
       "labels": [
         "ai21",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-mamba",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$2.60/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "SSM-Transformer hybrid (Mamba + attention), MoE",
+          "params": "398B",
+          "activeParams": "94B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "ai21labs/AI21-Jamba-Large-1.7",
+          "license": "Jamba Open Model License",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ai21labs/AI21-Jamba-Large-1.7 model card (config.json gated/401 — layers/hidden/vocab/experts unverified)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 5,
           "basis": "reference-precision",
@@ -4059,6 +4430,16 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "facts": 0.832,
+          "ifEval": 0.84,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ai21labs/AI21-Jamba-Large-1.7 model card",
+            "verification": "cited",
+            "confidence": "low"
+          }
         }
       }
     },
@@ -4066,27 +4447,38 @@
       "id": "model-jamba-reasoning-3b",
       "kind": "model",
       "name": "Jamba Reasoning 3B",
-      "summary": "Open-weights LLM by AI21 Labs; catalog stub (AA-leaderboard-seeded, 4 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "3B dense Mamba+attention hybrid (26 Mamba / 2 attention, MQA); 256K context; reasoning; Apache-2.0",
       "visibility": "public",
       "labels": [
         "ai21",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "hybrid-mamba",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 4. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Mamba + attention hybrid (26 Mamba / 2 attention; MQA 1 KV head, 20 Q heads)",
+          "params": "3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "ai21labs/AI21-Jamba-Reasoning-3B",
+          "modelType": "jamba",
+          "layers": 28,
+          "hidden": 2560,
+          "vocab": 65536,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ai21labs/AI21-Jamba-Reasoning-3B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 4,
           "basis": "reference-precision",
@@ -4096,6 +4488,16 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmluPro": 61,
+          "hle": 6,
+          "ifBench": 52,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/ai21labs/AI21-Jamba-Reasoning-3B model card",
+            "verification": "cited"
           }
         }
       }
@@ -4116,11 +4518,21 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 28. Stub pending enrichment from the vendor config.json.",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 28.",
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "NO OPEN WEIGHTS (checked 2026-06-29): JIUTIAN (China Mobile) is API-only — no HF config.json/weights. The JT-LM org hosts only JT-Math-8B / JT-Coder-8B / JT-DA-8B, not this model. Third-party (artificialanalysis.ai) suggests ~35B non-reasoning, ~260k ctx — NOT authoritative. Architecture not enrichable from HF; this stub stays AA-leaderboard-only unless weights are released.",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/JT-LM (org checked — model absent)",
+            "confidence": "low",
+            "verification": "cited"
           }
         }
       ],
@@ -4154,11 +4566,21 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 19.",
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "NO OPEN WEIGHTS (checked 2026-06-29): JIUTIAN (China Mobile) is API-only — no HF config.json/weights; param count not disclosed. Only a third-party listing (artificialanalysis.ai/models/jt-mini) exists. Not enrichable from HF; this stub stays AA-leaderboard-only unless weights are released.",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/JT-LM (org checked — model absent)",
+            "confidence": "low",
+            "verification": "cited"
           }
         }
       ],
@@ -4180,27 +4602,40 @@
       "id": "model-k-exaone",
       "kind": "model",
       "name": "K-EXAONE",
-      "summary": "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 25 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "236B/23B-active fine-grained MoE (128 experts top-8 + 1 shared; MTP); hybrid-GQA; 256K context; K-EXAONE License",
       "visibility": "public",
       "labels": [
         "lg-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "multilingual",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 25. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "Hybrid GQA — sliding_window 128, 3:1 pattern; 64 heads / 8 KV",
+          "params": "236B",
+          "activeParams": "23B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "LGAI-EXAONE/K-EXAONE-236B-A23B",
+          "modelType": "exaone_moe",
+          "layers": 48,
+          "hidden": 6144,
+          "experts": "128 routed (8/token) + 1 shared; MTP self-speculative layers",
+          "vocab": 153600,
+          "license": "k-exaone-ai",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/K-EXAONE-236B-A23B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 25,
           "basis": "reference-precision",
@@ -4211,6 +4646,20 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 83.8,
+          "aime25": 92.8,
+          "liveCodeBench": 80.7,
+          "ifEval": 89.7,
+          "kmmluPro": 67.3,
+          "mmmlu": 85.7,
+          "tau2Retail": 78.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LGAI-EXAONE/K-EXAONE-236B-A23B model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4218,27 +4667,41 @@
       "id": "model-kimi-k2-6",
       "kind": "model",
       "name": "Kimi K2.6",
-      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 43 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1T/32B-active MLA MoE (384 experts, 8/token; MoonViT vision); 256K context; ships INT4; Modified MIT",
       "visibility": "public",
       "labels": [
         "moonshot",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.70/1M blended; AA Intelligence Index 43. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "MLA (kv_lora_rank 512, q_lora_rank 1536, qk_nope 128 + qk_rope 64, v_head 128)",
+          "params": "1T",
+          "activeParams": "32B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "moonshotai/Kimi-K2.6",
+          "modelType": "kimi_k25",
+          "layers": 61,
+          "hidden": 7168,
+          "experts": "384 routed (8/token) + 1 shared",
+          "vocab": 163840,
+          "license": "modified-mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-K2.6 config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 43,
           "basis": "reference-precision",
@@ -4249,6 +4712,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "gpqaDiamond": 90.5,
+          "sweBenchVerified": 80.2,
+          "sweBenchPro": 58.6,
+          "terminalBench2": 66.7,
+          "mmmuPro": 79.4,
+          "liveCodeBench": 89.6,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-K2.6 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4256,27 +4732,42 @@
       "id": "model-kimi-k2-7-code",
       "kind": "model",
       "name": "Kimi K2.7 Code",
-      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1T/32B-active MLA MoE (384 experts, 8/token); coding/agentic build on K2.6; 256K context; Modified MIT",
       "visibility": "public",
       "labels": [
         "moonshot",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "coding",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.70/1M blended; AA Intelligence Index 42. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "MLA (kv_lora_rank 512, q_lora_rank 1536, qk_nope 128 + qk_rope 64, v_head 128)",
+          "params": "1T",
+          "activeParams": "32B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "moonshotai/Kimi-K2.7-Code",
+          "modelType": "kimi_k25",
+          "layers": 61,
+          "hidden": 7168,
+          "experts": "384 routed (8/token) + 1 shared",
+          "vocab": 163840,
+          "license": "modified-mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-K2.7-Code config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 42,
           "basis": "reference-precision",
@@ -4287,6 +4778,18 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "kimiCodeBenchV2": 62,
+          "programBench": 53.6,
+          "mlsBenchLite": 35.1,
+          "mcpAtlas": 76,
+          "mcpMarkVerified": 81.1,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-K2.7-Code model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4294,27 +4797,40 @@
       "id": "model-kimi-linear-48b-a3b-instruct",
       "kind": "model",
       "name": "Kimi Linear 48B A3B Instruct",
-      "summary": "Open-weights LLM by Kimi; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "48B/3B-active hybrid linear MoE (Kimi Delta Attention + global MLA 3:1); 1M context; MIT",
       "visibility": "public",
       "labels": [
         "moonshot",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "linear-attention",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "hybrid linear: Kimi Delta Attention (gated DeltaNet) + global MLA at 3:1 (full-attn layers 4/8/12/16/20/24/27)",
+          "params": "48B",
+          "activeParams": "3B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
+          "modelType": "kimi_linear",
+          "layers": 27,
+          "hidden": 2304,
+          "experts": "256 routed (8/token) + 1 shared",
+          "vocab": 163840,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct config.json + model card",
+            "verification": "authoritative",
+            "note": "card calls it 'not traditional MoE' but config IS MoE (256+1, 8/token); claims ~6x decode throughput + 75% KV-cache reduction at 1M"
+          }
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -4325,6 +4841,15 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 51,
+          "ruler128k": 84.3,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4332,27 +4857,39 @@
       "id": "model-lfm2-24b-a2b",
       "kind": "model",
       "name": "LFM2 24B A2B",
-      "summary": "Open-weights LLM by Liquid AI; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "24B/2.3B-active short-conv+GQA hybrid MoE (64 experts, 4/token); 32K context; LFM Open License",
       "visibility": "public",
       "labels": [
         "liquid-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-conv"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 32.8k, hosted price ~$0.04/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "short-conv + GQA hybrid MoE (GQA 32 heads / 8 KV)",
+          "params": "24B",
+          "activeParams": "2.3B",
+          "nativeContext": 32768,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "LiquidAI/LFM2-24B-A2B",
+          "modelType": "lfm2_moe",
+          "layers": 40,
+          "hidden": 2048,
+          "experts": "64 routed (4/token)",
+          "vocab": 65536,
+          "license": "lfm-open-license-v1.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LiquidAI/LFM2-24B-A2B config.json + model card",
+            "verification": "authoritative",
+            "note": "context discrepancy — card says 32768, config max_position_embeddings=128000; card value used"
+          }
+        },
         "aaIntelligence": {
           "index": 5,
           "basis": "reference-precision",
@@ -4370,27 +4907,40 @@
       "id": "model-lfm2-5-8b-a1b",
       "kind": "model",
       "name": "LFM2.5-8B-A1B",
-      "summary": "Open-weights LLM by Liquid AI; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "8.3B/1.5B-active short-conv+GQA hybrid MoE (32 experts, 4/token); 128K context; reasoning; LFM License",
       "visibility": "public",
       "labels": [
         "liquid-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-conv",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 32.8k, hosted price ~$0.00/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "short-conv + GQA hybrid MoE (6 full-attn + 18 conv layers; GQA 32 heads / 8 KV)",
+          "params": "8.3B",
+          "activeParams": "1.5B",
+          "nativeContext": 128000,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "LiquidAI/LFM2.5-8B-A1B",
+          "modelType": "lfm2_moe",
+          "layers": 24,
+          "hidden": 2048,
+          "experts": "32 routed (4/token)",
+          "vocab": 128000,
+          "license": "lfm-1.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 8,
           "basis": "reference-precision",
@@ -4401,6 +4951,20 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "ifEval": 91.84,
+          "ifBench": 56.47,
+          "math500": 88.76,
+          "aime25": 42.53,
+          "aime26": 50,
+          "bfcl": 64.79,
+          "tau2Telecom": 88.07,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4408,27 +4972,39 @@
       "id": "model-ling-2-6-1t",
       "kind": "model",
       "name": "Ling-2.6-1T",
-      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 26 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1T hybrid MLA + linear-attention MoE (256 experts, 8/token); instruct sibling of Ring; 256K context; MIT",
       "visibility": "public",
       "labels": [
         "inclusion-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-linear",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.52/1M blended; AA Intelligence Index 26. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "hybrid MLA (q_lora 1536 / kv_lora 512) + linear attention",
+          "params": "1T",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "inclusionAI/Ling-2.6-1T",
+          "modelType": "bailing_hybrid",
+          "layers": 80,
+          "hidden": 8192,
+          "experts": "256 routed (8/token) + 1 shared",
+          "vocab": 157184,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ling-2.6-1T config.json + model card",
+            "verification": "authoritative",
+            "note": "activeParams not published on card; config FP8_DYNAMIC quant, rope_theta 6e6"
+          }
+        },
         "aaIntelligence": {
           "index": 26,
           "basis": "reference-precision",
@@ -4439,6 +5015,14 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "sweBenchVerified": 72.2,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ling-2.6-1T model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4446,27 +5030,40 @@
       "id": "model-ling-2-6-flash",
       "kind": "model",
       "name": "Ling 2.6 Flash",
-      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 19 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "104B/7.4B-active hybrid MLA + Lightning-linear MoE (256 experts, 8/token); 128K (256K YaRN); MIT",
       "visibility": "public",
       "labels": [
         "inclusion-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-linear",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.06/1M blended; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "1:7 MLA + Lightning-linear hybrid (MLA q_lora 1536 / kv_lora 512)",
+          "params": "104B",
+          "activeParams": "7.4B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "inclusionAI/Ling-2.6-flash",
+          "modelType": "bailing_hybrid",
+          "layers": 32,
+          "hidden": 4096,
+          "experts": "256 routed (8/token) + 1 shared",
+          "extendedContext": 262144,
+          "vocab": 157184,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ling-2.6-flash config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 19,
           "basis": "reference-precision",
@@ -4477,6 +5074,16 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "sweBenchVerified": 61.2,
+          "aime2026": 73.85,
+          "hmmtFeb2026": 49.29,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ling-2.6-flash model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4484,27 +5091,37 @@
       "id": "model-llama-3-1-405b",
       "kind": "model",
       "name": "Llama 3.1 405B",
-      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "405B dense GQA transformer; 128K context; Llama 3.1 Community License",
       "visibility": "public",
       "labels": [
         "meta",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$3.13/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "GQA (128 heads / 8 KV)",
+          "params": "405B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "meta-llama/Llama-3.1-405B",
+          "modelType": "llama",
+          "layers": 126,
+          "hidden": 16384,
+          "vocab": 128256,
+          "license": "llama-3.1",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-3.1-405B (gated 401; arch verified vs allenai/Llama-3.1-Tulu-3-405B config.json)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -4522,27 +5139,36 @@
       "id": "model-llama-3-1-nemotron-70b",
       "kind": "model",
       "name": "Llama 3.1 Nemotron 70B",
-      "summary": "Open-weights LLM by NVIDIA; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "70B dense GQA (RLHF-tuned Llama-3.1-70B-Instruct); 128K context; NVIDIA Open Model License",
       "visibility": "public",
       "labels": [
         "nvidia",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$1.20/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 heads / 8 KV)",
+          "params": "70B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
+          "modelType": "llama",
+          "layers": 80,
+          "hidden": 8192,
+          "vocab": 128256,
+          "license": "nvidia-open-model-license",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 8,
           "basis": "reference-precision",
@@ -4553,6 +5179,16 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "arenaHard": 85,
+          "alpacaEval2": 57.6,
+          "mtBench": 8.98,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4560,27 +5196,39 @@
       "id": "model-llama-3-2-90b",
       "kind": "model",
       "name": "Llama 3.2 90B (Vision)",
-      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 6 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "90B GQA + vision cross-attention VLM (100 text + 32 vision layers); 128K context; Llama 3.2 License",
       "visibility": "public",
       "labels": [
         "meta",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$1.38/1M blended; AA Intelligence Index 6. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "GQA + cross-attention (vision)",
+          "params": "90B",
+          "nativeContext": 131072,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "meta-llama/Llama-3.2-90B-Vision",
+          "modelType": "mllama",
+          "layers": 100,
+          "hidden": 8192,
+          "vocab": 128256,
+          "license": "llama-3.2",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-3.2-90B-Vision (gated; verified via unsloth mirror config.json)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 6,
           "basis": "reference-precision",
@@ -4598,27 +5246,37 @@
       "id": "model-llama-3-3-70b",
       "kind": "model",
       "name": "Llama 3.3 70B",
-      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "70B dense GQA transformer (instruction-tuned); 128K context; Llama 3.3 License",
       "visibility": "public",
       "labels": [
         "meta",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.59/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "GQA (64 heads / 8 KV)",
+          "params": "70B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "meta-llama/Llama-3.3-70B-Instruct",
+          "modelType": "llama",
+          "layers": 80,
+          "hidden": 8192,
+          "vocab": 128256,
+          "license": "llama-3.3",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct (verified via unsloth mirror config.json + card)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -4629,6 +5287,20 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 86,
+          "mmluPro": 68.9,
+          "ifEval": 92.1,
+          "math": 77,
+          "gpqaDiamond": 50.5,
+          "humanEval": 88.4,
+          "mgsm": 91.1,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct model card (via unsloth mirror)",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4636,27 +5308,41 @@
       "id": "model-llama-4-maverick",
       "kind": "model",
       "name": "Llama 4 Maverick",
-      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 14 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "400B/17B-active MoE (128 experts, 1/token; chunked iRoPE); 1M context; multimodal; Llama 4 License",
       "visibility": "public",
       "labels": [
         "meta",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.34/1M blended; AA Intelligence Index 14. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "GQA + chunked iRoPE (attention_chunk_size 8192, NoPE interleaved)",
+          "params": "400B",
+          "activeParams": "17B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "modelType": "llama4",
+          "layers": 48,
+          "hidden": 5120,
+          "experts": "128 routed (1/token) + 1 shared",
+          "vocab": 202048,
+          "license": "llama4",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct (verified via unsloth mirror config.json + card)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 14,
           "basis": "reference-precision",
@@ -4667,6 +5353,21 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 80.5,
+          "gpqaDiamond": 69.8,
+          "liveCodeBench": 43.4,
+          "mathVista": 73.7,
+          "mmmu": 73.4,
+          "mmmuPro": 59.6,
+          "chartQa": 90,
+          "docVqa": 94.4,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct model card (via unsloth mirror)",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4674,27 +5375,41 @@
       "id": "model-llama-4-scout",
       "kind": "model",
       "name": "Llama 4 Scout",
-      "summary": "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "109B/17B-active MoE (16 experts, 1/token; chunked iRoPE); 10M context; multimodal; Llama 4 License",
       "visibility": "public",
       "labels": [
         "meta",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 10M, hosted price ~$0.22/1M blended; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "GQA + chunked iRoPE (attention_chunk_size 8192, NoPE interleaved)",
+          "params": "109B",
+          "activeParams": "17B",
+          "nativeContext": 10485760,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "modelType": "llama4",
+          "layers": 48,
+          "hidden": 5120,
+          "experts": "16 routed (1/token) + 1 shared",
+          "vocab": 202048,
+          "license": "llama4",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct (verified via unsloth mirror config.json)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 10,
           "basis": "reference-precision",
@@ -4705,6 +5420,15 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmluPro": 74.3,
+          "gpqaDiamond": 57.2,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4712,27 +5436,40 @@
       "id": "model-longcat-flash-lite",
       "kind": "model",
       "name": "LongCat Flash Lite",
-      "summary": "Open-weights LLM by LongCat; catalog stub (AA-leaderboard-seeded, 17 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "68.5B/~3B-active MLA MoE (256 routed + 128 zero-experts, top-12); 32K native (256K YaRN); MIT",
       "visibility": "public",
       "labels": [
         "longcat",
+        "meituan",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 17. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "MLA (kv_lora_rank 512, q_lora_rank 1536)",
+          "params": "68.5B",
+          "activeParams": "~3B",
+          "nativeContext": 32768,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "meituan-longcat/LongCat-Flash-Lite",
+          "modelType": "LongcatFlashNgram",
+          "layers": 14,
+          "hidden": 3072,
+          "experts": "256 routed + 128 zero-experts (top-12)",
+          "extendedContext": 262144,
+          "vocab": 131072,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meituan-longcat/LongCat-Flash-Lite config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 17,
           "basis": "reference-precision",
@@ -4743,6 +5480,18 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "mmlu": 85.52,
+          "cmmlu": 82.48,
+          "math500": 96.8,
+          "aime25": 63.23,
+          "sweBench": 54.4,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/meituan-longcat/LongCat-Flash-Lite model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -4750,27 +5499,42 @@
       "id": "model-mimo-v2-5",
       "kind": "model",
       "name": "MiMo-V2.5",
-      "summary": "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 40 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "310B/15B-active omnimodal MoE (256 experts, 8/token; SWA+GA 5:1; +ViT/audio); 1M context; MIT",
       "visibility": "public",
       "labels": [
         "xiaomi",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.06/1M blended; AA Intelligence Index 40. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 / 4 KV); hybrid SWA+GA 5:1, 128 window",
+          "params": "310B",
+          "activeParams": "15B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text",
+            "image",
+            "video",
+            "audio"
+          ],
+          "hfRepo": "XiaomiMiMo/MiMo-V2.5",
+          "modelType": "mimo_v2",
+          "layers": 48,
+          "hidden": 4096,
+          "experts": "256 routed (8/token)",
+          "vocab": 152576,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5 config.json + model card (config = text LM backbone)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 40,
           "basis": "reference-precision",
@@ -4880,27 +5644,38 @@
       "id": "model-mimo-v2-5-pro",
       "kind": "model",
       "name": "MiMo-V2.5-Pro",
-      "summary": "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1.02T/42B-active MoE (384 experts, 8/token; SWA+GA 6:1, +MTP); 1M context; MIT",
       "visibility": "public",
       "labels": [
         "xiaomi",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.18/1M blended; AA Intelligence Index 42. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (128 / 8 KV); hybrid SWA+GA 6:1, 128 window; +MTP",
+          "params": "1.02T",
+          "activeParams": "42B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "XiaomiMiMo/MiMo-V2.5-Pro",
+          "modelType": "mimo_v2",
+          "layers": 70,
+          "hidden": 6144,
+          "experts": "384 routed (8/token)",
+          "vocab": 152576,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 42,
           "basis": "reference-precision",
@@ -4930,11 +5705,21 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.34/1M blended; AA Intelligence Index 36. Stub pending enrichment from the vendor config.json.",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.34/1M blended; AA Intelligence Index 36.",
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "REPO NOT FOUND (checked 2026-06-29): no \"MiMo-V2-Omni-0327\" (or any Omni/0327- dated) repo under XiaomiMiMo. Existing repos: MiMo-V2-Flash(-Base), MiMo-V2.5(-Base/-Pro/-ASR). The omnimodal model is MiMo-V2.5 (model-mimo-v2-5) — a different exact ID, not substituted here. This stub may be a leaderboard-only / renamed/withdrawn entry; not enrichable from HF.",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/XiaomiMiMo (org checked — exact repo absent)",
+            "confidence": "low",
+            "verification": "cited"
           }
         }
       ],
@@ -4956,27 +5741,40 @@
       "id": "model-minicpm-v-4-6-1-3b",
       "kind": "model",
       "name": "MiniCPM-V 4.6 1.3B",
-      "summary": "Open-weights LLM by OpenBMB; catalog stub (AA-leaderboard-seeded, 4 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1.3B multimodal VLM (SigLIP2-400M vision + Qwen3.5-0.8B LLM, 3:1 linear/full attn); 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "openbmb",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "multimodal",
+        "vision",
+        "small"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k; AA Intelligence Index 4. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "hybrid text backbone (qwen3_5_text, 3 linear-attn : 1 full-attn; GQA 8 Q / 2 KV); vision = full attn 16 heads",
+          "params": "1.3B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "openbmb/MiniCPM-V-4.6",
+          "modelType": "minicpmv4_6",
+          "layers": 24,
+          "hidden": 1024,
+          "vocab": 248094,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/openbmb/MiniCPM-V-4.6 config.json + model card",
+            "verification": "cited",
+            "confidence": "medium",
+            "note": "card body says '1B' but component sum / filename → ~1.3B; card claims video but config exposes only image+text → modality [text,image]"
+          }
+        },
         "aaIntelligence": {
           "index": 4,
           "basis": "reference-precision",
@@ -4994,27 +5792,36 @@
       "id": "model-minicpm5-1b",
       "kind": "model",
       "name": "MiniCPM5-1B",
-      "summary": "Open-weights LLM by OpenBMB; catalog stub (AA-leaderboard-seeded, 12 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1.08B dense Llama-arch transformer (GQA, hybrid-reasoning toggle); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "openbmb",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "small"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 12. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (16 Q / 2 KV, head_dim 128); standard Llama transformer — NOT SSM/hybrid",
+          "params": "1.08B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "openbmb/MiniCPM5-1B",
+          "modelType": "llama",
+          "layers": 24,
+          "hidden": 1536,
+          "vocab": 130560,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/openbmb/MiniCPM5-1B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 12,
           "basis": "reference-precision",
@@ -5537,7 +6344,7 @@
       "id": "model-minimax-m27-reap-172b-a10b",
       "kind": "model",
       "name": "MiniMax-M2.7-REAP-172B-A10B",
-      "summary": "REAP expert-pruned MiniMax-M2.7 (~172B total / ~10B active), open-weights. Community-reported: fast (NVFP4 ~40 tg) but quality-degraded on multistep reasoning. Stub.",
+      "summary": "REAP expert-pruned MiniMax-M2.7 (172B/~10B-active, 256→192 experts); fast but quality-degraded; community repack; NC License",
       "visibility": "public",
       "labels": [
         "minimax",
@@ -5545,7 +6352,7 @@
         "reap",
         "expert-pruned",
         "open-weights",
-        "stub"
+        "long-context"
       ],
       "relations": [
         {
@@ -5556,7 +6363,7 @@
       "claims": [
         {
           "kind": "caveat",
-          "body": "COMMUNITY (single-Spark coding, forum 374423, savu_silviu): NVFP4, ~40 tg/s — but criticised as \"half brained\" for multistep reasoning. Datapoint in the broader pattern that aggressive expert-pruning (REAP) trades capability for fit/speed (cf. the GLM-5.2 15%-pruned caveat). Treat as a speed-over-quality option; verify on a real eval before relying on it for agentic coding. Architecture/exact pruning ratio not confirmed — stub.",
+          "body": "COMMUNITY (single-Spark coding, forum 374423, savu_silviu): NVFP4, ~40 tg/s — but criticised as \"half brained\" for multistep reasoning. Datapoint in the broader pattern that aggressive expert-pruning (REAP) trades capability for fit/speed (cf. the GLM-5.2 15%-pruned caveat). Treat as a speed-over-quality option; verify on a real eval before relying on it for agentic coding. No quality benchmarks published — community repacks carry only throughput.",
           "provenance": {
             "asOf": "2026-06-26",
             "source": "https://forums.developer.nvidia.com/t/single-spark-setups-which-models-do-you-actually-run-for-coding-and-how-374423",
@@ -5564,33 +6371,70 @@
             "verification": "cited"
           }
         }
-      ]
+      ],
+      "facets": {
+        "architecture": {
+          "params": "172B",
+          "activeParams": "~10B",
+          "nativeContext": 196608,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "saricles/MiniMax-M2.7-REAP-172B-A10B-BF16",
+          "modelType": "minimax_m2",
+          "layers": 62,
+          "hidden": 3072,
+          "experts": "192 routed (8/token) — REAP-pruned from MiniMax-M2.7's 256",
+          "vocab": 200064,
+          "license": "minimax-m2.7-nc",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/saricles/MiniMax-M2.7-REAP-172B-A10B-BF16 config.json (REAP method arXiv:2510.13999; arch verified vs base MiniMaxAI/MiniMax-M2.7)",
+            "verification": "cited",
+            "confidence": "medium"
+          }
+        }
+      }
     },
     {
       "id": "model-minimax-m3",
       "kind": "model",
       "name": "MiniMax-M3",
-      "summary": "Open-weights LLM by MiniMax; catalog stub (AA-leaderboard-seeded, 44 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "428B/23B-active multimodal MoE (128 experts top-8 + 1 shared, 4/token; MSA); 1M context; MiniMax Community License",
       "visibility": "public",
       "labels": [
         "minimax",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 1M, hosted price ~$0.22/1M blended; AA Intelligence Index 44. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA per config (64 Q / 4 KV); card brands it MiniMax Sparse Attention (MSA)",
+          "params": "428B",
+          "activeParams": "23B",
+          "nativeContext": 1048576,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "MiniMaxAI/MiniMax-M3",
+          "modelType": "minimax_m3_vl",
+          "layers": 60,
+          "hidden": 6144,
+          "experts": "128 routed (4/token) + 1 shared",
+          "vocab": 200064,
+          "license": "minimax-community",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/MiniMaxAI/MiniMax-M3 config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 44,
           "basis": "reference-precision",
@@ -5601,6 +6445,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "sweBenchPro": 59,
+          "sweBenchVerified": 80.5,
+          "mmmuPro": 78.1,
+          "videoMmeV2": 85.4,
+          "clawEval": 74.5,
+          "apexAgents": 27.7,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/MiniMaxAI/MiniMax-M3 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -5608,27 +6465,39 @@
       "id": "model-ministral-3-14b",
       "kind": "model",
       "name": "Ministral 3 14B",
-      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "13.9B dense multimodal (mistral3 wrapper; 13.5B LM + 0.4B vision); 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "mistral",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.20/1M blended; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (32 heads / 8 KV, head_dim 128)",
+          "params": "13.9B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "mistralai/Ministral-3-14B-Instruct-2512",
+          "modelType": "mistral3",
+          "layers": 40,
+          "hidden": 5120,
+          "vocab": 131072,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512 config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 10,
           "basis": "reference-precision",
@@ -5639,6 +6508,19 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "aime25": 85,
+          "aime24": 89.8,
+          "gpqaDiamond": 71.2,
+          "liveCodeBench": 64.6,
+          "arenaHard": 55.1,
+          "math": 90.4,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512 model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -5646,27 +6528,39 @@
       "id": "model-ministral-3-8b",
       "kind": "model",
       "name": "Ministral 3 8B",
-      "summary": "Open-weights LLM by Mistral; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "8.8B dense multimodal (mistral3 wrapper; 8.4B LM + 0.4B vision); 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "mistral",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.15/1M blended; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (32 heads / 8 KV, head_dim 128)",
+          "params": "8.8B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "mistralai/Ministral-3-8B-Instruct-2512",
+          "modelType": "mistral3",
+          "layers": 34,
+          "hidden": 4096,
+          "vocab": 131072,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512 config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -5676,6 +6570,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "aime25": 78.7,
+          "aime24": 86,
+          "gpqaDiamond": 66.8,
+          "liveCodeBench": 61.6,
+          "arenaHard": 50.9,
+          "mmlu": 76.1,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512 model card",
+            "verification": "cited"
           }
         }
       }
@@ -5782,27 +6689,36 @@
       "id": "model-motif-2-12-7b",
       "kind": "model",
       "name": "Motif-2-12.7B",
-      "summary": "Open-weights LLM by Motif Technologies; catalog stub (AA-leaderboard-seeded, 13 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "12.7B dense transformer (Grouped Differential Attention); 32K context (Base); Apache-2.0",
       "visibility": "public",
       "labels": [
         "motif",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 13. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (40 / 16 KV); Grouped Differential Attention (num_noise_heads 8)",
+          "params": "12.7B",
+          "nativeContext": 32768,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "Motif-Technologies/Motif-2-12.7B-Base",
+          "modelType": "Motif",
+          "layers": 40,
+          "hidden": 4096,
+          "vocab": 219520,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Motif-Technologies/Motif-2-12.7B-Base config.json + model card (tech report arXiv:2511.07464)",
+            "verification": "authoritative",
+            "note": "exact 'Motif-2-12.7B' is a collection (-Base/-Instruct/-Reasoning); Base used here"
+          }
+        },
         "aaIntelligence": {
           "index": 13,
           "basis": "reference-precision",
@@ -5812,6 +6728,18 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmlu": 78.1,
+          "gsm8k": 93.85,
+          "math": 73.62,
+          "humanEval": 65.9,
+          "mbpp": 81.5,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Motif-Technologies/Motif-2-12.7B-Base model card",
+            "verification": "cited"
           }
         }
       }
@@ -5858,27 +6786,37 @@
       "id": "model-nanbeige4-1-3b",
       "kind": "model",
       "name": "Nanbeige4.1-3B",
-      "summary": "Open-weights LLM by Nanbeige; catalog stub (AA-leaderboard-seeded, 10 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "~4B dense Llama-arch GQA transformer; 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "nanbeige",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "small",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k; AA Intelligence Index 10. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (20 heads / 4 KV, head_dim 128)",
+          "params": "~4B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "Nanbeige/Nanbeige4.1-3B",
+          "modelType": "llama",
+          "layers": 32,
+          "hidden": 2560,
+          "vocab": 166144,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Nanbeige/Nanbeige4.1-3B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 10,
           "basis": "reference-precision",
@@ -5888,6 +6826,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "liveCodeBench": 76.9,
+          "aime2026": 87.4,
+          "gpqaDiamond": 83.8,
+          "arenaHard": 73.2,
+          "bfcl": 56.5,
+          "tau2": 48.57,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Nanbeige/Nanbeige4.1-3B model card",
+            "verification": "cited"
           }
         }
       }
@@ -6092,7 +7043,18 @@
           "target": "model-nemotron"
         }
       ],
-      "claims": [],
+      "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): \"Nemotron3 Nano Omni 30B-A3B BF16\" Overall 31.2% — bfcl 76%, bigcodebench 54%, IfEvalCode 4%, TheAgentCompany 0%. Below the top single-Spark cluster. CAVEAT: the eval ran the OMNI (multimodal) BF16 variant; this catalog entry is the text Nano-30B-A3B — confirm they're the same checkpoint before treating this as authoritative for this model. NOT a knowledge bench.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        }
+      ],
       "facets": {
         "architecture": {
           "params": "30B",
@@ -6508,6 +7470,16 @@
       ],
       "claims": [
         {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Nemotron-3-Super-120B-A12B NVFP4 Overall just 25.4% — bfcl COLLAPSED to 12% (vs ~76-80% for the small models), bigcodebench 60%. Concrete evidence that fitting a LARGE model on one Spark via FP4 does NOT buy agentic/tool-use quality — the small dense / small-active MoEs (Qwen3.6-35B-A3B 47.7, Gemma4-31B 46.5) decisively beat it on this board. Weigh against the vendor BF16 benchmarks facet (reference precision).",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
           "kind": "note",
           "body": "VS QWEN3.5-122B ON SPARK (can it run the same way?): SAME SIZE CLASS (120B/12B-active vs 122B/10B-active) → at 4-bit/NVFP4 ~60–68GB it's single-Spark-class, like Qwen 122B (model-qwen35-122b), and BOTH ship MTP (APC-safe speculative decoding). BUT the serving path is NOT identical: Nemotron is a LatentMoE **Mamba-2 + Attention hybrid**, not a pure-transformer MoE, so it needs a HYBRID-AWARE runtime — note this recipe's `--moe-backend cutlass`, `--mamba_ssm_cache_dtype float32`, `--reasoning-parser nemotron_v3`, TRITON attention — you cannot just reuse the Qwen NVFP4/AutoRound recipe. Upside: the Mamba-2 layers carry CONSTANT state (no growing KV); only the periodic attention layers grow KV → a SMALLER KV footprint at long context than pure-attention Qwen 122B → BETTER single-Spark long-context fit (eases the weights-vs-KV budget — see llm-spark-moe-streaming-investigation). Net: same fit + same MTP story, different (hybrid) runtime, and friendlier at 1M context.",
           "provenance": {
@@ -6852,27 +7824,42 @@
       "id": "model-nex-n2-pro",
       "kind": "model",
       "name": "Nex-N2-Pro",
-      "summary": "Open-weights LLM by Nex AGI; catalog stub (AA-leaderboard-seeded, 41 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "397B/~17B-active MoE (512 experts, 10/token; hybrid linear + GQA, VL) on Qwen3.5-397B-A17B; 256K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "nex-agi",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multimodal",
+        "agentic",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.53/1M blended; AA Intelligence Index 41. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA + hybrid linear (32 / 2 KV; full attn every 4th layer, rest linear; head_dim 256, partial_rotary 0.25)",
+          "params": "397B",
+          "activeParams": "~17B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "nex-agi/Nex-N2-Pro",
+          "modelType": "qwen3_5_moe",
+          "layers": 60,
+          "hidden": 4096,
+          "experts": "512 routed (10/token); shared_expert_intermediate 1024",
+          "vocab": 248320,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/nex-agi/Nex-N2-Pro config.json + model card (built on Qwen3.5-397B-A17B)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 41,
           "basis": "reference-precision",
@@ -6882,6 +7869,20 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "terminalBench": 75.3,
+          "sweBenchPro": 58.8,
+          "sweBenchVerified": 80.8,
+          "gpqaDiamond": 90.7,
+          "ifEval": 94,
+          "browseComp": 83.7,
+          "toolathlon": 51.9,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/nex-agi/Nex-N2-Pro model card",
+            "verification": "cited"
           }
         }
       }
@@ -6900,6 +7901,16 @@
       ],
       "relations": [],
       "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): North-Mini-Code Overall 32.7% — bfcl 68%, bigcodebench 54%, IfEvalCode 8%, TheAgentCompany 0%. Below the Qwen3.6/Gemma4 single-Spark cluster (~42-48); a real datapoint for this otherwise leaderboard-only stub. NOT a knowledge bench.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
         {
           "kind": "note",
           "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 21. Stub pending enrichment from the vendor config.json.",
@@ -6928,27 +7939,35 @@
       "id": "model-phi-4",
       "kind": "model",
       "name": "Phi-4",
-      "summary": "Open-weights LLM by Microsoft; catalog stub (AA-leaderboard-seeded, 5 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "14B dense GQA transformer (phi3 arch); 16K context; MIT",
       "visibility": "public",
       "labels": [
         "microsoft",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 16k, hosted price ~$0.16/1M blended; AA Intelligence Index 5. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (40 heads / 10 KV)",
+          "params": "14B",
+          "nativeContext": 16384,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "microsoft/phi-4",
+          "modelType": "phi3",
+          "layers": 40,
+          "hidden": 5120,
+          "vocab": 100352,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/microsoft/phi-4 config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 5,
           "basis": "reference-precision",
@@ -6958,6 +7977,21 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmlu": 84.8,
+          "mmluPro": 70.4,
+          "gpqaDiamond": 56.1,
+          "math": 80.4,
+          "humanEval": 82.6,
+          "mgsm": 80.6,
+          "simpleQa": 3,
+          "drop": 75.5,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/microsoft/phi-4 model card",
+            "verification": "cited"
           }
         }
       }
@@ -7075,27 +8109,41 @@
       "id": "model-qwen3-5-4b",
       "kind": "model",
       "name": "Qwen3.5 4B",
-      "summary": "Open-weights LLM by Alibaba; catalog stub (AA-leaderboard-seeded, 20 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "4B dense hybrid (Gated-DeltaNet linear + full attn) multimodal VL; 256K native (~1M extended); Apache-2.0",
       "visibility": "public",
       "labels": [
+        "qwen",
         "alibaba",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "multimodal",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.04/1M blended; AA Intelligence Index 20. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (16 heads / 4 KV; hybrid Gated-DeltaNet linear + full attention)",
+          "params": "4B",
+          "nativeContext": 262144,
+          "modality": [
+            "text",
+            "image",
+            "video"
+          ],
+          "hfRepo": "Qwen/Qwen3.5-4B",
+          "modelType": "qwen3_5",
+          "layers": 32,
+          "hidden": 2560,
+          "extendedContext": 1010000,
+          "vocab": 248320,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Qwen/Qwen3.5-4B config.json + model card (dense — mlp_only_layers empty)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 20,
           "basis": "reference-precision",
@@ -7105,6 +8153,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmluPro": 79.1,
+          "gpqaDiamond": 76.2,
+          "cEval": 85.1,
+          "mmmuPro": 66.3,
+          "mathVision": 74.6,
+          "longBenchV2": 50,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Qwen/Qwen3.5-4B model card",
+            "verification": "cited"
           }
         }
       }
@@ -7125,11 +8186,21 @@
       "claims": [
         {
           "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.17/1M blended; AA Intelligence Index 19. Stub pending enrichment from the vendor config.json.",
+          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 256k, hosted price ~$0.17/1M blended; AA Intelligence Index 19.",
           "provenance": {
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        {
+          "kind": "note",
+          "body": "NO OPEN WEIGHTS (checked 2026-06-29): \"Qwen3.5-Omni-Flash\" exists only as a DashScope API model ID + hosted demo Spaces — no open-weights HF card/config (page + raw config.json both 401). Closest open-weights is Qwen3-Omni-30B-A3B (Qwen3, NOT 3.5) — a different model, not substituted. Not enrichable from HF; this stub stays AA-leaderboard-only unless open weights are released.",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Qwen/Qwen3.5-Omni-Flash (401) + https://qwen.ai/blog?id=qwen3.5-omni",
+            "confidence": "low",
+            "verification": "cited"
           }
         }
       ],
@@ -7159,7 +8230,7 @@
         "coder",
         "moe",
         "open-weights",
-        "stub"
+        "long-context"
       ],
       "relations": [],
       "claims": [
@@ -7175,40 +8246,36 @@
         },
         {
           "kind": "note",
-          "body": "STUB: distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same Qwen3-Coder line, smaller size class. Exact params/layers, context, and license not HF-verified here. ingest config.json from Qwen/Qwen3-Coder-30B-A3B-Instruct to promote.",
+          "body": "Distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same Qwen3-Coder line, smaller size class. Architecture HF-verified 2026-06-29 (30.5B/3.3B MoE, qwen3_moe, 48L, 128 experts 8/token, 256K native / 1M YaRN).",
           "provenance": {
-            "asOf": "2026-06-27",
-            "source": "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct (to ingest)",
-            "confidence": "low",
-            "verification": "cited"
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct config.json",
+            "verification": "authoritative"
           }
         }
       ],
       "facets": {
         "architecture": {
-          "attention": "MoE",
-          "params": "~30B",
-          "activeParams": "~3B",
+          "attention": "GQA (32 Q / 4 KV, head_dim 128)",
+          "params": "30.5B",
+          "activeParams": "3.3B",
           "nativeContext": 262144,
           "modality": [
             "text"
           ],
           "hfRepo": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
-          "notes": "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models. Architecture not yet HF-verified — stub.",
+          "modelType": "qwen3_moe",
+          "layers": 48,
+          "hidden": 2048,
+          "experts": "128 routed (8/token)",
+          "extendedContext": 1048576,
+          "vocab": 151936,
+          "license": "apache-2.0",
+          "notes": "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models.",
           "provenance": {
-            "asOf": "2026-06-27",
-            "source": "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (community) — HF repo Qwen/Qwen3-Coder-30B-A3B-Instruct",
-            "verification": "cited",
-            "confidence": "low"
-          }
-        },
-        "license": {
-          "spdx": "apache-2.0",
-          "provenance": {
-            "asOf": "2026-06-27",
-            "source": "Qwen3-Coder line (Apache-2.0) — confirm on the HF card",
-            "verification": "cited",
-            "confidence": "low"
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct config.json + model card",
+            "verification": "authoritative"
           }
         },
         "runsOn": [
@@ -7249,6 +8316,16 @@
       ],
       "relations": [],
       "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3-Coder-Next FP8 Overall 41.2% — bfcl 78%, bigcodebench 62%, and notably TheAgentCompany 20% (tied best agentic on the board) despite a mid-pack Overall. A genuinely-agentic coder. NOT a knowledge bench.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
         {
           "kind": "caveat",
           "body": "`--min-p 0.01` is required — llama.cpp defaults to 0.05, which diverges from the Qwen-recommended sampling.",
@@ -9354,6 +10431,16 @@
       ],
       "claims": [
         {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3.6-27B mid-pack. Tested configs: nothink Overall 43.8%, FP8 42.7%, DFlash(15) 42.3%, base 36.5%. Disabling thinking (43.8) edged FP8 (42.7) here. bfcl ~78% across configs; the agentic axis (TheAgentCompany) only 0–10%. NOT a knowledge bench.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
+        {
           "kind": "note",
           "body": "Dense 27B (non-MoE), multimodal, ~196K context. Distinct from Qwen3.5-27B and from the Qwen3.6-35B-A3B MoE. Params/layers from a community forum report; full HF config.json verification pending (confidence low on the architecture, medium on the measured speed).",
           "provenance": {
@@ -9564,6 +10651,16 @@
         }
       ],
       "claims": [
+        {
+          "kind": "finding",
+          "body": "INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals, inspect_evals — bfcl/bigcodebench/IfEvalCode/TheAgentCompany; see artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3.6-35B-A3B is the #1 single-Spark model on the leaderboard. Tested quants: FP8+fp8-KV Overall 47.7%, FP8 46.9%, NVFP4 45.8%, base 41.9% — fp8-KV and quant differences are within harness noise (50 samples × 7 epochs). Best agentic axis: TheAgentCompany 20% (tied top). NOT a knowledge bench — read alongside the vendor benchmarks facet.",
+          "provenance": {
+            "asOf": "2026-06-28",
+            "source": "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md",
+            "confidence": "low",
+            "verification": "cited"
+          }
+        },
         {
           "kind": "note",
           "body": "COMMUNITY (single-Spark coding, forum 374423): Qwen3.6-35B-A3B is the daily-driver consensus / \"single-Spark coding sweet spot\" — \"fastest and most capable small model\" (nangld85, PrismaQuant 4.75-bit), also run FP8 with Opus fallback for hard tasks (door.blu). Cross-cutting findings: \"vLLM beats llama.cpp every day with a proper quant (NVFP4 / int4-autoround)\" (0rand); set `repetition_penalty: 1.02` to break digit/output loops without harming normal tokens (nangld85). Shared test probe: \"write a C99 program computing 100 digits of Pi (no hardcoding), compile with w64devkit\" — needs real algorithm planning + independent build-debugging + persistence.",
@@ -10253,27 +11350,40 @@
       "id": "model-r1-1776",
       "kind": "model",
       "name": "R1 1776",
-      "summary": "Open-weights LLM by Perplexity; catalog stub (AA-leaderboard-seeded, 6 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "671B/37B-active MLA MoE (DeepSeek-R1 post-trained / de-censored by Perplexity); 160K context; MIT",
       "visibility": "public",
       "labels": [
         "perplexity",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 6. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "MLA (q_lora_rank 1536, kv_lora_rank 512)",
+          "params": "671B",
+          "activeParams": "37B",
+          "nativeContext": 163840,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "perplexity-ai/r1-1776",
+          "modelType": "deepseek_v3",
+          "layers": 61,
+          "hidden": 7168,
+          "experts": "256 routed (8/token) + 1 shared",
+          "vocab": 129280,
+          "license": "mit",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/perplexity-ai/r1-1776 (gated 401; arch verified vs deepseek-ai/DeepSeek-R1 config.json — post-trained, architecturally identical)",
+            "verification": "cited",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 6,
           "basis": "reference-precision",
@@ -10291,27 +11401,42 @@
       "id": "model-ring-2-6-1t",
       "kind": "model",
       "name": "Ring-2.6-1T",
-      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 31 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "1T/~63B-active hybrid linear+MLA MoE (256 experts, 8/token); reasoning sibling of Ling-2.6; 128K (256K YaRN); MIT",
       "visibility": "public",
       "labels": [
         "inclusion-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "hybrid-linear",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 262k, hosted price ~$0.52/1M blended; AA Intelligence Index 31. Stub pending enrichment from the vendor config.json.",
+      "claims": [],
+      "facets": {
+        "architecture": {
+          "attention": "hybrid linear-attention + MLA-style (q_lora 1536 / kv_lora 512, 64 heads)",
+          "params": "1T",
+          "activeParams": "~63B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "inclusionAI/Ring-2.6-1T",
+          "modelType": "bailing_hybrid",
+          "layers": 80,
+          "hidden": 8192,
+          "experts": "256 routed (8/token) + 1 shared",
+          "extendedContext": 262144,
+          "vocab": 157184,
+          "license": "mit",
           "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ring-2.6-1T config.json + model card (activeParams ~63B third-party — verify)",
+            "verification": "authoritative",
             "confidence": "medium"
           }
-        }
-      ],
-      "facets": {
+        },
         "aaIntelligence": {
           "index": 31,
           "basis": "reference-precision",
@@ -10322,6 +11447,18 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "gpqaDiamond": 88.27,
+          "aime2026": 95.83,
+          "arcAgiV2": 66.18,
+          "sweBenchVerified": 74,
+          "tau2Telecom": 95.32,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ring-2.6-1T model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -10329,27 +11466,41 @@
       "id": "model-ring-flash-2-0",
       "kind": "model",
       "name": "Ring-flash-2.0",
-      "summary": "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "100B/6.1B-active MoE (256 experts, 8/token; GQA); 32K native (131K YaRN); reasoning; MIT",
       "visibility": "public",
       "labels": [
         "inclusion-ai",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.18/1M blended; AA Intelligence Index 8. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (32 heads / 4 KV)",
+          "params": "100B",
+          "activeParams": "6.1B",
+          "nativeContext": 32768,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "inclusionAI/Ring-flash-2.0",
+          "modelType": "bailing_moe",
+          "layers": 32,
+          "hidden": 4096,
+          "experts": "256 routed (8/token) + 1 shared",
+          "extendedContext": 131072,
+          "vocab": 157184,
+          "license": "mit",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/inclusionAI/Ring-flash-2.0 config.json + model card",
+            "verification": "authoritative",
+            "note": "model_type bailing_moe (older, full GQA) vs the bailing_hybrid 2.6 models; ~40B-dense-equivalent claim"
+          }
+        },
         "aaIntelligence": {
           "index": 8,
           "basis": "reference-precision",
@@ -10367,27 +11518,39 @@
       "id": "model-sarvam-105b",
       "kind": "model",
       "name": "Sarvam 105B",
-      "summary": "Open-weights LLM by Sarvam; catalog stub (AA-leaderboard-seeded, 12 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "105B/10.3B-active MLA MoE (128 experts top-8 + 1 shared); 128K context (YaRN); Apache-2.0",
       "visibility": "public",
       "labels": [
         "sarvam",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multilingual",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k, hosted price ~$0.04/1M blended; AA Intelligence Index 12. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "MLA (kv_lora_rank 512, q_head_dim 192 = 128 nope + 64 rope, v_head_dim 128; 64 heads)",
+          "params": "105B",
+          "activeParams": "10.3B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "sarvamai/sarvam-105b",
+          "modelType": "sarvam_mla",
+          "layers": 32,
+          "hidden": 4096,
+          "experts": "128 routed (8/token) + 1 shared",
+          "vocab": 262144,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/sarvamai/sarvam-105b config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 12,
           "basis": "reference-precision",
@@ -10398,6 +11561,21 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "math500": 98.6,
+          "mmlu": 90.6,
+          "mmluPro": 81.7,
+          "gpqaDiamond": 78.7,
+          "aime25": 88.3,
+          "liveCodeBench": 71.7,
+          "arenaHard": 71,
+          "sweBenchVerified": 45,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/sarvamai/sarvam-105b model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -10405,27 +11583,39 @@
       "id": "model-sarvam-30b",
       "kind": "model",
       "name": "Sarvam 30B",
-      "summary": "Open-weights LLM by Sarvam; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "32B/2.4B-active GQA MoE (128 experts top-6 + 1 shared); 128K context; Apache-2.0",
       "visibility": "public",
       "labels": [
         "sarvam",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multilingual",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 65.5k, hosted price ~$0.03/1M blended; AA Intelligence Index 7. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 heads / 4 KV, head_dim 64, qk_norm)",
+          "params": "32B",
+          "activeParams": "2.4B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "sarvamai/sarvam-30b",
+          "modelType": "sarvam_moe",
+          "layers": 19,
+          "hidden": 4096,
+          "experts": "128 routed (6/token) + 1 shared",
+          "vocab": 262144,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/sarvamai/sarvam-30b config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 7,
           "basis": "reference-precision",
@@ -10436,6 +11626,21 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "math500": 97,
+          "humanEval": 92.1,
+          "mbpp": 92.7,
+          "mmlu": 85.1,
+          "mmluPro": 80,
+          "gpqaDiamond": 66.5,
+          "aime25": 88.3,
+          "sweBenchVerified": 34,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/sarvamai/sarvam-30b model card",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -10443,27 +11648,39 @@
       "id": "model-solar-open-100b",
       "kind": "model",
       "name": "Solar Open 100B",
-      "summary": "Open-weights LLM by Upstage; catalog stub (AA-leaderboard-seeded, 15 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "102.6B/12B-active MoE (128 experts top-8 + 1 shared); 128K context; Upstage Solar License",
       "visibility": "public",
       "labels": [
         "upstage",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "multilingual",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 128k; AA Intelligence Index 15. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (64 heads / 8 KV, head_dim 128)",
+          "params": "102.6B",
+          "activeParams": "12B",
+          "nativeContext": 131072,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "upstage/Solar-Open-100B",
+          "modelType": "solar_open",
+          "layers": 48,
+          "hidden": 4096,
+          "experts": "128 routed (8/token) + 1 shared",
+          "vocab": 196608,
+          "license": "upstage-solar",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/upstage/Solar-Open-100B config.json + model card",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 15,
           "basis": "reference-precision",
@@ -10473,6 +11690,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "mmlu": 88.2,
+          "mmluPro": 80.4,
+          "aime24": 91.7,
+          "ifEval": 88,
+          "arenaHard": 74.8,
+          "kmmlu": 73,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/upstage/Solar-Open-100B model card",
+            "verification": "cited"
           }
         }
       }
@@ -10657,27 +11887,40 @@
       "id": "model-step3-vl-10b",
       "kind": "model",
       "name": "Step3 VL 10B",
-      "summary": "Open-weights LLM by StepFun; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "10B dense multimodal VLM (Qwen3-8B text decoder + PE vision ~1.8B); 64K native (128K PaCoRe); Apache-2.0",
       "visibility": "public",
       "labels": [
         "stepfun",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "dense",
+        "multimodal",
+        "vision",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 65.5k; AA Intelligence Index 9. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (32 heads / 8 KV, head_dim 128)",
+          "params": "10B",
+          "nativeContext": 65536,
+          "modality": [
+            "text",
+            "image"
+          ],
+          "hfRepo": "stepfun-ai/Step3-VL-10B",
+          "modelType": "step_robotics",
+          "layers": 36,
+          "hidden": 4096,
+          "extendedContext": 131072,
+          "vocab": 151936,
+          "license": "apache-2.0",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/stepfun-ai/Step3-VL-10B config.json + model card (text decoder Qwen3-8B; vision = PE-lang encoder ~1.8B)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 9,
           "basis": "reference-precision",
@@ -10688,6 +11931,18 @@
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
           }
+        },
+        "benchmarks": {
+          "aime25": 94.43,
+          "hmmt25": 92.14,
+          "liveCodeBench": 76.43,
+          "mmmu": 80.11,
+          "mathVista": 85.5,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/stepfun-ai/Step3-VL-10B model card (think-mode column)",
+            "verification": "cited"
+          }
         }
       }
     },
@@ -10695,27 +11950,40 @@
       "id": "model-trinity-large-thinking",
       "kind": "model",
       "name": "Trinity Large Thinking",
-      "summary": "Open-weights LLM by Arcee AI; catalog stub (AA-leaderboard-seeded, 24 Intelligence Index 2026-06-25). Architecture + recipes pending.",
+      "summary": "~398B/~13B-active sparse MoE (256 experts top-4 + 1 shared; afmoe); 256K native (512K extended); OpenMDW-1.1",
       "visibility": "public",
       "labels": [
         "arcee",
         "open-weights",
-        "stub",
-        "aa-leaderboard"
+        "moe",
+        "reasoning",
+        "long-context"
       ],
       "relations": [],
-      "claims": [
-        {
-          "kind": "note",
-          "body": "Leaderboard-observed (third-party, provider-dependent — NOT authoritative architecture): context 512k, hosted price ~$0.24/1M blended; AA Intelligence Index 24. Stub pending enrichment from the vendor config.json.",
-          "provenance": {
-            "asOf": "2026-06-25",
-            "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
-            "confidence": "medium"
-          }
-        }
-      ],
+      "claims": [],
       "facets": {
+        "architecture": {
+          "attention": "GQA (48 heads / 8 KV; sliding + full attention, full every 4th layer)",
+          "params": "~398B",
+          "activeParams": "~13B",
+          "nativeContext": 262144,
+          "modality": [
+            "text"
+          ],
+          "hfRepo": "arcee-ai/Trinity-Large-Thinking",
+          "modelType": "afmoe",
+          "layers": 60,
+          "hidden": 3072,
+          "experts": "256 routed (4/token) + 1 shared",
+          "extendedContext": 524288,
+          "vocab": 200192,
+          "license": "openmdw-1.1",
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking config.json + model card (custom AfmoeForCausalLM, mup_enabled)",
+            "verification": "authoritative"
+          }
+        },
         "aaIntelligence": {
           "index": 24,
           "basis": "reference-precision",
@@ -10725,6 +11993,19 @@
             "asOf": "2026-06-25",
             "source": "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md",
             "confidence": "medium"
+          }
+        },
+        "benchmarks": {
+          "gpqaDiamond": 76.3,
+          "mmluPro": 83.4,
+          "tau2Telecom": 94.7,
+          "aime25": 96.3,
+          "sweBenchVerified": 63.2,
+          "liveCodeBench": 98.2,
+          "provenance": {
+            "asOf": "2026-06-29",
+            "source": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking model card",
+            "verification": "cited"
           }
         }
       }

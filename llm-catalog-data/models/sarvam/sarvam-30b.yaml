@@ -1,13 +1,12 @@
-# Sarvam 30B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Sarvam 30B — Sarvam AI GQA MoE. Enriched from the HF card + config.json
+# (2026-06-29).
 
 - id: model-sarvam-30b
   kind: model
   name: Sarvam 30B
-  summary: "Open-weights LLM by Sarvam; catalog stub (AA-leaderboard-seeded, 7 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 32B/2.4B-active GQA MoE (128 experts top-6 + 1 shared); 128K context; Apache-2.0
   visibility: public
-  labels: [sarvam, open-weights, stub, aa-leaderboard]
+  labels: [sarvam, open-weights, moe, multilingual, long-context]
   facets:
     aaIntelligence:
       index: 7
@@ -18,13 +17,33 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 65.5k, hosted price ~$0.03/1M blended; AA Intelligence Index 7.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: sarvamai/sarvam-30b
+      modelType: sarvam_moe
+      params: "32B"
+      activeParams: "2.4B" # non-embedding active
+      layers: 19
+      hidden: 4096
+      experts: "128 routed (6/token) + 1 shared"
+      nativeContext: 131072 # rope_theta 8e6
+      attention: "GQA (64 heads / 4 KV, head_dim 64, qk_norm)"
+      vocab: 262144
+      license: apache-2.0
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/sarvamai/sarvam-30b config.json + model card"
+        verification: authoritative
+    benchmarks: # Sarvam card
+      math500: 97.0
+      humanEval: 92.1
+      mbpp: 92.7
+      mmlu: 85.1
+      mmluPro: 80.0
+      gpqaDiamond: 66.5
+      aime25: 88.3
+      sweBenchVerified: 34.0
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/sarvamai/sarvam-30b model card"
+        verification: cited

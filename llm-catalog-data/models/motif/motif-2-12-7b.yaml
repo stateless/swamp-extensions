@@ -1,13 +1,12 @@
-# Motif-2-12.7B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Motif-2-12.7B — Motif Technologies dense transformer (Grouped Differential
+# Attention). Enriched from the HF card + config.json (2026-06-29); Base used.
 
 - id: model-motif-2-12-7b
   kind: model
   name: Motif-2-12.7B
-  summary: "Open-weights LLM by Motif Technologies; catalog stub (AA-leaderboard-seeded, 13 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 12.7B dense transformer (Grouped Differential Attention); 32K context (Base); Apache-2.0
   visibility: public
-  labels: [motif, open-weights, stub, aa-leaderboard]
+  labels: [motif, open-weights, dense]
   facets:
     aaIntelligence:
       index: 13
@@ -18,13 +17,29 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 128k; AA Intelligence Index 13.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: Motif-Technologies/Motif-2-12.7B-Base
+      modelType: Motif
+      params: "12.7B"
+      layers: 40
+      hidden: 4096
+      nativeContext: 32768 # Base; Reasoning variant 64K
+      attention: "GQA (40 / 16 KV); Grouped Differential Attention (num_noise_heads 8)"
+      vocab: 219520
+      license: apache-2.0
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Motif-Technologies/Motif-2-12.7B-Base config.json + model card (tech report arXiv:2511.07464)"
+        verification: authoritative
+        note: "exact 'Motif-2-12.7B' is a collection (-Base/-Instruct/-Reasoning); Base used here"
+    benchmarks: # Motif card (Base)
+      mmlu: 78.1 # 5-shot
+      gsm8k: 93.85 # 4-shot CoT
+      math: 73.62 # 4-shot CoT
+      humanEval: 65.9
+      mbpp: 81.5 # 3-shot
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Motif-Technologies/Motif-2-12.7B-Base model card"
+        verification: cited

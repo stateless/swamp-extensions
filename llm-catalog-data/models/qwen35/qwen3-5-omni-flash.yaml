@@ -23,8 +23,19 @@
       body: >-
         Leaderboard-observed (third-party, provider-dependent — NOT authoritative
         architecture): context 256k, hosted price ~$0.17/1M blended; AA Intelligence Index 19.
-        Stub pending enrichment from the vendor config.json.
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
+    - kind: note
+      body: >-
+        NO OPEN WEIGHTS (checked 2026-06-29): "Qwen3.5-Omni-Flash" exists only as a
+        DashScope API model ID + hosted demo Spaces — no open-weights HF card/config
+        (page + raw config.json both 401). Closest open-weights is Qwen3-Omni-30B-A3B
+        (Qwen3, NOT 3.5) — a different model, not substituted. Not enrichable from HF;
+        this stub stays AA-leaderboard-only unless open weights are released.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Qwen/Qwen3.5-Omni-Flash (401) + https://qwen.ai/blog?id=qwen3.5-omni"
+        verification: cited
+        confidence: low

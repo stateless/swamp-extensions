@@ -1,13 +1,12 @@
-# LongCat Flash Lite — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# LongCat Flash Lite — Meituan MLA MoE with N-gram block design. Enriched from the
+# HF card + config.json (2026-06-29).
 
 - id: model-longcat-flash-lite
   kind: model
   name: LongCat Flash Lite
-  summary: "Open-weights LLM by LongCat; catalog stub (AA-leaderboard-seeded, 17 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 68.5B/~3B-active MLA MoE (256 routed + 128 zero-experts, top-12); 32K native (256K YaRN); MIT
   visibility: public
-  labels: [longcat, open-weights, stub, aa-leaderboard]
+  labels: [longcat, meituan, open-weights, moe, long-context]
   facets:
     aaIntelligence:
       index: 17
@@ -18,13 +17,31 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 256k, hosted price ~$0.00/1M blended; AA Intelligence Index 17.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: meituan-longcat/LongCat-Flash-Lite
+      modelType: LongcatFlashNgram
+      params: "68.5B"
+      activeParams: "~3B" # 2.9B–4.5B
+      layers: 14 # shallow; MoE + N-gram block design
+      hidden: 3072
+      experts: "256 routed + 128 zero-experts (top-12)"
+      nativeContext: 32768
+      extendedContext: 262144 # 256K via YaRN; max_position 327680
+      attention: "MLA (kv_lora_rank 512, q_lora_rank 1536)"
+      vocab: 131072
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/meituan-longcat/LongCat-Flash-Lite config.json + model card"
+        verification: authoritative
+    benchmarks: # Meituan card
+      mmlu: 85.52
+      cmmlu: 82.48
+      math500: 96.80
+      aime25: 63.23 # avg
+      sweBench: 54.40
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/meituan-longcat/LongCat-Flash-Lite model card"
+        verification: cited

@@ -1,13 +1,12 @@
-# MiniCPM-V 4.6 1.3B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# MiniCPM-V 4.6 1.3B — OpenBMB multimodal VLM (SigLIP2 vision + Qwen3.5-0.8B LLM).
+# Enriched from the HF card + config.json (2026-06-29).
 
 - id: model-minicpm-v-4-6-1-3b
   kind: model
   name: MiniCPM-V 4.6 1.3B
-  summary: "Open-weights LLM by OpenBMB; catalog stub (AA-leaderboard-seeded, 4 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 1.3B multimodal VLM (SigLIP2-400M vision + Qwen3.5-0.8B LLM, 3:1 linear/full attn); 256K context; Apache-2.0
   visibility: public
-  labels: [openbmb, open-weights, stub, aa-leaderboard]
+  labels: [openbmb, open-weights, multimodal, vision, small]
   facets:
     aaIntelligence:
       index: 4
@@ -18,13 +17,21 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 262k; AA Intelligence Index 4.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: openbmb/MiniCPM-V-4.6
+      modelType: minicpmv4_6
+      params: "1.3B" # SigLIP2-400M vision + Qwen3.5-0.8B LLM
+      layers: 24 # LLM; vision encoder 27
+      hidden: 1024 # LLM; vision 1152
+      nativeContext: 262144
+      attention: "hybrid text backbone (qwen3_5_text, 3 linear-attn : 1 full-attn; GQA 8 Q / 2 KV); vision = full attn 16 heads"
+      vocab: 248094
+      license: apache-2.0
+      modality: [text, image]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/openbmb/MiniCPM-V-4.6 config.json + model card"
+        verification: cited
         confidence: medium
+        note: "card body says '1B' but component sum / filename → ~1.3B; card claims video but config exposes only image+text → modality [text,image]"
+    # benchmarks: card cites AA Intelligence Index 13 vs Qwen3.5-0.8B 10; no standard numeric table

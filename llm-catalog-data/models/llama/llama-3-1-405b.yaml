@@ -1,13 +1,13 @@
-# Llama 3.1 405B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Llama 3.1 405B — Meta dense GQA transformer. Enriched 2026-06-29. NOTE: meta-llama
+# repo is gated (401); architecture verified against the full-param Tulu-3-405B
+# fine-tune (identical arch). Card benchmarks not accessible → omitted.
 
 - id: model-llama-3-1-405b
   kind: model
   name: Llama 3.1 405B
-  summary: "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 405B dense GQA transformer; 128K context; Llama 3.1 Community License
   visibility: public
-  labels: [meta, open-weights, stub, aa-leaderboard]
+  labels: [meta, open-weights, dense, long-context]
   facets:
     aaIntelligence:
       index: 9
@@ -18,13 +18,20 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 128k, hosted price ~$3.13/1M blended; AA Intelligence Index 9.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: meta-llama/Llama-3.1-405B
+      modelType: llama
+      params: "405B"
+      layers: 126
+      hidden: 16384
+      nativeContext: 131072
+      attention: "GQA (128 heads / 8 KV)"
+      vocab: 128256
+      license: llama-3.1
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/meta-llama/Llama-3.1-405B (gated 401; arch verified vs allenai/Llama-3.1-Tulu-3-405B config.json)"
+        verification: cited
         confidence: medium
+    # benchmarks: meta-llama card gated/inaccessible — omitted rather than guessed

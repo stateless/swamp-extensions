@@ -23,8 +23,19 @@
       body: >-
         Leaderboard-observed (third-party, provider-dependent — NOT authoritative
         architecture): context 256k; AA Intelligence Index 28.
-        Stub pending enrichment from the vendor config.json.
       provenance:
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
+    - kind: note
+      body: >-
+        NO OPEN WEIGHTS (checked 2026-06-29): JIUTIAN (China Mobile) is API-only — no
+        HF config.json/weights. The JT-LM org hosts only JT-Math-8B / JT-Coder-8B /
+        JT-DA-8B, not this model. Third-party (artificialanalysis.ai) suggests ~35B
+        non-reasoning, ~260k ctx — NOT authoritative. Architecture not enrichable from
+        HF; this stub stays AA-leaderboard-only unless weights are released.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/JT-LM (org checked — model absent)"
+        verification: cited
+        confidence: low

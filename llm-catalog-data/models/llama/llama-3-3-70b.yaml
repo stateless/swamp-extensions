@@ -1,13 +1,12 @@
-# Llama 3.3 70B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Llama 3.3 70B — Meta dense GQA transformer. Enriched 2026-06-29 (config +
+# benchmarks via the unsloth mirror; meta repo gated).
 
 - id: model-llama-3-3-70b
   kind: model
   name: Llama 3.3 70B
-  summary: "Open-weights LLM by Meta; catalog stub (AA-leaderboard-seeded, 9 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 70B dense GQA transformer (instruction-tuned); 128K context; Llama 3.3 License
   visibility: public
-  labels: [meta, open-weights, stub, aa-leaderboard]
+  labels: [meta, open-weights, dense, long-context]
   facets:
     aaIntelligence:
       index: 9
@@ -18,13 +17,31 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 128k, hosted price ~$0.59/1M blended; AA Intelligence Index 9.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: meta-llama/Llama-3.3-70B-Instruct
+      modelType: llama
+      params: "70B"
+      layers: 80
+      hidden: 8192
+      nativeContext: 131072
+      attention: "GQA (64 heads / 8 KV)"
+      vocab: 128256
+      license: llama-3.3
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct (verified via unsloth mirror config.json + card)"
+        verification: cited
         confidence: medium
+    benchmarks: # Meta-published (instruct)
+      mmlu: 86.0 # CoT
+      mmluPro: 68.9
+      ifEval: 92.1
+      math: 77.0 # CoT
+      gpqaDiamond: 50.5
+      humanEval: 88.4
+      mgsm: 91.1
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct model card (via unsloth mirror)"
+        verification: cited

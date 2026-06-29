@@ -450,6 +450,20 @@
             confidence: medium
             versionPins: { quant: int4-autoround, packager: spark-auto-round }
   claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals,
+        inspect_evals — bfcl/bigcodebench/IfEvalCode/TheAgentCompany; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): Qwen3.6-35B-A3B is the
+        #1 single-Spark model on the leaderboard. Tested quants: FP8+fp8-KV Overall
+        47.7%, FP8 46.9%, NVFP4 45.8%, base 41.9% — fp8-KV and quant differences are
+        within harness noise (50 samples × 7 epochs). Best agentic axis: TheAgentCompany
+        20% (tied top). NOT a knowledge bench — read alongside the vendor benchmarks facet.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
     - kind: note
       body: >-
         COMMUNITY (single-Spark coding, forum 374423): Qwen3.6-35B-A3B is the

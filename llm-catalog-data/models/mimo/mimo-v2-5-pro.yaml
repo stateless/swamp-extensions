@@ -1,13 +1,12 @@
-# MiMo-V2.5-Pro — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# MiMo-V2.5-Pro — Xiaomi trillion-param MoE. Enriched from config.json (2026-06-29).
+# Benchmark table not reliably parsed → architecture only.
 
 - id: model-mimo-v2-5-pro
   kind: model
   name: MiMo-V2.5-Pro
-  summary: "Open-weights LLM by Xiaomi; catalog stub (AA-leaderboard-seeded, 42 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 1.02T/42B-active MoE (384 experts, 8/token; SWA+GA 6:1, +MTP); 1M context; MIT
   visibility: public
-  labels: [xiaomi, open-weights, stub, aa-leaderboard]
+  labels: [xiaomi, open-weights, moe, long-context]
   facets:
     aaIntelligence:
       index: 42
@@ -18,13 +17,21 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 1M, hosted price ~$0.18/1M blended; AA Intelligence Index 42.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: XiaomiMiMo/MiMo-V2.5-Pro
+      modelType: mimo_v2
+      params: "1.02T"
+      activeParams: "42B"
+      layers: 70
+      hidden: 6144
+      experts: "384 routed (8/token)"
+      nativeContext: 1048576
+      attention: "GQA (128 / 8 KV); hybrid SWA+GA 6:1, 128 window; +MTP"
+      vocab: 152576
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro config.json + model card"
+        verification: authoritative
+    # benchmarks: card table not reliably parsed (conflicting figures) — omitted pending direct re-read

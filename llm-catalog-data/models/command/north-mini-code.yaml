@@ -19,6 +19,18 @@
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
   claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): North-Mini-Code Overall
+        32.7% — bfcl 68%, bigcodebench 54%, IfEvalCode 8%, TheAgentCompany 0%. Below the
+        Qwen3.6/Gemma4 single-Spark cluster (~42-48); a real datapoint for this otherwise
+        leaderboard-only stub. NOT a knowledge bench.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
     - kind: note
       body: >-
         Leaderboard-observed (third-party, provider-dependent — NOT authoritative

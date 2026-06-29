@@ -1,13 +1,12 @@
-# Llama 3.1 Nemotron 70B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Llama 3.1 Nemotron 70B — NVIDIA RLHF tune of Llama-3.1-70B (dense GQA). Enriched
+# from the HF card + config.json (2026-06-29, not gated).
 
 - id: model-llama-3-1-nemotron-70b
   kind: model
   name: Llama 3.1 Nemotron 70B
-  summary: "Open-weights LLM by NVIDIA; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 70B dense GQA (RLHF-tuned Llama-3.1-70B-Instruct); 128K context; NVIDIA Open Model License
   visibility: public
-  labels: [nvidia, open-weights, stub, aa-leaderboard]
+  labels: [nvidia, open-weights, dense, long-context]
   facets:
     aaIntelligence:
       index: 8
@@ -18,13 +17,26 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 128k, hosted price ~$1.20/1M blended; AA Intelligence Index 8.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: nvidia/Llama-3.1-Nemotron-70B-Instruct-HF
+      modelType: llama
+      params: "70B"
+      layers: 80
+      hidden: 8192
+      nativeContext: 131072 # 128k input / 4k output
+      attention: "GQA (64 heads / 8 KV)"
+      vocab: 128256
+      license: nvidia-open-model-license # + llama-3.1 community license
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF config.json + model card"
+        verification: authoritative
+    benchmarks: # NVIDIA card (alignment-focused)
+      arenaHard: 85.0
+      alpacaEval2: 57.6 # LC
+      mtBench: 8.98 # GPT-4-Turbo judge
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF model card"
+        verification: cited

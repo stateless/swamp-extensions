@@ -1,13 +1,12 @@
-# Ring-flash-2.0 — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# Ring-flash-2.0 — InclusionAI MoE (older bailing_moe, full GQA). Enriched from the
+# HF card + config.json (2026-06-29).
 
 - id: model-ring-flash-2-0
   kind: model
   name: Ring-flash-2.0
-  summary: "Open-weights LLM by InclusionAI; catalog stub (AA-leaderboard-seeded, 8 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 100B/6.1B-active MoE (256 experts, 8/token; GQA); 32K native (131K YaRN); reasoning; MIT
   visibility: public
-  labels: [inclusion-ai, open-weights, stub, aa-leaderboard]
+  labels: [inclusion-ai, open-weights, moe, reasoning, long-context]
   facets:
     aaIntelligence:
       index: 8
@@ -18,13 +17,23 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 128k, hosted price ~$0.18/1M blended; AA Intelligence Index 8.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: inclusionAI/Ring-flash-2.0
+      modelType: bailing_moe
+      params: "100B"
+      activeParams: "6.1B" # 4.8B non-embedding
+      layers: 32
+      hidden: 4096
+      experts: "256 routed (8/token) + 1 shared"
+      nativeContext: 32768
+      extendedContext: 131072 # 4x YaRN
+      attention: "GQA (32 heads / 4 KV)"
+      vocab: 157184
+      license: mit
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/inclusionAI/Ring-flash-2.0 config.json + model card"
+        verification: authoritative
+        note: "model_type bailing_moe (older, full GQA) vs the bailing_hybrid 2.6 models; ~40B-dense-equivalent claim"
+    # benchmarks: card names AIME25/Omni-MATH/LiveCodeBench/GPQA-Diamond etc. but values are in chart images — omitted

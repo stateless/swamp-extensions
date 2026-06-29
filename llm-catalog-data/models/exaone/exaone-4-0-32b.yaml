@@ -1,13 +1,12 @@
-# EXAONE 4.0 32B — catalog STUB seeded from the Artificial Analysis leaderboard
-# (artifacts/benchmarks/aa-leaderboard-2026-06-25.md). Open-weights; architecture/quants/self-host recipes pending
-# enrichment (e.g. via the @stateless/llm-catalog `ingest` method from HF config.json).
+# EXAONE 4.0 32B — LG AI dense hybrid-GQA (local SWA + global, 3:1) unified
+# reasoning model. Enriched from the HF card + config.json (2026-06-29).
 
 - id: model-exaone-4-0-32b
   kind: model
   name: EXAONE 4.0 32B
-  summary: "Open-weights LLM by LG AI Research; catalog stub (AA-leaderboard-seeded, 11 Intelligence Index 2026-06-25). Architecture + recipes pending."
+  summary: 32B dense hybrid-GQA (sliding-window+global 3:1) unified reasoning model; 128K context; EXAONE NC License
   visibility: public
-  labels: [lg-ai, open-weights, stub, aa-leaderboard]
+  labels: [lg-ai, open-weights, dense, reasoning, long-context]
   facets:
     aaIntelligence:
       index: 11
@@ -18,13 +17,29 @@
         asOf: "2026-06-25"
         source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
         confidence: medium
-  claims:
-    - kind: note
-      body: >-
-        Leaderboard-observed (third-party, provider-dependent — NOT authoritative
-        architecture): context 131k; AA Intelligence Index 11.
-        Stub pending enrichment from the vendor config.json.
+    architecture:
+      hfRepo: LGAI-EXAONE/EXAONE-4.0-32B
+      modelType: exaone4
+      params: "32B" # 30.95B excl. embeddings
+      layers: 64
+      hidden: 5120
+      nativeContext: 131072
+      attention: "Hybrid GQA — local sliding-window (4096) + global, 3:1 ratio; 40 heads / 8 KV"
+      vocab: 102400
+      license: exaone-ai-1.2-nc # non-commercial
+      modality: [text]
       provenance:
-        asOf: "2026-06-25"
-        source: "Artificial Analysis leaderboard — artifacts/benchmarks/aa-leaderboard-2026-06-25.md"
-        confidence: medium
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B config.json + model card"
+        verification: authoritative
+    benchmarks: # LG card (reasoning mode)
+      mmluRedux: 92.3
+      mmluPro: 81.8
+      aime25: 85.3
+      liveCodeBench: 72.6 # v5
+      ifEval: 83.7
+      bfcl: 63.9 # v3
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B model card"
+        verification: cited

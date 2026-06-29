@@ -13,28 +13,27 @@
     as a co-resident coder seat on 128GB unified memory: ~3B active recovers quality
     while leaving RAM for other models. Apache-2.0. Stub.
   visibility: public
-  labels: [qwen, alibaba, coder, moe, open-weights, stub]
+  labels: [qwen, alibaba, coder, moe, open-weights, long-context]
   facets:
     architecture:
       hfRepo: Qwen/Qwen3-Coder-30B-A3B-Instruct
-      attention: MoE
-      params: "~30B"
-      activeParams: "~3B"
-      nativeContext: 262144 # 256K (community; confirm vs config.json)
+      modelType: qwen3_moe
+      params: "30.5B"
+      activeParams: "3.3B"
+      layers: 48
+      hidden: 2048
+      experts: "128 routed (8/token)"
+      nativeContext: 262144 # 256K; YaRN to 1M opt-in (rope_scaling null)
+      extendedContext: 1048576
+      attention: "GQA (32 Q / 4 KV, head_dim 128)"
+      vocab: 151936
+      license: apache-2.0
       modality: [text]
-      notes: "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models. Architecture not yet HF-verified — stub."
+      notes: "Non-reasoning instruct, agentic-coding focus. Qwen3 generation — predates the 3.5/3.6 coders and the RL-trained research models."
       provenance:
-        asOf: "2026-06-27"
-        source: "https://www.reddit.com/r/LocalLLM/comments/1uen4nv/ (community) — HF repo Qwen/Qwen3-Coder-30B-A3B-Instruct"
-        verification: cited
-        confidence: low
-    license:
-      spdx: apache-2.0
-      provenance:
-        asOf: "2026-06-27"
-        source: "Qwen3-Coder line (Apache-2.0) — confirm on the HF card"
-        verification: cited
-        confidence: low
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct config.json + model card"
+        verification: authoritative
     runsOn:
       # community datapoint — 8-bit MLX on M5 Max 128GB (UNVERIFIED, single-source)
       - endpoint: endpoint-mlx-mac
@@ -71,12 +70,10 @@
         confidence: low
     - kind: note
       body: >-
-        STUB: distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same
-        Qwen3-Coder line, smaller size class. Exact params/layers, context, and
-        license not HF-verified here. ingest config.json from
-        Qwen/Qwen3-Coder-30B-A3B-Instruct to promote.
+        Distinct from Qwen3-Coder-Next (80B, model-qwen3-coder-next) — same
+        Qwen3-Coder line, smaller size class. Architecture HF-verified 2026-06-29
+        (30.5B/3.3B MoE, qwen3_moe, 48L, 128 experts 8/token, 256K native / 1M YaRN).
       provenance:
-        asOf: "2026-06-27"
-        source: "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct (to ingest)"
-        verification: cited
-        confidence: low
+        asOf: "2026-06-29"
+        source: "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct config.json"
+        verification: authoritative

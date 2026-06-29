@@ -139,3 +139,18 @@
             verification: cited
             confidence: medium
             versionPins: { runtime: "Atlas (avarok/atlas-gb10:latest)", quant: fp8 }
+  claims:
+    - kind: finding
+      body: >-
+        INDEPENDENT single-Spark agentic-coding eval (DanTup/spark-evals; see
+        artifacts/benchmarks/spark-evals-dantup-2026-06-28.md): "Nemotron3 Nano Omni
+        30B-A3B BF16" Overall 31.2% — bfcl 76%, bigcodebench 54%, IfEvalCode 4%,
+        TheAgentCompany 0%. Below the top single-Spark cluster. CAVEAT: the eval ran the
+        OMNI (multimodal) BF16 variant; this catalog entry is the text Nano-30B-A3B —
+        confirm they're the same checkpoint before treating this as authoritative for
+        this model. NOT a knowledge bench.
+      provenance:
+        asOf: "2026-06-28"
+        source: "github.com/DanTup/spark-evals — artifacts/benchmarks/spark-evals-dantup-2026-06-28.md"
+        verification: cited
+        confidence: low
