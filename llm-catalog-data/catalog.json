@@ -76,7 +76,7 @@
       "id": "endpoint-ds4-dgx-spark",
       "kind": "endpoint",
       "name": "DwarfStar @ DGX Spark",
-      "summary": "ds4 (DwarfStar) on a GB10 Spark; CUDA backend on GB10 is UNVERIFIED (repo Speed table is Mac-only)",
+      "summary": "ds4 (DwarfStar) on a GB10 Spark; GB10/sm_121 CUDA is a first-class target (make cuda-spark)",
       "visibility": "public",
       "labels": [
         "self-host",
@@ -97,11 +97,12 @@
       ],
       "claims": [
         {
-          "kind": "caveat",
-          "body": "ds4 CUDA backend on GB10 is UNVERIFIED — confirm it compiles/runs before trusting any -dgx-spark operating point.",
+          "kind": "finding",
+          "body": "GB10/sm_121 is a FIRST-CLASS ds4 target (corrects the earlier UNVERIFIED flag): build with `make cuda-spark` (deliberately leaves CUDA_ARCH empty → default-arch PTX + forward-compat JIT; aarch64 via sbsa-linux libs, CUDA 13 at /usr/local/cuda). Confirmed: issue #289 logs \"CUDA backend initialized on NVIDIA GB10 (sm_121)\"; the README ships a GB10 q2 bench (343.81 t/s prefill / 13.75 t/s gen). OpenAI + Anthropic compat; native tool_calls. Caveats: PRO-Q2 + --ssd-streaming crashes on GB10 (#427); distributed worker host-registers the whole GGUF → Q4 OOMs on 128GB (#293); --mtp path fragile (#325). Needs --ulimit memlock=-1 (mlock/managed memory, no pageable fallback).",
           "provenance": {
-            "asOf": "2026-06-22",
-            "source": "https://github.com/antirez/ds4 (Speed table Mac-only; days-old beta)",
+            "asOf": "2026-06-29",
+            "source": "https://github.com/antirez/ds4 (Makefile cuda-spark; issues #289/#427/#293/#325)",
+            "confidence": "medium",
             "verification": "cited"
           }
         }
