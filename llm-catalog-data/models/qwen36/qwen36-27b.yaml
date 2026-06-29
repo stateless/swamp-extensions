@@ -49,6 +49,7 @@
         outcome:
           context: { tokens: 196608 }
           speed:
+            unit: decode-accepted # vLLM decode, c1 (measurements below)
             genTokS: 33.2 # decode c1
             note: "decode 33.2 c1 / 56.8 c2 / 90.8 c4; raw coding bursts ~65 t/s on large ctx; prefill ~2.1k tok/s; high startup mem (~95%) then stabilises"
           measurements:
@@ -73,7 +74,7 @@
         procedure: "https://github.com/whpthomas/spark-auto-round (`spark-auto-round <model>`; auto_round output)"
         outcome:
           context: { tokens: 196608 }
-          speed: { genTokS: 26.4, note: "26.4 tok/s (whpthomas); community 0rand 20–21 t/s — 'better at writing code but lacks knowledge'" }
+          speed: { unit: decode-accepted, genTokS: 26.4, note: "26.4 tok/s (whpthomas); community 0rand 20–21 t/s — 'better at writing code but lacks knowledge'" }
           quality:
             toolEvalBench: "92/100"
             note: >-
@@ -98,6 +99,7 @@
           context: { tokens: 196608, note: "M5 reports 256K max; model native 196K" }
           speed:
             prefillTokS: 778.5
+            unit: decode-accepted # MLX decode on M5 Max (Apple, not a GB10 number)
             genTokS: 35.0
             note: >-
               M5 Max 40-core GPU; 15.3GB peak. CROSS-CHECK: the kb's MEASURED Spark 27B

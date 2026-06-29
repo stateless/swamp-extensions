@@ -40,6 +40,7 @@
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
           speed:
+            unit: repo-claim # Atlas self-reported single-stream — re-verify (genai-perf)
             genTokS: 97
             note: "Atlas single-GPU; vision MoE"
           provenance:

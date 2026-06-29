@@ -70,7 +70,7 @@
           build: { runtime: Atlas, image: "avarok/atlas-gb10:latest" }
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
-          speed: { genTokS: 131, note: "Atlas Recipe B, single-GPU, NVFP4 + MTP K=2 — repo's fastest target; ~2min cold start. Repo figure; re-verify single-stream vs concurrent (cf. the qwen3.6 headline-vs-single-thread caveat)." }
+          speed: { unit: repo-claim, genTokS: 131, note: "Atlas Recipe B, single-GPU, NVFP4 + MTP K=2 — repo's fastest target; ~2min cold start. Repo figure; re-verify single-stream vs concurrent (cf. the qwen3.6 headline-vs-single-thread caveat)." }
           provenance:
             asOf: "2026-06-23"
             source: "https://github.com/Avarok-Cybersecurity/atlas (Recipe B)"

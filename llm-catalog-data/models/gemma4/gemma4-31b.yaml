@@ -86,6 +86,7 @@
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
           speed:
+            unit: repo-claim # Atlas self-reported — re-verify (genai-perf)
             genTokS: 9
             note: "Atlas single-GPU at batch=2; slow — dense 31B is a poor Atlas fit"
           provenance:

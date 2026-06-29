@@ -51,7 +51,7 @@
         procedure: "https://github.com/tonyd2wild/MiMo-V2.5-TP2-1M-NVFP4-KV-2xDGX-Spark"
         outcome:
           context: { tokens: 1048576, note: "1M verified (karol.spark #19); KV pool ~2M tokens" }
-          speed: { genTokS: 29, note: "28–30 tok/s decode (karol.spark #19, gpu-util 0.84)" }
+          speed: { unit: decode-accepted, genTokS: 29, note: "28–30 tok/s decode, 2× Spark cluster (karol.spark #19, gpu-util 0.84)" }
           quality: { note: "tool/agent eval 97.8, thinking-OFF (tonyd615 #1); karol.spark: NVFP4 weights+KV 'effectively lossless vs AWQ-int4' in tool/agent testing" }
           provenance:
             asOf: "2026-06-26"

@@ -73,7 +73,7 @@
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
           context: { tokens: 16384 }
-          speed: { genTokS: 32, note: "Atlas Recipe C, single-GPU NVFP4, 16K ctx, no spec-decode (fits over speed) — comparable to other single-Spark 122B paths (cf. Albond AR-INT4 51-52 with the full opt stack)" }
+          speed: { unit: repo-claim, genTokS: 32, note: "Atlas Recipe C, single-GPU NVFP4, 16K ctx, no spec-decode (fits over speed) — comparable to other single-Spark 122B paths (cf. Albond AR-INT4 51-52 with the full opt stack)" }
           provenance:
             asOf: "2026-06-23"
             source: "https://github.com/Avarok-Cybersecurity/atlas (Recipe C)"
@@ -103,6 +103,7 @@
         procedure: "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public + Albond's canonical recipe repo github.com/albond/DGX_Spark_Qwen3.5-122B-A10B-AR-INT4 (Intel AutoRound INT4, single Spark, vLLM 0.19.1 2a69949bd, image vllm-qwen35-v2, FlashInfer + hybrid INT4+FP8 + MTP-2 + INT8 LM head, 51-52 tok/s)"
         outcome:
           speed:
+            unit: decode-accepted # MTP-accounted decode, single-request short prompt (forum 365639)
             genTokS: 52 # v2.4 FINAL, single-request, short prompt — post 398 (avg 51.6±0.3, peak 54.9)
             genTokS32k: 48 # single-request at 32K filled context — post 72/396
             progression: # all single-Spark, single-request, short prompts, warm — measured (forum 365639)
@@ -145,7 +146,7 @@
         config:
           build: { image: "eugr/spark-vllm-docker (local build, tag vllm-node)" }
         outcome:
-          speed: { genTokS: 56, note: "Ray cluster — higher than single-Spark; explains the spread toward the title's 51" }
+          speed: { unit: decode-accepted, genTokS: 56, note: "Ray cluster (multi-box) — higher than single-Spark; explains the spread toward the title's 51" }
           quality:
             note: >-
               RECONCILIATION: results span 28.3 (v1) → 36.5 (AutoRound+MTP) → 38.4
@@ -291,6 +292,7 @@
         outcome:
           context: { tokens: 262144, note: "KV pool ~426k–456k tokens" }
           speed:
+            unit: e2e-incl-prefill # Hermes real agent turns (prefill in denominator); the 59 is albond-bench e2e
             genTokS: 81 # agent traffic: 73% tool-calls, accept-length ~8.3
             note: >-
               Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7
@@ -371,6 +373,7 @@
           context: { tokens: 262144, note: "256K max; practical ~80-100K" }
           speed:
             prefillTokS: 1005.7 # 1024-token prompt
+            unit: decode-accepted # MLX decode on M5 Max (Apple, not a GB10 number)
             genTokS: 49.7
             note: >-
               M5 Max 40-core GPU; 68.7GB peak. mxfp4 + TurboQuant staggered cache. M5

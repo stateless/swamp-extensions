@@ -94,6 +94,7 @@
         outcome:
           context: { tokens: 1000000 }
           speed:
+            unit: decode-accepted # 2× Spark cluster decode @240K (forum 372268); prefill below is a separate-source e2e prefill number
             genTokS: 39.4
             prefillTokS: 1850 # ~1800-1900 @2048-tok prompt, 2x GB10 — forum 373482 post 38 (separate source from the 372268 decode rows below)
             note: "@240K ctx, single request — see measurements for the conditions; prefill ~1800-1900 @2048 prompt (forum 373482)"
@@ -441,6 +442,7 @@
           # ds4 runs on a SINGLE DGX Spark via its CUDA backend; the repo's Speed table
           # is Mac-only — single-Spark tok/s now filled from a community forum benchmark.
           speed:
+            unit: decode-step # llama-benchy raw (forum 369791) — confirm steps vs accepted-tokens
             genTokS: 30 # 27-30 single-stream, peaks >34 (forum 369791 post 83)
             note: "ds4 OpenAI endpoint via llama-benchy; <=7K-tok prompts; single-stream; GB10 CUDA-13, ~94% GPU util — see finding"
           quality: # agentic/coding pass-rates (DanTup/spark-evals, inspect_evals; NOT knowledge benches)

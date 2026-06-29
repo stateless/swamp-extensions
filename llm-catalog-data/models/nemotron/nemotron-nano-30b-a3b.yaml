@@ -131,6 +131,7 @@
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
           speed:
+            unit: repo-claim # Atlas self-reported single-stream — re-verify (genai-perf)
             genTokS: 88
             note: "Atlas, Nemotron-3-Nano-30B-A3B kernel (Mamba-2 + attention + MoE); confirm this maps to this catalog model"
           provenance:

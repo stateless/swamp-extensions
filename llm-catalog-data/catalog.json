@@ -878,6 +878,7 @@
                 "tokens": 1000000
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 39.4,
                 "prefillTokS": 1850,
                 "note": "@240K ctx, single request — see measurements for the conditions; prefill ~1800-1900 @2048 prompt (forum 373482)"
@@ -1346,6 +1347,7 @@
             "procedure": "https://github.com/antirez/ds4",
             "outcome": {
               "speed": {
+                "unit": "decode-step",
                 "genTokS": 30,
                 "note": "ds4 OpenAI endpoint via llama-benchy; <=7K-tok prompts; single-stream; GB10 CUDA-13, ~94% GPU util — see finding"
               },
@@ -2578,6 +2580,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 67,
                 "note": "Atlas supported target; single-GPU"
               },
@@ -2737,6 +2740,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 9,
                 "note": "Atlas single-GPU at batch=2; slow — dense 31B is a poor Atlas fit"
               },
@@ -3135,6 +3139,7 @@
                 "tokens": 202752
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 40,
                 "note": "from recipe comment (\"~40 t/s generation in both single node and cluster\"), not a benchmark. Recipe warns vLLM is suboptimal for this model even with the speed-optimization patch — slower than expected for the active-param count; cluster helps prompt processing, not generation."
               },
@@ -3445,6 +3450,7 @@
                 "note": "256K tested; ~21→19 tok/s at 64K depth (prelim)"
               },
               "speed": {
+                "unit": "decode-step",
                 "genTokS": 21.9,
                 "note": "decode 20.2 (depth 0) / 21.9 (8K) / 21.2 (32K); prefill 535/517/476 tok/s; peak ~22 decode / ~500 prefill. Alt madeby561/GLM-5.2-NVFP4-REAP-504B was slower (~10 tok/s) + unstable."
               },
@@ -3542,6 +3548,7 @@
                 "tokens": 262144
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 26.5,
                 "note": "26–27 tok/s with MTP across all depths to 256K (unpruned, 8 units)"
               },
@@ -5630,8 +5637,9 @@
                 "note": "1M verified (karol.spark #19); KV pool ~2M tokens"
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 29,
-                "note": "28–30 tok/s decode (karol.spark #19, gpu-util 0.84)"
+                "note": "28–30 tok/s decode, 2× Spark cluster (karol.spark #19, gpu-util 0.84)"
               },
               "quality": {
                 "note": "tool/agent eval 97.8, thinking-OFF (tonyd615 #1); karol.spark: NVFP4 weights+KV 'effectively lossless vs AWQ-int4' in tool/agent testing"
@@ -6679,6 +6687,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 33,
                 "note": "Atlas single-GPU"
               },
@@ -7224,6 +7233,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 88,
                 "note": "Atlas, Nemotron-3-Nano-30B-A3B kernel (Mamba-2 + attention + MoE); confirm this maps to this catalog model"
               },
@@ -7685,6 +7695,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 24,
                 "note": "Atlas, Nemotron-3-Super-120B-A12B kernel (Mamba-2 + attention + MoE)"
               },
@@ -8299,6 +8310,7 @@
             "units": 1,
             "outcome": {
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 65,
                 "note": "~60–70 tok/s, 8-bit, ~30GB resident, M5 Max 128GB via an MLX serve (community 'oMLX' fork). UNVERIFIED single-source — measure to confirm."
               },
@@ -8710,6 +8722,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 74,
                 "note": "Atlas single-GPU"
               },
@@ -8802,6 +8815,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 97,
                 "note": "Atlas single-GPU; vision MoE"
               },
@@ -9148,6 +9162,7 @@
                 "tokens": 16384
               },
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 32,
                 "note": "Atlas Recipe C, single-GPU NVFP4, 16K ctx, no spec-decode (fits over speed) — comparable to other single-Spark 122B paths (cf. Albond AR-INT4 51-52 with the full opt stack)"
               },
@@ -9196,6 +9211,7 @@
             "procedure": "https://forums.developer.nvidia.com/t/365639 + production runbook github.com/drewid74/optimized-qwen35-hybrid-v2-runbook-public + Albond's canonical recipe repo github.com/albond/DGX_Spark_Qwen3.5-122B-A10B-AR-INT4 (Intel AutoRound INT4, single Spark, vLLM 0.19.1 2a69949bd, image vllm-qwen35-v2, FlashInfer + hybrid INT4+FP8 + MTP-2 + INT8 LM head, 51-52 tok/s)",
             "outcome": {
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 52,
                 "genTokS32k": 48,
                 "progression": [
@@ -9272,8 +9288,9 @@
             },
             "outcome": {
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 56,
-                "note": "Ray cluster — higher than single-Spark; explains the spread toward the title's 51"
+                "note": "Ray cluster (multi-box) — higher than single-Spark; explains the spread toward the title's 51"
               },
               "quality": {
                 "note": "RECONCILIATION: results span 28.3 (v1) → 36.5 (AutoRound+MTP) → 38.4 (v2 hybrid, single Spark) → 56 (AoE Ray cluster). The title's \"51 tok/s\" sits between single-Spark v2 and the cluster — it is NOT the verified single-Spark number (38.4). Also: llama-benchy reports ~20 tok/s because it measures decode steps, not user-facing throughput — a metric disagreement, not a config one."
@@ -9429,6 +9446,7 @@
                 "note": "KV pool ~426k–456k tokens"
               },
               "speed": {
+                "unit": "e2e-incl-prefill",
                 "genTokS": 81,
                 "note": "Progression: 28.2 plain INT4 → 51.58 MTP-2 (Albond baseline) → 53.7 DFlash unpatched (accept ~6.5) → 59.0 +dense levers → ~81 on agent traffic (accept ~8.3). The 59.0 is the Albond e2e BENCHMARK harness; the ~81 is REAL-WORLD agent turns (Hermes, 73% tool-calls, 100k ctx) — a benchmark-vs-real-world gap, NOT two configs (corroborated forum 365639 post 447). Dense decode-only single-stream: prose 48.8 / code 66.9 / agentic 121.8; 3-stream: prose 30.8 / code 43.0 / agentic 66.7. Dense levers' ~28% baseline gain amortizes to ~0 on high-accept agent traffic (dflash ≈ dense there)."
               },
@@ -9498,6 +9516,7 @@
               },
               "speed": {
                 "prefillTokS": 1005.7,
+                "unit": "decode-accepted",
                 "genTokS": 49.7,
                 "note": "M5 Max 40-core GPU; 68.7GB peak. mxfp4 + TurboQuant staggered cache. M5 DOMINATES decode here vs the 2x DGX Spark same-model path (~26 t/s decode) — driven by M5's ~612 GB/s LPDDR bandwidth vs GB10's ~275 GB/s. Spark's counter-advantage is 1M OPERATIONAL context (M5 practical ~80-100K)."
               },
@@ -9731,6 +9750,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 13,
                 "note": "Atlas, hybrid SSM+attention; notably slow (dense-ish 27B is a poor Atlas fit vs the A3B MoEs)"
               },
@@ -9864,6 +9884,7 @@
             "procedure": "https://github.com/Avarok-Cybersecurity/atlas",
             "outcome": {
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 131,
                 "note": "Atlas Recipe B, single-GPU, NVFP4 + MTP K=2 — repo's fastest target; ~2min cold start. Repo figure; re-verify single-stream vs concurrent (cf. the qwen3.6 headline-vs-single-thread caveat)."
               },
@@ -10178,6 +10199,7 @@
                 "tokens": 32768
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 37,
                 "aggregateTokS": 103,
                 "note": "from recipe comment (\"37 tok/s single-user, 103 tok/s aggregate (4 concurrent) on 4× DGX Spark\"), not an independent benchmark. Requires NVIDIA driver 580.x (590.x has a CUDAGraph deadlock bug on GB10)."
@@ -10571,6 +10593,7 @@
                 "tokens": 196608
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 33.2,
                 "note": "decode 33.2 c1 / 56.8 c2 / 90.8 c4; raw coding bursts ~65 t/s on large ctx; prefill ~2.1k tok/s; high startup mem (~95%) then stabilises"
               },
@@ -10631,6 +10654,7 @@
                 "tokens": 196608
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 26.4,
                 "note": "26.4 tok/s (whpthomas); community 0rand 20–21 t/s — 'better at writing code but lacks knowledge'"
               },
@@ -10668,6 +10692,7 @@
               },
               "speed": {
                 "prefillTokS": 778.5,
+                "unit": "decode-accepted",
                 "genTokS": 35,
                 "note": "M5 Max 40-core GPU; 15.3GB peak. CROSS-CHECK: the kb's MEASURED Spark 27B (NVFP4+DFlash) does prefill 2117 / decode 33.2 (c1) — so Spark PREFILL actually EXCEEDS the M5's 778.5; the M5 edge is decode + tiny footprint (bandwidth-bound), not prefill. The forum's \"M5 faster on both\" holds only vs a weaker Spark config — winner is config-dependent."
               },
@@ -10854,6 +10879,7 @@
                 "tokens": 16384
               },
               "speed": {
+                "unit": "repo-claim",
                 "genTokS": 84,
                 "note": "DISCREPANCY: repo Recipe A claims ~130 tok/s; community SINGLE-THREAD measured 75-93 (forum 369263, AzeezIsh maintainer + users); ~35-40% throughput drop at 2× concurrency. Use ~75-93 single-stream as the trustable number until reconciled. ~2min cold start."
               },
@@ -10900,6 +10926,7 @@
                 "tokens": 262144
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 126.1,
                 "note": "decode 126.1 c1 / 189.9 c2 / 156.3 c4; prefill ~6.4k tok/s; spec-decode best 131 eff t/s @8K code, 92% accept"
               },
@@ -10972,6 +10999,7 @@
                 "tokens": 262144
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 70.8,
                 "note": "CORRECTION (refreshed to post ~280): the earlier 77.74 tg128 (serapis post 5) was measured on DUAL Spark with TP — NOT single-Spark. True single-Spark FP8 is ~52-77 depending on flags; recent optimized 69.9-70.8 tg128 (Digital_David post 94, vLLM-node-tf5). FP8 + MTP-3 = 63.9 tg single (timhbl post 27, MTP acceptance ~2.77 from c1 to c32). INT4-AutoRound ~70.6 tg128 (post 99) with faster prefill (~6.1-6.7k pp). Requires `--default-chat-template-kwargs '{\"preserve_thinking\":true}'` (see technique-preserve-thinking-template) + `--tool-call-parser qwen3_xml` (not the deprecated qwen3_coder)."
               },
@@ -11049,6 +11077,7 @@
                 "tokens": 262144
               },
               "speed": {
+                "unit": "decode-accepted",
                 "genTokS": 75,
                 "note": "decode 75-124 c1 (task-dependent); long-ctx 16-32k holds 73-106; aggregate ~740 t/s @c64; DFlash acceptance 24-48% (higher on structured); TTFT p50 88-137ms"
               },

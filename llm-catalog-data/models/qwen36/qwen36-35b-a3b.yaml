@@ -76,6 +76,7 @@
         outcome:
           context: { tokens: 16384 }
           speed:
+            unit: repo-claim # Atlas headline; community single-thread 75-93 — re-verify
             genTokS: 84 # community single-thread 75-93 (forum 369263); repo headline claims ~130
             note: "DISCREPANCY: repo Recipe A claims ~130 tok/s; community SINGLE-THREAD measured 75-93 (forum 369263, AzeezIsh maintainer + users); ~35-40% throughput drop at 2× concurrency. Use ~75-93 single-stream as the trustable number until reconciled. ~2min cold start."
           provenance:
@@ -102,6 +103,7 @@
         outcome:
           context: { tokens: 262144 }
           speed:
+            unit: decode-accepted # llama-benchy but delivered-tokens (126 > step-rate roofline for 3B-active@NVFP4) — confirm on re-run
             genTokS: 126.1 # decode c1 @ pp2048 (llama-benchy)
             note: "decode 126.1 c1 / 189.9 c2 / 156.3 c4; prefill ~6.4k tok/s; spec-decode best 131 eff t/s @8K code, 92% accept"
           measurements:
@@ -133,6 +135,7 @@
         outcome:
           context: { tokens: 262144 }
           speed:
+            unit: decode-accepted # single-Spark FP8 decode, tg128
             genTokS: 70.8 # single-Spark FP8, recent optimized (Digital_David post 94: 69.9-70.8 tg128)
             note: >-
               CORRECTION (refreshed to post ~280): the earlier 77.74 tg128 (serapis
@@ -179,6 +182,7 @@
         outcome:
           context: { tokens: 262144 }
           speed:
+            unit: decode-accepted # DFlash decode c1, category-dependent
             genTokS: 75 # decode c1, category-dependent (Prose ~75, Math/Reasoning 120+)
             note: "decode 75-124 c1 (task-dependent); long-ctx 16-32k holds 73-106; aggregate ~740 t/s @c64; DFlash acceptance 24-48% (higher on structured); TTFT p50 88-137ms"
           measurements:

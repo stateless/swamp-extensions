@@ -97,6 +97,7 @@
         outcome:
           context: { tokens: 202752 }
           speed:
+            unit: decode-accepted # eugr recipe — verify on re-run
             genTokS: 40
             note: >-
               from recipe comment ("~40 t/s generation in both single node and

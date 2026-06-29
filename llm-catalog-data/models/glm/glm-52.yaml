@@ -112,6 +112,7 @@
         outcome:
           context: { tokens: 262144, note: "256K tested; ~21→19 tok/s at 64K depth (prelim)" }
           speed:
+            unit: decode-step # llama-benchy 0.3.7 raw — confirm steps vs accepted-tokens
             genTokS: 21.9 # decode @ 8K depth (llama-benchy 0.3.7, pp2048/tg256)
             note: >-
               decode 20.2 (depth 0) / 21.9 (8K) / 21.2 (32K); prefill 535/517/476
@@ -174,7 +175,7 @@
         download: { hfRepo: "zai-org/GLM-5.2 (unpruned, AWQ-INT4)", format: safetensors }
         outcome:
           context: { tokens: 262144 }
-          speed: { genTokS: 26.5, note: "26–27 tok/s with MTP across all depths to 256K (unpruned, 8 units)" }
+          speed: { unit: decode-accepted, genTokS: 26.5, note: "26–27 tok/s with MTP across all depths to 256K (unpruned, 8 units)" }
           provenance:
             asOf: "2026-06-26"
             source: "https://forums.developer.nvidia.com/t/glm-5-2-on-a-4x-gb10-cluster-22-tok-s-decode-256k-ctx-recipe/374125 (comment, ciprianveg)"

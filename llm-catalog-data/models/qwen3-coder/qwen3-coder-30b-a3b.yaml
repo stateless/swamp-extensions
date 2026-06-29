@@ -43,6 +43,7 @@
         units: 1
         outcome:
           speed:
+            unit: decode-accepted # MLX decode on M5 Max (Apple, not a GB10), UNVERIFIED single-source
             genTokS: 65 # ~60–70 tok/s reported range, midpoint
             note: "~60–70 tok/s, 8-bit, ~30GB resident, M5 Max 128GB via an MLX serve (community 'oMLX' fork). UNVERIFIED single-source — measure to confirm."
           provenance:

@@ -54,6 +54,7 @@
         procedure: "https://github.com/Avarok-Cybersecurity/atlas"
         outcome:
           speed:
+            unit: repo-claim # Atlas self-reported single-stream — re-verify (genai-perf)
             genTokS: 13
             note: "Atlas, hybrid SSM+attention; notably slow (dense-ish 27B is a poor Atlas fit vs the A3B MoEs)"
           provenance:

@@ -165,6 +165,7 @@
         outcome:
           context: { tokens: 32768 }
           speed:
+            unit: decode-accepted # 4× Spark cluster (TP=4); genTokS=per-stream, aggregateTokS=summed
             genTokS: 37
             aggregateTokS: 103
             note: >-
