@@ -63,11 +63,21 @@
         verification: cited
     - kind: caveat
       body: >-
-        Phase 0 — run HEADLESS. A desktop session (gdm3) holds ~16GB of GPU memory;
-        set `multi-user.target` (no display manager) to reclaim it for inference.
-        A headless DGX Spark idles at only ~0.4GB GPU memory in use (observed
-        2026-06-20: gdm/lightdm/sddm inactive, default target multi-user).
-      provenance: *spark-runbook
+        Phase 0 — run HEADLESS. The desktop + maintenance daemons (GNOME, display
+        manager, snap, timers) hold ~10-16GB of UNIFIED memory; on a shared-memory
+        box that is KV the model never gets. Set `multi-user.target` to reclaim it.
+        MEASURED IMPACT (Entrpi, forum 374328 post 26): going headless took the KV
+        pool from ~200k to 417,792 tokens (1.59x) / 26.2 GiB KV at 0.82 GMU on the
+        SAME GB10 — the gap was pure desktop overhead. Tooling:
+        github.com/Entrpi/dgx-spark-serving-mode (`serving-mode serve` pares the
+        desktop, KEEPS ssh/docker/nvidia-persistenced, brings up the model unit,
+        lingers across reboot). See technique-headless-serving-mode. Diagnostic:
+        "Available KV cache memory" a dozen GiB below a peer's = the desktop is up.
+      provenance:
+        asOf: "2026-06-29"
+        source: "github.com/Entrpi/dgx-spark-serving-mode + forum 374328 post 26 (entrpi); earlier gdm3 ~16GB observation per the drewid74 runbook"
+        verification: cited
+        confidence: medium
     - kind: caveat
       body: >-
         USB-C Power-Delivery firmware WEDGE (seen on ASUS GX10; not DGX Founders):

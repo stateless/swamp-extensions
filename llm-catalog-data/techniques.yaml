@@ -646,3 +646,49 @@
         source: "https://www.reddit.com/r/LocalLLaMA/comments/1ugg1dm/comment/ou1fu1b/ (edit)"
         verification: cited
         confidence: low
+
+# HOST / OS technique — free unified memory for KV by dropping the desktop. On a
+# unified-memory box (GB10) every MB the OS holds is KV the model doesn't get.
+- id: technique-headless-serving-mode
+  kind: technique
+  name: Headless serving mode (free unified memory for KV)
+  summary: Drop the desktop + maintenance daemons to multi-user.target to reclaim ~10-15GB unified memory for the KV pool (GB10)
+  visibility: public
+  labels: [kv-cache, memory, host, os, dgx-spark, gb10, serving, capacity]
+  facets: { qualityImpact: neutral } # pure memory/capacity win — frees KV, never changes output
+  claims:
+    - kind: finding
+      body: >-
+        On a UNIFIED-memory box the 128GB is shared between the OS/desktop and the
+        GPU, so GNOME + display-manager + snap + maintenance daemons (commonly
+        ~10-15GB) is KV the model never gets. Dropping to `multi-user.target`
+        (headless) and paring those services hands it straight to the vLLM KV pool.
+        MEASURED (Entrpi, forum 374328 post 26, Qwen3.5-122B on 1x GB10 @0.82 GMU):
+        417,792 KV tokens / 26.2 GiB available KV — a 1.59x KV pool vs the original
+        ~200k-token poster on the same hardware; the ~12-13GiB gap WAS the desktop
+        overhead. Diagnostic tell: "Available KV cache memory" a dozen GiB below a
+        peer's, or "Maximum concurrency" below ~1x. Tooling: github.com/Entrpi/
+        dgx-spark-serving-mode (`serving-mode serve` = pare desktop, KEEP docker +
+        ssh + nvidia-persistenced, bring up the model unit, linger across reboot).
+        Pure capacity win — more concurrency + better prefix-cache reuse, no quality
+        change. Companion to the qwen3.5-122B-A10B-on-spark recipe.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://github.com/Entrpi/dgx-spark-serving-mode + https://forums.developer.nvidia.com/t/374328 (post 26, entrpi)"
+        verification: cited
+        confidence: medium
+    - kind: note
+      body: >-
+        Two more KV-pool levers from the same thread (forum 374328 post 26): keep
+        `--max-num-seqs` LOW — values >3 inflate the per-sequence Mamba/hybrid state
+        reserve, eating KV; and a hybrid checkpoint with INT8 LM head
+        (technique-int8-lmhead) shrinks the resident head. Pairs with the
+        GMU/CUDA-graph budget caveats on hardware-dgx-spark (driver reserves ~22GB;
+        0.85 GMU safe ceiling; VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS for the
+        low-GMU OOM). Distinct lever from KV QUANT (technique-kv-quant-fp4) and KV
+        EVICTION (technique-kv-eviction) — this frees HOST memory, not cache bytes.
+      provenance:
+        asOf: "2026-06-29"
+        source: "https://forums.developer.nvidia.com/t/374328 (post 26, entrpi)"
+        verification: cited
+        confidence: medium
